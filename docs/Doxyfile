@@ -1,0 +1,30 @@
+# Doxyfile — Raven API documentation
+# Minimal config for XML output (future mdBook pipeline).
+# Not wired into the build yet.
+
+PROJECT_NAME           = "Raven"
+PROJECT_BRIEF          = "Pixel art roguelike — C++20, EnTT, SDL2"
+PROJECT_NUMBER         = 0.1.0
+
+INPUT                  = ../src
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp *.cpp
+
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = ../build-docs/doxygen-xml
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+
+JAVADOC_AUTOBRIEF      = NO
+QT_AUTOBRIEF           = NO
+OPTIMIZE_OUTPUT_FOR_C  = NO
+
+BUILTIN_STL_SUPPORT    = YES
