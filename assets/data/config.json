@@ -1,0 +1,34 @@
+{
+    "window": {
+        "title": "Raven",
+        "scale": 2,
+        "fullscreen": false,
+        "vsync": true
+    },
+    "gameplay": {
+        "virtual_width": 480,
+        "virtual_height": 270,
+        "tick_rate": 120,
+        "starting_lives": 3
+    },
+    "audio": {
+        "music_volume": 80,
+        "sfx_volume": 100
+    },
+    "sprite_sheets": [
+        { "id": "player",      "path": "assets/sprites/player.png",      "frame_w": 16, "frame_h": 16 },
+        { "id": "projectiles", "path": "assets/sprites/projectiles.png", "frame_w": 8,  "frame_h": 8  },
+        { "id": "enemies",     "path": "assets/sprites/enemies.png",     "frame_w": 16, "frame_h": 16 }
+    ],
+    "sprite_defs": {
+        "projectile_small_red":   { "sheet": "projectiles", "frame_x": 0, "frame_y": 0 },
+        "projectile_small_blue":  { "sheet": "projectiles", "frame_x": 1, "frame_y": 0 },
+        "projectile_large_red":   { "sheet": "projectiles", "frame_x": 0, "frame_y": 1 },
+        "projectile_large_blue":  { "sheet": "projectiles", "frame_x": 1, "frame_y": 1 }
+    },
+    "debug": {
+        "show_hitboxes": false,
+        "show_fps": true,
+        "imgui_enabled": false
+    }
+}
