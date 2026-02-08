@@ -76,6 +76,33 @@ void Renderer::shutdown() {
     }
 }
 
+void Renderer::handle_event(const SDL_Event& event) {
+    if (event.type == SDL_RENDER_TARGETS_RESET ||
+        event.type == SDL_RENDER_DEVICE_RESET) {
+        spdlog::warn("Render targets reset — recreating");
+        recreate_target();
+    } else if (event.type == SDL_WINDOWEVENT &&
+               event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+        recreate_target();
+    }
+}
+
+void Renderer::recreate_target() {
+    if (render_target_) {
+        SDL_DestroyTexture(render_target_);
+        render_target_ = nullptr;
+    }
+    render_target_ = SDL_CreateTexture(
+        renderer_,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_TARGET,
+        VIRTUAL_WIDTH, VIRTUAL_HEIGHT
+    );
+    if (!render_target_) {
+        spdlog::error("Failed to recreate render target: {}", SDL_GetError());
+    }
+}
+
 void Renderer::begin_frame() {
     SDL_SetRenderTarget(renderer_, render_target_);
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
@@ -83,11 +110,12 @@ void Renderer::begin_frame() {
 }
 
 void Renderer::end_frame() {
-    // Switch back to window and blit the virtual target
     SDL_SetRenderTarget(renderer_, nullptr);
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
     SDL_RenderClear(renderer_);
-    SDL_RenderCopy(renderer_, render_target_, nullptr, nullptr);
+    if (render_target_) {
+        SDL_RenderCopy(renderer_, render_target_, nullptr, nullptr);
+    }
 }
 
 void Renderer::present() {

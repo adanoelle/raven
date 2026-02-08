@@ -40,6 +40,10 @@ public:
     /// @brief Present the rendered frame. Call after any overlays have drawn.
     void present();
 
+    /// @brief Handle SDL events that affect the renderer (target reset, resize).
+    /// @param event The SDL event to inspect.
+    void handle_event(const SDL_Event& event);
+
     /// @brief Get the raw SDL_Renderer pointer for direct draw calls.
     /// @return Pointer to the SDL_Renderer (never null after successful init).
     [[nodiscard]] SDL_Renderer* sdl_renderer() const { return renderer_; }
@@ -60,6 +64,9 @@ private:
     SDL_Window* window_ = nullptr;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* render_target_ = nullptr; ///< Virtual resolution render target.
+
+    /// @brief Destroy and recreate the virtual resolution render target.
+    void recreate_target();
 };
 
 } // namespace raven
