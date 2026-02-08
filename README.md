@@ -1,4 +1,9 @@
-# Raven
+<table width="100%">
+<tr>
+<td><h1>Raven</h1></td>
+<td align="right"><sub>A new game</sub></td>
+</tr>
+</table>
 
 A pixel art roguelike built with C++20, EnTT ECS, and SDL2. Inspired by Blazing
 Beaks.
