@@ -48,6 +48,7 @@
 
             # Documentation
             mdbook          # Markdown book generator
+            doxygen         # API reference generator
 
             # Misc dev tools
             git

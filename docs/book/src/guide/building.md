@@ -21,8 +21,12 @@ just test     # Build + run Catch2 tests
 | `just asan` | Debug build with AddressSanitizer enabled. |
 | `just fmt` | Format all `.hpp` and `.cpp` files with clang-format. |
 | `just lint` | Run clang-tidy static analysis. |
-| `just book` | Build the mdBook documentation. |
-| `just book-serve` | Serve the book locally with live reload. |
+| `just book build` | Build the mdBook documentation. |
+| `just book serve` | Serve the book locally with live reload. |
+| `just book clean` | Remove generated book output. |
+| `just api build` | Generate Doxygen API reference (HTML + XML). |
+| `just api serve` | Serve API docs locally at `localhost:8080`. |
+| `just api clean` | Remove generated API output. |
 | `just clean` | Remove all build directories. |
 | `just watch` | Auto-rebuild on source changes (requires `entr`). |
 
@@ -42,3 +46,5 @@ These are set via `-D` flags during configuration:
 - `build/bin/assets` — symlink to the `assets/` directory
 - `build-release/bin/raven` — Release build
 - `build-docs/book/` — generated mdBook HTML
+- `build-docs/api/` — generated Doxygen HTML
+- `build-docs/doxygen-xml/` — generated Doxygen XML

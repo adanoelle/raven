@@ -1,5 +1,8 @@
 # raven — development commands
 
+mod book 'docs/book.just'
+mod api 'docs/api.just'
+
 default:
     @just --list
 
@@ -36,14 +39,6 @@ fmt:
 # Run static analysis
 lint:
     find src -name '*.hpp' -o -name '*.cpp' | xargs clang-tidy -p build
-
-# Build mdBook documentation
-book:
-    mdbook build docs/book
-
-# Serve mdBook with live reload
-book-serve:
-    mdbook serve docs/book --open
 
 # Clean build artifacts
 clean:
