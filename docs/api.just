@@ -7,7 +7,7 @@ build:
 # Serve generated HTML locally
 serve: build
     @echo "Serving API docs at http://localhost:8080"
-    python3 -m http.server 8080 -d ../build-docs/api
+    npx -y serve ../build-docs/api -l 8080 --no-clipboard
 
 # Remove generated output
 clean:
