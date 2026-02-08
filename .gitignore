@@ -1,0 +1,34 @@
+# Build
+build/
+build-*/
+cmake-build-*/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cache/
+compile_commands.json
+
+# Nix
+result
+result-*
+.direnv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vendor (NDA-restricted SDKs)
+vendor/steamworks/
+vendor/nintendo/
+
+# Assets (large generated files)
+*.aseprite.bak
+
+# Packages
+*.AppImage
+*.zip
+*.tar.gz
