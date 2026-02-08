@@ -14,23 +14,44 @@
 
 namespace raven {
 
-/// Top-level game state. Owns all subsystems.
+/// @brief Top-level game state. Owns all subsystems and the ECS registry.
 class Game {
 public:
+    /// @brief Construct the game with default subsystem state.
     Game();
     ~Game();
 
+    /// @brief Initialise SDL, renderer, input, and load initial assets.
+    /// @return True on success, false if any subsystem failed to init.
     bool init();
+
+    /// @brief Enter the main loop. Blocks until the game exits.
     void run();
+
+    /// @brief Tear down all subsystems and release SDL resources.
     void shutdown();
 
-    // Public access to subsystems (scenes and systems need these)
+    /// @brief Access the ECS registry shared by all systems.
+    /// @return Mutable reference to the EnTT registry.
     entt::registry& registry() { return registry_; }
+
+    /// @brief Access the rendering subsystem.
+    /// @return Mutable reference to the Renderer.
     Renderer& renderer() { return renderer_; }
+
+    /// @brief Access the sprite sheet manager.
+    /// @return Mutable reference to the SpriteSheetManager.
     SpriteSheetManager& sprites() { return sprites_; }
+
+    /// @brief Access the input subsystem.
+    /// @return Mutable reference to the Input handler.
     Input& input() { return input_; }
+
+    /// @brief Access the scene manager.
+    /// @return Mutable reference to the SceneManager.
     SceneManager& scenes() { return scenes_; }
 
+    /// @brief Signal the game loop to stop after the current frame.
     void request_quit() { running_ = false; }
 
 private:
@@ -50,8 +71,15 @@ private:
     // ECS
     entt::registry registry_;
 
+    /// @brief Execute one fixed-timestep tick of game logic.
+    /// @param dt Fixed timestep delta in seconds (Clock::TICK_RATE).
     void fixed_update(float dt);
+
+    /// @brief Render the current frame via the active scene and overlay.
     void render();
+
+    /// @brief Load sprite sheets and other initial assets.
+    /// @return True if all required assets loaded successfully.
     bool load_assets();
 };
 

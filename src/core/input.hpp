@@ -5,44 +5,45 @@
 
 namespace raven {
 
-/// Abstract input state — works for keyboard and gamepad.
+/// @brief Abstract input state — works for keyboard and gamepad.
 /// Designed for easy porting to Switch Pro Controller.
 struct InputState {
-    // Movement (normalized -1 to 1)
-    float move_x = 0.f;
-    float move_y = 0.f;
+    float move_x = 0.f;  ///< Horizontal movement axis, normalised to [-1, 1].
+    float move_y = 0.f;  ///< Vertical movement axis, normalised to [-1, 1].
 
-    // Buttons (current frame state)
-    bool shoot = false;
-    bool focus = false;   // slow movement + show hitbox
-    bool bomb = false;
-    bool pause = false;
-    bool confirm = false;
-    bool cancel = false;
+    bool shoot = false;   ///< Shoot button held this frame.
+    bool focus = false;   ///< Focus button held (slow movement + show hitbox).
+    bool bomb = false;    ///< Bomb button held this frame.
+    bool pause = false;   ///< Pause button held this frame.
+    bool confirm = false; ///< Confirm/accept button held this frame.
+    bool cancel = false;  ///< Cancel/back button held this frame.
 
-    // Edge detection (pressed this frame)
-    bool shoot_pressed = false;
-    bool bomb_pressed = false;
-    bool pause_pressed = false;
-    bool confirm_pressed = false;
-    bool cancel_pressed = false;
+    bool shoot_pressed = false;   ///< Shoot button pressed this frame (edge).
+    bool bomb_pressed = false;    ///< Bomb button pressed this frame (edge).
+    bool pause_pressed = false;   ///< Pause button pressed this frame (edge).
+    bool confirm_pressed = false; ///< Confirm button pressed this frame (edge).
+    bool cancel_pressed = false;  ///< Cancel button pressed this frame (edge).
 };
 
+/// @brief Manages keyboard and gamepad input with per-frame edge detection.
 class Input {
 public:
     Input();
     ~Input();
 
-    /// Call once per frame before polling events
+    /// @brief Reset per-frame edge flags. Call once per frame before polling events.
     void begin_frame();
 
-    /// Process an SDL event
+    /// @brief Process a single SDL event for input state changes.
+    /// @param event The SDL event to handle.
     void process_event(const SDL_Event& event);
 
-    /// Get current input state
+    /// @brief Get the current input state snapshot.
+    /// @return Const reference to the current InputState.
     [[nodiscard]] const InputState& state() const { return current_; }
 
-    /// Is quit requested?
+    /// @brief Check whether a quit event was received.
+    /// @return True if the user requested quit (window close or quit key).
     [[nodiscard]] bool quit_requested() const { return quit_; }
 
 private:
@@ -50,10 +51,8 @@ private:
     InputState previous_;
     bool quit_ = false;
 
-    // Keyboard state
     const Uint8* keyboard_ = nullptr;
 
-    // Gamepad
     SDL_GameController* gamepad_ = nullptr;
 
     void update_from_keyboard();

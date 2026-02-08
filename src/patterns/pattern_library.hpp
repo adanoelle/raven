@@ -8,37 +8,62 @@
 
 namespace raven {
 
-/// Describes one emitter within a bullet pattern.
+/// @brief Describes one emitter within a bullet pattern.
+///
+/// Each emitter fires bursts of bullets in a configurable arc.
+/// Multiple emitters combine to form a complete PatternDef.
 struct EmitterDef {
-    enum class Type { Radial, Aimed, Linear };
+    /// @brief Shape of the bullet emission.
+    enum class Type {
+        Radial, ///< Bullets spread evenly across spread_angle.
+        Aimed,  ///< Bullets aimed at the player position.
+        Linear  ///< Bullets fired in a straight line.
+    };
 
-    Type type = Type::Radial;
-    int count = 1;               // bullets per burst
-    float speed = 100.f;         // pixels/sec
-    float angular_velocity = 0.f; // degrees/sec rotation
-    float fire_rate = 0.1f;      // seconds between bursts
-    float spread_angle = 360.f;  // degrees
-    float start_angle = 0.f;     // degrees offset
-    std::string bullet_sprite = "bullet_small_red";
-    float lifetime = 5.f;
-    float damage = 1.f;
-    float hitbox_radius = 3.f;
+    Type type = Type::Radial;          ///< Emission shape.
+    int count = 1;                     ///< Bullets per burst.
+    float speed = 100.f;               ///< Bullet speed in pixels/sec.
+    float angular_velocity = 0.f;      ///< Emitter rotation in degrees/sec.
+    float fire_rate = 0.1f;            ///< Seconds between bursts.
+    float spread_angle = 360.f;        ///< Arc width in degrees.
+    float start_angle = 0.f;           ///< Initial angle offset in degrees.
+    std::string bullet_sprite = "bullet_small_red"; ///< Sprite ID for emitted bullets.
+    float lifetime = 5.f;              ///< Bullet lifetime in seconds.
+    float damage = 1.f;               ///< Damage dealt per bullet on contact.
+    float hitbox_radius = 3.f;         ///< Bullet collision radius in pixels.
 };
 
-/// A complete bullet pattern (may contain multiple emitters).
+/// @brief A complete bullet pattern composed of one or more emitters.
 struct PatternDef {
-    std::string name;
-    std::vector<EmitterDef> emitters;
+    std::string name;                  ///< Unique pattern identifier.
+    std::vector<EmitterDef> emitters;  ///< Emitters that fire together.
 };
 
-/// Loads and stores bullet pattern definitions from JSON files.
+/// @brief Loads and stores bullet pattern definitions from JSON files.
 class PatternLibrary {
 public:
+    /// @brief Load a manifest JSON that lists pattern files to load.
+    /// @param manifest_path Path to the manifest.json file.
+    /// @return True if all listed patterns loaded successfully.
     bool load_manifest(const std::string& manifest_path);
+
+    /// @brief Load a single pattern definition from a JSON file.
+    /// @param file_path Path to the pattern JSON file.
+    /// @return True on success, false if the file could not be parsed.
     bool load_file(const std::string& file_path);
+
+    /// @brief Load a pattern definition from an already-parsed JSON object.
+    /// @param j JSON object containing the pattern definition.
+    /// @return True on success, false if the JSON structure is invalid.
     bool load_from_json(const nlohmann::json& j);
 
+    /// @brief Retrieve a pattern by name.
+    /// @param name The pattern identifier.
+    /// @return Pointer to the PatternDef, or nullptr if not found.
     [[nodiscard]] const PatternDef* get(const std::string& name) const;
+
+    /// @brief Get the names of all loaded patterns.
+    /// @return Vector of pattern name strings.
     [[nodiscard]] std::vector<std::string> names() const;
 
 private:

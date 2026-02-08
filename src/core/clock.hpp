@@ -4,17 +4,22 @@
 
 namespace raven {
 
-/// Fixed timestep game clock with interpolation support.
-/// Tick rate of 120Hz for precise bullet movement.
+/// @brief Fixed timestep game clock with interpolation support.
+///
+/// Uses a 120 Hz tick rate for precise physics and bullet movement.
+/// An accumulator pattern prevents the spiral-of-death by capping the
+/// maximum number of steps per frame.
 struct Clock {
-    static constexpr float TICK_RATE = 1.f / 120.f;
-    static constexpr int MAX_STEPS_PER_FRAME = 4; // prevent spiral of death
+    static constexpr float TICK_RATE = 1.f / 120.f;      ///< Seconds per fixed tick (1/120).
+    static constexpr int MAX_STEPS_PER_FRAME = 4;         ///< Cap to prevent spiral of death.
 
-    float accumulator = 0.f;
-    float interpolation_alpha = 0.f;
-    uint64_t tick_count = 0;
+    float accumulator = 0.f;          ///< Unprocessed time carried across frames.
+    float interpolation_alpha = 0.f;  ///< Blend factor [0,1] for rendering between ticks.
+    uint64_t tick_count = 0;          ///< Total fixed ticks since start.
 
-    /// Feed raw frame delta. Returns number of fixed steps to execute.
+    /// @brief Feed a raw frame delta and compute how many fixed steps to run.
+    /// @param frame_delta_seconds Wall-clock time since the last frame, in seconds.
+    /// @return Number of fixed-timestep updates to execute this frame.
     int advance(float frame_delta_seconds) {
         // Clamp to prevent huge deltas (e.g., after breakpoint)
         if (frame_delta_seconds > 0.25f) {
