@@ -46,6 +46,9 @@
             audacity        # Audio editing
             ffmpeg          # Audio/video conversion
 
+            # Documentation
+            mdbook          # Markdown book generator
+
             # Misc dev tools
             git
             direnv

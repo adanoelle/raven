@@ -1,0 +1,14 @@
+[book]
+title = "Raven: Building a Pixel Art Roguelike"
+authors = ["Ada"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "../../build-docs/book"
+
+[output.html]
+git-repository-url = "https://github.com/user/raven"
+
+[output.html.search]
+enable = true

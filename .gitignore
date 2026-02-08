@@ -28,6 +28,9 @@ vendor/nintendo/
 # Assets (large generated files)
 *.aseprite.bak
 
+# Generated docs
+build-docs/
+
 # Packages
 *.AppImage
 *.zip

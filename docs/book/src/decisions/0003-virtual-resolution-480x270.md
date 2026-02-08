@@ -1,0 +1,1 @@
+../../../decisions/0003-virtual-resolution-480x270.md
