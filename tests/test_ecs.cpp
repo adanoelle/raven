@@ -4,6 +4,8 @@
 #include <entt/entt.hpp>
 #include "ecs/components.hpp"
 
+#include <cmath>
+
 using namespace raven;
 
 TEST_CASE("Entity creation with components", "[ecs]") {
@@ -54,5 +56,26 @@ TEST_CASE("Entity creation with components", "[ecs]") {
         auto& tf = reg.get<Transform2D>(entity);
         REQUIRE(tf.x == Catch::Approx(100.f / 120.f));
         REQUIRE(tf.y == Catch::Approx(50.f / 120.f));
+    }
+
+    SECTION("velocity smoothing converges") {
+        // Test the exponential approach used in input_system
+        float vel_dx = 0.f;
+        float vel_dy = 0.f;
+        constexpr float target_dx = 200.f;
+        constexpr float target_dy = 0.f;
+        constexpr float approach_rate = 60.f;
+        constexpr float dt = 1.f / 120.f;
+
+        // Simulate 15 ticks (125ms at 120Hz) of smoothing
+        for (int i = 0; i < 15; ++i) {
+            float t = 1.f - std::exp(-approach_rate * dt);
+            vel_dx += (target_dx - vel_dx) * t;
+            vel_dy += (target_dy - vel_dy) * t;
+        }
+
+        // After 15 ticks at 120Hz, velocity should be very close to target
+        REQUIRE(vel_dx == Catch::Approx(200.f).margin(1.f));
+        REQUIRE(vel_dy == Catch::Approx(0.f).margin(0.01f));
     }
 }

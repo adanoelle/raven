@@ -7,6 +7,13 @@
 namespace raven::systems {
 
 void update_movement(entt::registry& reg, float dt) {
+    // Snapshot positions for render interpolation
+    auto interp_view = reg.view<Transform2D, PreviousTransform>();
+    for (auto [entity, tf, prev] : interp_view.each()) {
+        prev.x = tf.x;
+        prev.y = tf.y;
+    }
+
     // Move all entities with velocity
     auto view = reg.view<Transform2D, Velocity>();
     for (auto [entity, tf, vel] : view.each()) {

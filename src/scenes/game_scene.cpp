@@ -28,10 +28,10 @@ void GameScene::spawn_player(Game& game) {
     auto& reg = game.registry();
     auto player = reg.create();
 
-    reg.emplace<Transform2D>(player,
-        static_cast<float>(Renderer::VIRTUAL_WIDTH) / 2.f,
-        static_cast<float>(Renderer::VIRTUAL_HEIGHT) / 2.f
-    );
+    float spawn_x = static_cast<float>(Renderer::VIRTUAL_WIDTH) / 2.f;
+    float spawn_y = static_cast<float>(Renderer::VIRTUAL_HEIGHT) / 2.f;
+    reg.emplace<Transform2D>(player, spawn_x, spawn_y);
+    reg.emplace<PreviousTransform>(player, spawn_x, spawn_y);
     reg.emplace<Velocity>(player);
     reg.emplace<Player>(player);
     reg.emplace<Health>(player, 1.f, 1.f);
@@ -48,7 +48,7 @@ void GameScene::update(Game& game, float dt) {
     auto& input = game.input().state();
 
     // Run ECS systems in order
-    systems::update_input(reg, input);
+    systems::update_input(reg, input, dt);
     systems::update_movement(reg, dt);
     systems::update_projectiles(reg, dt);
     systems::update_collision(reg);
@@ -68,17 +68,24 @@ void GameScene::render(Game& game) {
     SDL_SetRenderDrawColor(r, 8, 8, 24, 255);
     SDL_RenderClear(r);
 
-    // Render all sprites via ECS
-    systems::render_sprites(game.registry(), r, game.sprites());
+    // Render all sprites via ECS (interpolated)
+    float alpha = game.clock().interpolation_alpha;
+    systems::render_sprites(game.registry(), r, game.sprites(), alpha);
 
-    // Debug: draw player hitbox
+    // Debug: draw player hitbox (interpolated to match sprite)
     auto view = game.registry().view<Transform2D, CircleHitbox, Player>();
     for (auto [entity, tf, hb, _] : view.each()) {
+        float hb_x = tf.x;
+        float hb_y = tf.y;
+        if (auto* prev = game.registry().try_get<PreviousTransform>(entity)) {
+            hb_x = prev->x + (tf.x - prev->x) * alpha;
+            hb_y = prev->y + (tf.y - prev->y) * alpha;
+        }
         SDL_SetRenderDrawColor(r, 255, 255, 255, 100);
         // Approximate circle with small rect for debug
         SDL_Rect debug_rect{
-            static_cast<int>(tf.x - hb.radius),
-            static_cast<int>(tf.y - hb.radius),
+            static_cast<int>(hb_x - hb.radius),
+            static_cast<int>(hb_y - hb.radius),
             static_cast<int>(hb.radius * 2.f),
             static_cast<int>(hb.radius * 2.f)
         };

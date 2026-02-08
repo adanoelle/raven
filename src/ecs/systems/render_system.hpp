@@ -11,11 +11,14 @@ namespace raven::systems {
 ///
 /// Sorts entities by Sprite::layer before drawing so higher layers
 /// render on top. Reads Transform2D for position and Sprite for the
-/// sheet ID and frame indices.
+/// sheet ID and frame indices. Entities with PreviousTransform are
+/// interpolated between ticks using the supplied alpha.
 /// @param reg The ECS registry containing renderable entities.
 /// @param renderer The SDL_Renderer to draw with.
 /// @param sprites The SpriteSheetManager providing loaded textures.
+/// @param interpolation_alpha Blend factor [0,1] between previous and current tick positions.
 void render_sprites(entt::registry& reg, SDL_Renderer* renderer,
-                    const SpriteSheetManager& sprites);
+                    const SpriteSheetManager& sprites,
+                    float interpolation_alpha);
 
 } // namespace raven::systems

@@ -7,7 +7,8 @@
 namespace raven::systems {
 
 void render_sprites(entt::registry& reg, SDL_Renderer* renderer,
-                    const SpriteSheetManager& sprites) {
+                    const SpriteSheetManager& sprites,
+                    float interpolation_alpha) {
     // Collect all renderable entities and sort by layer
     struct RenderEntry {
         float x, y;
@@ -22,12 +23,20 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer,
 
     auto view = reg.view<Transform2D, Sprite>();
     for (auto [entity, tf, sprite] : view.each()) {
+        // Interpolate position if previous transform is available
+        float render_x = tf.x;
+        float render_y = tf.y;
+        if (auto* prev = reg.try_get<PreviousTransform>(entity)) {
+            render_x = prev->x + (tf.x - prev->x) * interpolation_alpha;
+            render_y = prev->y + (tf.y - prev->y) * interpolation_alpha;
+        }
+
         const auto* sheet = sprites.get(sprite.sheet_id);
         if (!sheet) {
             // No sprite sheet loaded — draw a placeholder colored rect
             SDL_Rect rect{
-                static_cast<int>(tf.x - static_cast<float>(sprite.width) / 2.f),
-                static_cast<int>(tf.y - static_cast<float>(sprite.height) / 2.f),
+                static_cast<int>(render_x - static_cast<float>(sprite.width) / 2.f),
+                static_cast<int>(render_y - static_cast<float>(sprite.height) / 2.f),
                 sprite.width,
                 sprite.height
             };
@@ -48,7 +57,7 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer,
         }
 
         entries.push_back({
-            tf.x, tf.y,
+            render_x, render_y,
             sprite.frame_x, sprite.frame_y,
             sprite.width, sprite.height,
             sprite.layer,

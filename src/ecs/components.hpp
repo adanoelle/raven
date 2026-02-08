@@ -22,6 +22,14 @@ struct Velocity {
     float dy = 0.f; ///< Vertical speed in pixels/s.
 };
 
+// ── Interpolation ───────────────────────────────────────────────
+
+/// @brief Stores the previous tick's position for render interpolation.
+struct PreviousTransform {
+    float x = 0.f; ///< Previous X position in pixels.
+    float y = 0.f; ///< Previous Y position in pixels.
+};
+
 // ── Rendering ────────────────────────────────────────────────────
 
 /// @brief Sprite rendering data referencing a frame within a sprite sheet.

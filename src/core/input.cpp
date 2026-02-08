@@ -61,7 +61,9 @@ void Input::process_event(const SDL_Event& event) {
     default:
         break;
     }
+}
 
+void Input::update() {
     update_from_keyboard();
     update_from_gamepad();
     compute_edges();

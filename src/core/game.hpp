@@ -51,6 +51,10 @@ public:
     /// @return Mutable reference to the SceneManager.
     SceneManager& scenes() { return scenes_; }
 
+    /// @brief Access the game clock (read-only).
+    /// @return Const reference to the Clock.
+    [[nodiscard]] const Clock& clock() const { return clock_; }
+
     /// @brief Signal the game loop to stop after the current frame.
     void request_quit() { running_ = false; }
 

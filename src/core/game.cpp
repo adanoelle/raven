@@ -93,6 +93,8 @@ void Game::run() {
         input_.begin_frame();
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
+            renderer_.handle_event(event);
+
 #ifdef RAVEN_ENABLE_IMGUI
             bool imgui_consumed = debug_overlay_.process_event(event);
 
@@ -109,6 +111,9 @@ void Game::run() {
             input_.process_event(event);
 #endif
         }
+
+        // Poll keyboard/gamepad state once per frame (even if no events arrived)
+        input_.update();
 
         if (input_.quit_requested()) {
             running_ = false;

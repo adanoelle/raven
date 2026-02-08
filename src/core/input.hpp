@@ -34,9 +34,19 @@ public:
     /// @brief Reset per-frame edge flags. Call once per frame before polling events.
     void begin_frame();
 
-    /// @brief Process a single SDL event for input state changes.
+    /// @brief Process a single SDL event (quit, controller hot-plug).
+    ///
+    /// Does not poll keyboard or gamepad state; call update() after the
+    /// event loop for that.
     /// @param event The SDL event to handle.
     void process_event(const SDL_Event& event);
+
+    /// @brief Poll keyboard and gamepad state and compute edge flags.
+    ///
+    /// Must be called exactly once per frame, after the event loop, to
+    /// ensure input axes reflect currently held keys even on frames with
+    /// no pending SDL events.
+    void update();
 
     /// @brief Get the current input state snapshot.
     /// @return Const reference to the current InputState.

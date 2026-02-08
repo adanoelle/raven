@@ -5,7 +5,7 @@
 
 namespace raven::systems {
 
-void update_input(entt::registry& reg, const InputState& input) {
+void update_input(entt::registry& reg, const InputState& input, float dt) {
     auto view = reg.view<Player, Velocity>();
 
     for (auto [entity, player, vel] : view.each()) {
@@ -21,8 +21,15 @@ void update_input(entt::registry& reg, const InputState& input) {
             my /= len;
         }
 
-        vel.dx = mx * speed;
-        vel.dy = my * speed;
+        float target_dx = mx * speed;
+        float target_dy = my * speed;
+
+        // Exponential approach: ~92% in 5 ticks (~42ms), ~98% in 8 ticks (~67ms)
+        constexpr float approach_rate = 60.f;
+        float t = 1.f - std::exp(-approach_rate * dt);
+
+        vel.dx += (target_dx - vel.dx) * t;
+        vel.dy += (target_dy - vel.dy) * t;
     }
 }
 
