@@ -1,0 +1,18 @@
+{
+    "name": "aimed_burst",
+    "emitters": [
+        {
+            "type": "aimed",
+            "count": 12,
+            "speed": 150.0,
+            "angular_velocity": 0.0,
+            "fire_rate": 1.5,
+            "spread_angle": 30.0,
+            "start_angle": 0.0,
+            "bullet_sprite": "bullet_large_blue",
+            "lifetime": 5.0,
+            "damage": 1.0,
+            "hitbox_radius": 4.0
+        }
+    ]
+}

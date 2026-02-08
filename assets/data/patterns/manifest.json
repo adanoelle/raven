@@ -1,0 +1,6 @@
+{
+    "patterns": [
+        "assets/data/patterns/spiral_3way.json",
+        "assets/data/patterns/aimed_burst.json"
+    ]
+}

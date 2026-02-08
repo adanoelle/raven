@@ -1,0 +1,18 @@
+{
+    "name": "spiral_3way",
+    "emitters": [
+        {
+            "type": "radial",
+            "count": 3,
+            "speed": 120.0,
+            "angular_velocity": 45.0,
+            "fire_rate": 0.08,
+            "spread_angle": 360.0,
+            "start_angle": 0.0,
+            "bullet_sprite": "bullet_small_red",
+            "lifetime": 4.0,
+            "damage": 1.0,
+            "hitbox_radius": 3.0
+        }
+    ]
+}
