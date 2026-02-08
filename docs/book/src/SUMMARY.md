@@ -19,6 +19,7 @@
 - [ECS with EnTT](architecture/ecs.md)
 - [Rendering Pipeline](architecture/rendering.md)
 - [Input Handling](architecture/input.md)
+- [Smooth Character Movement](architecture/smooth-movement.md)
 - [Scene Management](architecture/scenes.md)
 
 ---
