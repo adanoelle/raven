@@ -28,6 +28,7 @@
 
 - [Art Specification](art-spec.md)
 - [Art Integration Guide](art-integration.md)
+- [Learning Resources](art-resources.md)
 
 ---
 
