@@ -24,6 +24,13 @@
 
 ---
 
+# Art & Animation
+
+- [Art Specification](art-spec.md)
+- [Art Integration Guide](art-integration.md)
+
+---
+
 # Development Log
 
 - [Project Setup](devlog/2026-02-08-project-setup.md)
