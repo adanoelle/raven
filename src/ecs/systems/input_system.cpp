@@ -1,4 +1,5 @@
 #include "ecs/systems/input_system.hpp"
+
 #include "ecs/components.hpp"
 
 #include <cmath>

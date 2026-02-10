@@ -17,7 +17,7 @@ namespace raven {
 /// Toggle visibility with a key binding (typically F3).
 /// Conditionally compiled via RAVEN_ENABLE_IMGUI.
 class DebugOverlay {
-public:
+  public:
     /// @brief Initialise the ImGui context and SDL2 backend.
     /// @param window The SDL_Window to attach ImGui to.
     /// @param renderer The SDL_Renderer used for ImGui drawing.
@@ -46,13 +46,13 @@ public:
     /// @return True if the overlay is being drawn.
     [[nodiscard]] bool visible() const { return visible_; }
 
-private:
+  private:
     bool visible_ = false;
 
-    static constexpr int FRAME_HISTORY_SIZE = 120; ///< Number of frame times to track.
+    static constexpr int FRAME_HISTORY_SIZE = 120;        ///< Number of frame times to track.
     std::array<float, FRAME_HISTORY_SIZE> frame_times_{}; ///< Ring buffer of frame deltas.
-    int frame_index_ = 0;  ///< Current write index in the ring buffer.
-    float fps_avg_ = 0.f;  ///< Smoothed FPS average.
+    int frame_index_ = 0; ///< Current write index in the ring buffer.
+    float fps_avg_ = 0.f; ///< Smoothed FPS average.
 
     /// @brief Draw the FPS counter and frame time graph.
     void panel_fps();

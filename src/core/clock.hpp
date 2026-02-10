@@ -10,12 +10,12 @@ namespace raven {
 /// An accumulator pattern prevents the spiral-of-death by capping the
 /// maximum number of steps per frame.
 struct Clock {
-    static constexpr float TICK_RATE = 1.f / 120.f;      ///< Seconds per fixed tick (1/120).
-    static constexpr int MAX_STEPS_PER_FRAME = 4;         ///< Cap to prevent spiral of death.
+    static constexpr float TICK_RATE = 1.f / 120.f; ///< Seconds per fixed tick (1/120).
+    static constexpr int MAX_STEPS_PER_FRAME = 4;   ///< Cap to prevent spiral of death.
 
-    float accumulator = 0.f;          ///< Unprocessed time carried across frames.
-    float interpolation_alpha = 0.f;  ///< Blend factor [0,1] for rendering between ticks.
-    uint64_t tick_count = 0;          ///< Total fixed ticks since start.
+    float accumulator = 0.f;         ///< Unprocessed time carried across frames.
+    float interpolation_alpha = 0.f; ///< Blend factor [0,1] for rendering between ticks.
+    uint64_t tick_count = 0;         ///< Total fixed ticks since start.
 
     /// @brief Feed a raw frame delta and compute how many fixed steps to run.
     /// @param frame_delta_seconds Wall-clock time since the last frame, in seconds.

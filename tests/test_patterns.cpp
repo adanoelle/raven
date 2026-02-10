@@ -1,8 +1,7 @@
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/catch_approx.hpp>
-
 #include "patterns/pattern_library.hpp"
 
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <cmath>
 
 using namespace raven;
@@ -23,11 +22,12 @@ TEST_CASE("Radial pattern angle distribution", "[patterns]") {
 
     SECTION("5-way aimed forward") {
         int count = 5;
-        float spread = 30.f; // narrow cone
+        float spread = 30.f;                // narrow cone
         float start = 270.f - spread / 2.f; // centered upward
 
         float first_angle = start;
-        float last_angle = start + spread * (static_cast<float>(count - 1) / static_cast<float>(count));
+        float last_angle =
+            start + spread * (static_cast<float>(count - 1) / static_cast<float>(count));
 
         REQUIRE(first_angle == Catch::Approx(255.f));
         REQUIRE(last_angle < 270.f + spread / 2.f);
@@ -58,16 +58,13 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
     PatternLibrary lib;
 
     SECTION("Valid JSON parses correctly") {
-        nlohmann::json j = {
-            {"name", "test_spiral"},
-            {"emitters", {{
-                {"type", "radial"},
-                {"count", 8},
-                {"speed", 150.f},
-                {"spread_angle", 360.f},
-                {"fire_rate", 0.2f}
-            }}}
-        };
+        nlohmann::json j = {{"name", "test_spiral"},
+                            {"emitters",
+                             {{{"type", "radial"},
+                               {"count", 8},
+                               {"speed", 150.f},
+                               {"spread_angle", 360.f},
+                               {"fire_rate", 0.2f}}}}};
 
         REQUIRE(lib.load_from_json(j));
 
@@ -82,12 +79,7 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
     }
 
     SECTION("Missing optional fields use defaults") {
-        nlohmann::json j = {
-            {"name", "minimal"},
-            {"emitters", {{
-                {"type", "aimed"}
-            }}}
-        };
+        nlohmann::json j = {{"name", "minimal"}, {"emitters", {{{"type", "aimed"}}}}};
 
         REQUIRE(lib.load_from_json(j));
 
@@ -103,14 +95,11 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
     }
 
     SECTION("Multiple emitters") {
-        nlohmann::json j = {
-            {"name", "multi"},
-            {"emitters", {
-                {{"type", "radial"}, {"count", 3}},
-                {{"type", "aimed"}, {"count", 1}},
-                {{"type", "linear"}, {"count", 5}}
-            }}
-        };
+        nlohmann::json j = {{"name", "multi"},
+                            {"emitters",
+                             {{{"type", "radial"}, {"count", 3}},
+                              {{"type", "aimed"}, {"count", 1}},
+                              {{"type", "linear"}, {"count", 5}}}}};
 
         REQUIRE(lib.load_from_json(j));
 
@@ -123,22 +112,14 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
     }
 
     SECTION("Invalid JSON returns false") {
-        nlohmann::json j = {
-            {"wrong_key", "no_name_field"}
-        };
+        nlohmann::json j = {{"wrong_key", "no_name_field"}};
 
         REQUIRE_FALSE(lib.load_from_json(j));
     }
 
     SECTION("names() returns loaded pattern names") {
-        nlohmann::json j1 = {
-            {"name", "alpha"},
-            {"emitters", {{{"type", "radial"}}}}
-        };
-        nlohmann::json j2 = {
-            {"name", "beta"},
-            {"emitters", {{{"type", "aimed"}}}}
-        };
+        nlohmann::json j1 = {{"name", "alpha"}, {"emitters", {{{"type", "radial"}}}}};
+        nlohmann::json j2 = {{"name", "beta"}, {"emitters", {{{"type", "aimed"}}}}};
 
         REQUIRE(lib.load_from_json(j1));
         REQUIRE(lib.load_from_json(j2));
@@ -149,8 +130,10 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
         bool has_alpha = false;
         bool has_beta = false;
         for (const auto& n : names) {
-            if (n == "alpha") has_alpha = true;
-            if (n == "beta") has_beta = true;
+            if (n == "alpha")
+                has_alpha = true;
+            if (n == "beta")
+                has_beta = true;
         }
         REQUIRE(has_alpha);
         REQUIRE(has_beta);

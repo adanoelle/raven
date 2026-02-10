@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+
 #include <cstdint>
 
 namespace raven {
@@ -8,8 +9,8 @@ namespace raven {
 /// @brief Abstract input state — works for keyboard and gamepad.
 /// Designed for easy porting to Switch Pro Controller.
 struct InputState {
-    float move_x = 0.f;  ///< Horizontal movement axis, normalised to [-1, 1].
-    float move_y = 0.f;  ///< Vertical movement axis, normalised to [-1, 1].
+    float move_x = 0.f; ///< Horizontal movement axis, normalised to [-1, 1].
+    float move_y = 0.f; ///< Vertical movement axis, normalised to [-1, 1].
 
     bool shoot = false;   ///< Shoot button held this frame.
     bool focus = false;   ///< Focus button held (slow movement + show hitbox).
@@ -27,7 +28,7 @@ struct InputState {
 
 /// @brief Manages keyboard and gamepad input with per-frame edge detection.
 class Input {
-public:
+  public:
     Input();
     ~Input();
 
@@ -56,7 +57,7 @@ public:
     /// @return True if the user requested quit (window close or quit key).
     [[nodiscard]] bool quit_requested() const { return quit_; }
 
-private:
+  private:
     InputState current_;
     InputState previous_;
     bool quit_ = false;

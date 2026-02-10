@@ -14,8 +14,7 @@ Input::Input() {
         if (SDL_IsGameController(i)) {
             gamepad_ = SDL_GameControllerOpen(i);
             if (gamepad_) {
-                spdlog::info("Gamepad connected: {}",
-                             SDL_GameControllerName(gamepad_));
+                spdlog::info("Gamepad connected: {}", SDL_GameControllerName(gamepad_));
                 break;
             }
         }
@@ -43,15 +42,14 @@ void Input::process_event(const SDL_Event& event) {
         if (!gamepad_) {
             gamepad_ = SDL_GameControllerOpen(event.cdevice.which);
             if (gamepad_) {
-                spdlog::info("Gamepad connected: {}",
-                             SDL_GameControllerName(gamepad_));
+                spdlog::info("Gamepad connected: {}", SDL_GameControllerName(gamepad_));
             }
         }
         break;
 
     case SDL_CONTROLLERDEVICEREMOVED:
         if (gamepad_ && event.cdevice.which ==
-            SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gamepad_))) {
+                            SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gamepad_))) {
             SDL_GameControllerClose(gamepad_);
             gamepad_ = nullptr;
             spdlog::info("Gamepad disconnected");
@@ -85,22 +83,27 @@ void Input::update_from_keyboard() {
     current_.focus = current_.focus || keyboard_[SDL_SCANCODE_LSHIFT];
     current_.bomb = current_.bomb || keyboard_[SDL_SCANCODE_X];
     current_.pause = current_.pause || keyboard_[SDL_SCANCODE_ESCAPE];
-    current_.confirm = current_.confirm || keyboard_[SDL_SCANCODE_Z] || keyboard_[SDL_SCANCODE_RETURN];
-    current_.cancel = current_.cancel || keyboard_[SDL_SCANCODE_X] || keyboard_[SDL_SCANCODE_ESCAPE];
+    current_.confirm =
+        current_.confirm || keyboard_[SDL_SCANCODE_Z] || keyboard_[SDL_SCANCODE_RETURN];
+    current_.cancel =
+        current_.cancel || keyboard_[SDL_SCANCODE_X] || keyboard_[SDL_SCANCODE_ESCAPE];
 }
 
 void Input::update_from_gamepad() {
-    if (!gamepad_) return;
+    if (!gamepad_)
+        return;
 
     // Left stick
     constexpr float DEADZONE = 0.2f;
-    float lx = static_cast<float>(
-        SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_LEFTX)) / 32767.f;
-    float ly = static_cast<float>(
-        SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_LEFTY)) / 32767.f;
+    float lx = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_LEFTX)) /
+               32767.f;
+    float ly = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_LEFTY)) /
+               32767.f;
 
-    if (std::abs(lx) > DEADZONE) current_.move_x += lx;
-    if (std::abs(ly) > DEADZONE) current_.move_y += ly;
+    if (std::abs(lx) > DEADZONE)
+        current_.move_x += lx;
+    if (std::abs(ly) > DEADZONE)
+        current_.move_y += ly;
 
     // D-pad
     if (SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_DPAD_LEFT))
@@ -113,12 +116,17 @@ void Input::update_from_gamepad() {
         current_.move_y += 1.f;
 
     // Buttons (A = shoot, B = bomb, RB = focus)
-    current_.shoot = current_.shoot || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_A);
+    current_.shoot =
+        current_.shoot || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_A);
     current_.bomb = current_.bomb || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_B);
-    current_.focus = current_.focus || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-    current_.pause = current_.pause || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_START);
-    current_.confirm = current_.confirm || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_A);
-    current_.cancel = current_.cancel || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_B);
+    current_.focus = current_.focus ||
+                     SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+    current_.pause =
+        current_.pause || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_START);
+    current_.confirm =
+        current_.confirm || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_A);
+    current_.cancel =
+        current_.cancel || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_B);
 }
 
 void Input::compute_edges() {

@@ -1,6 +1,7 @@
 #ifdef RAVEN_ENABLE_IMGUI
 
 #include "debug/debug_overlay.hpp"
+
 #include "ecs/components.hpp"
 
 #include <imgui.h>
@@ -75,10 +76,11 @@ void DebugOverlay::panel_fps() {
     ImGui::SetNextWindowPos(ImVec2(5, 5), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(260, 120), ImGuiCond_FirstUseEver);
     ImGui::Begin("FPS");
-    ImGui::Text("FPS: %.1f (avg: %.1f)", static_cast<double>(io.Framerate), static_cast<double>(fps_avg_));
+    ImGui::Text("FPS: %.1f (avg: %.1f)", static_cast<double>(io.Framerate),
+                static_cast<double>(fps_avg_));
     ImGui::Text("Frame: %.2f ms", static_cast<double>(frame_ms));
-    ImGui::PlotLines("##frametime", frame_times_.data(), FRAME_HISTORY_SIZE,
-                     frame_index_, nullptr, 0.f, 33.3f, ImVec2(0, 40));
+    ImGui::PlotLines("##frametime", frame_times_.data(), FRAME_HISTORY_SIZE, frame_index_, nullptr,
+                     0.f, 33.3f, ImVec2(0, 40));
     ImGui::End();
 }
 
@@ -111,7 +113,8 @@ void DebugOverlay::panel_entities(entt::registry& reg) {
 
 void DebugOverlay::panel_player(entt::registry& reg) {
     auto view = reg.view<Transform2D, Velocity, Player>();
-    if (view.size_hint() == 0) return;
+    if (view.size_hint() == 0)
+        return;
 
     ImGui::SetNextWindowPos(ImVec2(5, 235), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(260, 120), ImGuiCond_FirstUseEver);
@@ -125,7 +128,8 @@ void DebugOverlay::panel_player(entt::registry& reg) {
         ImGui::Text("Lives: %d", player.lives);
 
         if (auto* hp = reg.try_get<Health>(entity)) {
-            ImGui::Text("HP: %.1f / %.1f", static_cast<double>(hp->current), static_cast<double>(hp->max));
+            ImGui::Text("HP: %.1f / %.1f", static_cast<double>(hp->current),
+                        static_cast<double>(hp->max));
         }
     }
     ImGui::End();

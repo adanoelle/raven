@@ -1,4 +1,5 @@
 #include "ecs/systems/collision_system.hpp"
+
 #include "ecs/components.hpp"
 
 #include <cmath>
@@ -7,8 +8,7 @@ namespace raven::systems {
 
 namespace {
 
-bool circles_overlap(float x1, float y1, float r1,
-                     float x2, float y2, float r2) {
+bool circles_overlap(float x1, float y1, float r1, float x2, float y2, float r2) {
     float dx = x2 - x1;
     float dy = y2 - y1;
     float dist_sq = dx * dx + dy * dy;
@@ -26,15 +26,16 @@ void update_collision(entt::registry& reg) {
     for (auto [p_ent, p_tf, p_hb, player, p_hp] : players.each()) {
         // Skip if invulnerable
         if (auto* inv = reg.try_get<Invulnerable>(p_ent)) {
-            if (inv->remaining > 0.f) continue;
+            if (inv->remaining > 0.f)
+                continue;
         }
 
         for (auto [b_ent, b_tf, b_hb, bullet, dmg] : enemy_bullets.each()) {
-            if (bullet.owner != Bullet::Owner::Enemy) continue;
+            if (bullet.owner != Bullet::Owner::Enemy)
+                continue;
 
-            if (circles_overlap(
-                    p_tf.x + p_hb.offset_x, p_tf.y + p_hb.offset_y, p_hb.radius,
-                    b_tf.x + b_hb.offset_x, b_tf.y + b_hb.offset_y, b_hb.radius)) {
+            if (circles_overlap(p_tf.x + p_hb.offset_x, p_tf.y + p_hb.offset_y, p_hb.radius,
+                                b_tf.x + b_hb.offset_x, b_tf.y + b_hb.offset_y, b_hb.radius)) {
                 p_hp.current -= dmg.damage;
                 reg.destroy(b_ent);
 

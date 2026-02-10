@@ -1,6 +1,7 @@
 #include "scenes/title_scene.hpp"
-#include "scenes/game_scene.hpp"
+
 #include "core/game.hpp"
+#include "scenes/game_scene.hpp"
 
 #include <spdlog/spdlog.h>
 

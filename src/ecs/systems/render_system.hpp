@@ -17,8 +17,7 @@ namespace raven::systems {
 /// @param renderer The SDL_Renderer to draw with.
 /// @param sprites The SpriteSheetManager providing loaded textures.
 /// @param interpolation_alpha Blend factor [0,1] between previous and current tick positions.
-void render_sprites(entt::registry& reg, SDL_Renderer* renderer,
-                    const SpriteSheetManager& sprites,
+void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteSheetManager& sprites,
                     float interpolation_alpha);
 
 } // namespace raven::systems

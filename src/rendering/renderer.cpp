@@ -14,22 +14,16 @@ bool Renderer::init(const std::string& title, int window_scale) {
     int win_w = VIRTUAL_WIDTH * window_scale;
     int win_h = VIRTUAL_HEIGHT * window_scale;
 
-    window_ = SDL_CreateWindow(
-        title.c_str(),
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        win_w, win_h,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
-    );
+    window_ = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, win_w,
+                               win_h, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     if (!window_) {
         spdlog::error("Failed to create window: {}", SDL_GetError());
         return false;
     }
 
-    renderer_ = SDL_CreateRenderer(
-        window_, -1,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    );
+    renderer_ =
+        SDL_CreateRenderer(window_, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     if (!renderer_) {
         spdlog::error("Failed to create renderer: {}", SDL_GetError());
@@ -37,12 +31,8 @@ bool Renderer::init(const std::string& title, int window_scale) {
     }
 
     // Set up virtual resolution render target
-    render_target_ = SDL_CreateTexture(
-        renderer_,
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_TARGET,
-        VIRTUAL_WIDTH, VIRTUAL_HEIGHT
-    );
+    render_target_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
+                                       SDL_TEXTUREACCESS_TARGET, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
     if (!render_target_) {
         spdlog::error("Failed to create render target: {}", SDL_GetError());
@@ -55,8 +45,8 @@ bool Renderer::init(const std::string& title, int window_scale) {
     // Set logical size for proper scaling on window resize
     SDL_RenderSetLogicalSize(renderer_, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
-    spdlog::info("Renderer initialized: {}x{} virtual, {}x{} window",
-                 VIRTUAL_WIDTH, VIRTUAL_HEIGHT, win_w, win_h);
+    spdlog::info("Renderer initialized: {}x{} virtual, {}x{} window", VIRTUAL_WIDTH, VIRTUAL_HEIGHT,
+                 win_w, win_h);
 
     return true;
 }
@@ -77,8 +67,7 @@ void Renderer::shutdown() {
 }
 
 void Renderer::handle_event(const SDL_Event& event) {
-    if (event.type == SDL_RENDER_TARGETS_RESET ||
-        event.type == SDL_RENDER_DEVICE_RESET) {
+    if (event.type == SDL_RENDER_TARGETS_RESET || event.type == SDL_RENDER_DEVICE_RESET) {
         spdlog::warn("Render targets reset — recreating");
         recreate_target();
     } else if (event.type == SDL_WINDOWEVENT &&
@@ -92,12 +81,8 @@ void Renderer::recreate_target() {
         SDL_DestroyTexture(render_target_);
         render_target_ = nullptr;
     }
-    render_target_ = SDL_CreateTexture(
-        renderer_,
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_TARGET,
-        VIRTUAL_WIDTH, VIRTUAL_HEIGHT
-    );
+    render_target_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
+                                       SDL_TEXTUREACCESS_TARGET, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
     if (!render_target_) {
         spdlog::error("Failed to recreate render target: {}", SDL_GetError());
     }

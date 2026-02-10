@@ -1,4 +1,5 @@
 #include "ecs/systems/movement_system.hpp"
+
 #include "ecs/components.hpp"
 #include "rendering/renderer.hpp"
 
@@ -27,10 +28,8 @@ void update_movement(entt::registry& reg, float dt) {
         float half_w = static_cast<float>(sprite.width) / 2.f;
         float half_h = static_cast<float>(sprite.height) / 2.f;
 
-        tf.x = std::clamp(tf.x, half_w,
-                           static_cast<float>(Renderer::VIRTUAL_WIDTH) - half_w);
-        tf.y = std::clamp(tf.y, half_h,
-                           static_cast<float>(Renderer::VIRTUAL_HEIGHT) - half_h);
+        tf.x = std::clamp(tf.x, half_w, static_cast<float>(Renderer::VIRTUAL_WIDTH) - half_w);
+        tf.y = std::clamp(tf.y, half_h, static_cast<float>(Renderer::VIRTUAL_HEIGHT) - half_h);
     }
 }
 

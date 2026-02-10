@@ -1,7 +1,9 @@
 #include "ecs/systems/damage_system.hpp"
+
 #include "ecs/components.hpp"
 
 #include <spdlog/spdlog.h>
+
 #include <vector>
 
 namespace raven::systems {

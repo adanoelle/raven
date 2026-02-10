@@ -91,9 +91,12 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j) {
     EmitterDef def;
 
     auto type_str = j.value("type", "radial");
-    if (type_str == "aimed") def.type = EmitterDef::Type::Aimed;
-    else if (type_str == "linear") def.type = EmitterDef::Type::Linear;
-    else def.type = EmitterDef::Type::Radial;
+    if (type_str == "aimed")
+        def.type = EmitterDef::Type::Aimed;
+    else if (type_str == "linear")
+        def.type = EmitterDef::Type::Linear;
+    else
+        def.type = EmitterDef::Type::Radial;
 
     def.count = j.value("count", 1);
     def.speed = j.value("speed", 100.f);

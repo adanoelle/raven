@@ -20,28 +20,28 @@ struct EmitterDef {
         Linear  ///< Bullets fired in a straight line.
     };
 
-    Type type = Type::Radial;          ///< Emission shape.
-    int count = 1;                     ///< Bullets per burst.
-    float speed = 100.f;               ///< Bullet speed in pixels/sec.
-    float angular_velocity = 0.f;      ///< Emitter rotation in degrees/sec.
-    float fire_rate = 0.1f;            ///< Seconds between bursts.
-    float spread_angle = 360.f;        ///< Arc width in degrees.
-    float start_angle = 0.f;           ///< Initial angle offset in degrees.
+    Type type = Type::Radial;                       ///< Emission shape.
+    int count = 1;                                  ///< Bullets per burst.
+    float speed = 100.f;                            ///< Bullet speed in pixels/sec.
+    float angular_velocity = 0.f;                   ///< Emitter rotation in degrees/sec.
+    float fire_rate = 0.1f;                         ///< Seconds between bursts.
+    float spread_angle = 360.f;                     ///< Arc width in degrees.
+    float start_angle = 0.f;                        ///< Initial angle offset in degrees.
     std::string bullet_sprite = "bullet_small_red"; ///< Sprite ID for emitted bullets.
-    float lifetime = 5.f;              ///< Bullet lifetime in seconds.
-    float damage = 1.f;               ///< Damage dealt per bullet on contact.
-    float hitbox_radius = 3.f;         ///< Bullet collision radius in pixels.
+    float lifetime = 5.f;                           ///< Bullet lifetime in seconds.
+    float damage = 1.f;                             ///< Damage dealt per bullet on contact.
+    float hitbox_radius = 3.f;                      ///< Bullet collision radius in pixels.
 };
 
 /// @brief A complete bullet pattern composed of one or more emitters.
 struct PatternDef {
-    std::string name;                  ///< Unique pattern identifier.
-    std::vector<EmitterDef> emitters;  ///< Emitters that fire together.
+    std::string name;                 ///< Unique pattern identifier.
+    std::vector<EmitterDef> emitters; ///< Emitters that fire together.
 };
 
 /// @brief Loads and stores bullet pattern definitions from JSON files.
 class PatternLibrary {
-public:
+  public:
     /// @brief Load a manifest JSON that lists pattern files to load.
     /// @param manifest_path Path to the manifest.json file.
     /// @return True if all listed patterns loaded successfully.
@@ -66,7 +66,7 @@ public:
     /// @return Vector of pattern name strings.
     [[nodiscard]] std::vector<std::string> names() const;
 
-private:
+  private:
     std::unordered_map<std::string, PatternDef> patterns_;
 
     static PatternDef parse_pattern(const nlohmann::json& j);

@@ -1,4 +1,5 @@
 #include "ecs/systems/cleanup_system.hpp"
+
 #include "ecs/components.hpp"
 
 #include <vector>
@@ -20,8 +21,8 @@ void update_cleanup(entt::registry& reg, int screen_w, int screen_h) {
     constexpr float MARGIN = 32.f;
     auto offscreen_view = reg.view<Transform2D, OffScreenDespawn>();
     for (auto [entity, tf] : offscreen_view.each()) {
-        if (tf.x < -MARGIN || tf.x > static_cast<float>(screen_w) + MARGIN ||
-            tf.y < -MARGIN || tf.y > static_cast<float>(screen_h) + MARGIN) {
+        if (tf.x < -MARGIN || tf.x > static_cast<float>(screen_w) + MARGIN || tf.y < -MARGIN ||
+            tf.y > static_cast<float>(screen_h) + MARGIN) {
             to_destroy.push_back(entity);
         }
     }

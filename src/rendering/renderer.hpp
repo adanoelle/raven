@@ -12,9 +12,9 @@ namespace raven {
 /// Renders to a low-res target (480x270) then scales to the window size,
 /// giving pixel-perfect rendering at any display resolution.
 class Renderer {
-public:
-    static constexpr int VIRTUAL_WIDTH = 480;   ///< Internal render width in pixels (1920/4).
-    static constexpr int VIRTUAL_HEIGHT = 270;  ///< Internal render height in pixels (1080/4).
+  public:
+    static constexpr int VIRTUAL_WIDTH = 480;  ///< Internal render width in pixels (1920/4).
+    static constexpr int VIRTUAL_HEIGHT = 270; ///< Internal render height in pixels (1080/4).
 
     Renderer();
     ~Renderer();
@@ -60,7 +60,7 @@ public:
     /// @return VIRTUAL_HEIGHT (270).
     [[nodiscard]] int virtual_height() const { return VIRTUAL_HEIGHT; }
 
-private:
+  private:
     SDL_Window* window_ = nullptr;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* render_target_ = nullptr; ///< Virtual resolution render target.

@@ -10,7 +10,7 @@ class Game; // forward declare
 /// @brief Abstract scene interface. Scenes define update/render behaviour
 /// and receive lifecycle callbacks when pushed onto or popped from the stack.
 class Scene {
-public:
+  public:
     virtual ~Scene() = default;
 
     /// @brief Called when the scene is pushed onto the stack.
@@ -35,7 +35,7 @@ public:
 ///
 /// Supports push (for overlays like pause menus) and swap (for transitions).
 class SceneManager {
-public:
+  public:
     /// @brief Push a scene onto the stack, becoming the active scene.
     /// @param scene Owning pointer to the new scene.
     /// @param game The Game instance passed to on_enter().
@@ -63,7 +63,7 @@ public:
     /// @return True if no scenes are on the stack.
     [[nodiscard]] bool empty() const { return stack_.empty(); }
 
-private:
+  private:
     std::vector<std::unique_ptr<Scene>> stack_;
 };
 

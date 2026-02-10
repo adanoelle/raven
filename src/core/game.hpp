@@ -16,7 +16,7 @@ namespace raven {
 
 /// @brief Top-level game state. Owns all subsystems and the ECS registry.
 class Game {
-public:
+  public:
     /// @brief Construct the game with default subsystem state.
     Game();
     ~Game();
@@ -58,7 +58,7 @@ public:
     /// @brief Signal the game loop to stop after the current frame.
     void request_quit() { running_ = false; }
 
-private:
+  private:
     bool running_ = false;
 
     // Subsystems
