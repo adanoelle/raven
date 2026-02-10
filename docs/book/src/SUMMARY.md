@@ -19,6 +19,7 @@
 - [ECS with EnTT](architecture/ecs.md)
 - [Rendering Pipeline](architecture/rendering.md)
 - [Input Handling](architecture/input.md)
+- [Aiming and Shooting](architecture/shooting.md)
 - [Smooth Character Movement](architecture/smooth-movement.md)
 - [Sprite Animation](architecture/sprite-animation.md)
 - [Tilemaps and LDtk Integration](architecture/tilemaps.md)
