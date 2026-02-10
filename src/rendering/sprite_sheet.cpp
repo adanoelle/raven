@@ -1,6 +1,6 @@
 #include "rendering/sprite_sheet.hpp"
 
-#include <SDL2/SDL_image.h>
+#include <SDL_image.h>
 #include <spdlog/spdlog.h>
 
 namespace raven {
@@ -11,8 +11,8 @@ SpriteSheet::~SpriteSheet() {
     }
 }
 
-bool SpriteSheet::load(SDL_Renderer* renderer, const std::string& path,
-                       int frame_width, int frame_height) {
+bool SpriteSheet::load(SDL_Renderer* renderer, const std::string& path, int frame_width,
+                       int frame_height) {
     SDL_Surface* surface = IMG_Load(path.c_str());
     if (!surface) {
         spdlog::error("Failed to load sprite sheet '{}': {}", path, IMG_GetError());
@@ -35,24 +35,18 @@ bool SpriteSheet::load(SDL_Renderer* renderer, const std::string& path,
     frame_w_ = frame_width;
     frame_h_ = frame_height;
 
-    spdlog::debug("Loaded sprite sheet '{}': {}x{}, frames {}x{}",
-                  path, sheet_w_, sheet_h_, frame_w_, frame_h_);
+    spdlog::debug("Loaded sprite sheet '{}': {}x{}, frames {}x{}", path, sheet_w_, sheet_h_,
+                  frame_w_, frame_h_);
 
     return true;
 }
 
-void SpriteSheet::draw(SDL_Renderer* renderer,
-                       int frame_x, int frame_y,
-                       int dest_x, int dest_y,
+void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int dest_x, int dest_y,
                        bool flip_x) const {
-    if (!texture_) return;
+    if (!texture_)
+        return;
 
-    SDL_Rect src{
-        frame_x * frame_w_,
-        frame_y * frame_h_,
-        frame_w_,
-        frame_h_
-    };
+    SDL_Rect src{frame_x * frame_w_, frame_y * frame_h_, frame_w_, frame_h_};
 
     SDL_Rect dst{dest_x, dest_y, frame_w_, frame_h_};
 
@@ -63,7 +57,7 @@ void SpriteSheet::draw(SDL_Renderer* renderer,
 // ── SpriteSheetManager ───────────────────────────────────────────
 
 bool SpriteSheetManager::load(SDL_Renderer* renderer, const std::string& id,
-                               const std::string& path, int frame_w, int frame_h) {
+                              const std::string& path, int frame_w, int frame_h) {
     auto sheet = std::make_unique<SpriteSheet>();
     if (!sheet->load(renderer, path, frame_w, frame_h)) {
         return false;

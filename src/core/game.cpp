@@ -1,9 +1,10 @@
 #include "core/game.hpp"
+
 #include "scenes/title_scene.hpp"
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_mixer.h>
+#include <SDL_image.h>
+#include <SDL_mixer.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
@@ -99,8 +100,7 @@ void Game::run() {
             bool imgui_consumed = debug_overlay_.process_event(event);
 
             // Toggle overlay with F1
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F1 &&
-                !event.key.repeat) {
+            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F1 && !event.key.repeat) {
                 debug_overlay_.toggle();
             }
 
