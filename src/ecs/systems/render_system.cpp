@@ -1,25 +1,33 @@
 #include "ecs/systems/render_system.hpp"
 
+#include "core/string_id.hpp"
 #include "ecs/components.hpp"
 
 #include <algorithm>
 #include <vector>
 
+namespace {
+
+struct RenderEntry {
+    float x, y;
+    int frame_x, frame_y;
+    int width, height;
+    int layer;
+    bool flip_x;
+    const raven::SpriteSheet* sheet;
+};
+
+} // namespace
+
 namespace raven::systems {
 
 void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteSheetManager& sprites,
                     float interpolation_alpha) {
-    // Collect all renderable entities and sort by layer
-    struct RenderEntry {
-        float x, y;
-        int frame_x, frame_y;
-        int width, height;
-        int layer;
-        bool flip_x;
-        const SpriteSheet* sheet;
-    };
+    const auto& interner = reg.ctx().get<StringInterner>();
 
-    std::vector<RenderEntry> entries;
+    // Persistent scratch buffer — cleared each frame, capacity stays allocated
+    auto& entries = reg.ctx().emplace<std::vector<RenderEntry>>();
+    entries.clear();
 
     auto view = reg.view<Transform2D, Sprite>();
     for (auto [entity, tf, sprite] : view.each()) {
@@ -31,7 +39,7 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
             render_y = prev->y + (tf.y - prev->y) * interpolation_alpha;
         }
 
-        const auto* sheet = sprites.get(sprite.sheet_id);
+        const auto* sheet = sprites.get(interner.resolve(sprite.sheet_id));
         if (!sheet) {
             // No sprite sheet loaded — draw a placeholder colored rect
             SDL_Rect rect{static_cast<int>(render_x - static_cast<float>(sprite.width) / 2.f),

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "patterns/pattern_library.hpp"
 #include "rendering/tilemap.hpp"
 #include "scenes/scene.hpp"
 
@@ -30,7 +31,12 @@ class GameScene : public Scene {
     /// @param game The Game instance providing registry and sprite access.
     void spawn_player(Game& game);
 
-    Tilemap tilemap_; ///< Tilemap loaded from LDtk for the current room.
+    /// @brief Spawn playtest enemies with varying tiers and bullet patterns.
+    /// @param game The Game instance providing registry and sprite access.
+    void spawn_enemies(Game& game);
+
+    Tilemap tilemap_;            ///< Tilemap loaded from LDtk for the current room.
+    PatternLibrary pattern_lib_; ///< Bullet pattern definitions for enemy emitters.
 };
 
 } // namespace raven

@@ -1,0 +1,23 @@
+{
+    "name": "nova_legendary",
+    "tier": "legendary",
+    "emitters": [
+        {
+            "type": "radial",
+            "count": 16,
+            "speed": 80.0,
+            "angular_velocity": 20.0,
+            "fire_rate": 2.0,
+            "spread_angle": 360.0,
+            "start_angle": 0.0,
+            "bullet_sheet": "projectiles",
+            "bullet_frame_x": 0,
+            "bullet_frame_y": 1,
+            "bullet_width": 8,
+            "bullet_height": 8,
+            "lifetime": 6.0,
+            "damage": 2.0,
+            "hitbox_radius": 4.0
+        }
+    ]
+}

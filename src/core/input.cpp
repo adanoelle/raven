@@ -99,16 +99,15 @@ void Input::update_mouse() {
     constexpr double VIRTUAL_W = 480.0;
     constexpr double VIRTUAL_H = 270.0;
 
-    double scale = std::min(static_cast<double>(win_w) / VIRTUAL_W,
-                            static_cast<double>(win_h) / VIRTUAL_H);
+    double scale =
+        std::min(static_cast<double>(win_w) / VIRTUAL_W, static_cast<double>(win_h) / VIRTUAL_H);
     double offset_x = (static_cast<double>(win_w) - VIRTUAL_W * scale) / 2.0;
     double offset_y = (static_cast<double>(win_h) - VIRTUAL_H * scale) / 2.0;
 
     float lx = static_cast<float>((static_cast<double>(wx) - offset_x) / scale);
     float ly = static_cast<float>((static_cast<double>(wy) - offset_y) / scale);
 
-    spdlog::debug("mouse: win=({},{}) logical=({:.1f},{:.1f}) scale={:.2f}", wx, wy, lx, ly,
-                  scale);
+    spdlog::debug("mouse: win=({},{}) logical=({:.1f},{:.1f}) scale={:.2f}", wx, wy, lx, ly, scale);
 
     if (lx != current_.mouse_x || ly != current_.mouse_y) {
         mouse_moved_ = true;

@@ -1,3 +1,4 @@
+#include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/animation_system.hpp"
 
@@ -82,10 +83,11 @@ TEST_CASE("Entity creation with components", "[ecs]") {
 
 TEST_CASE("Animation system", "[ecs][animation]") {
     entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
 
     SECTION("looping animation cycles frames") {
         auto entity = reg.create();
-        reg.emplace<Sprite>(entity, std::string{"test"}, 0, 0, 16, 16, 0);
+        reg.emplace<Sprite>(entity, interner.intern("test"), 0, 0, 16, 16, 0);
         reg.emplace<Animation>(entity, 0, 3, 0.1f, 0.f, 0, true);
 
         auto& anim = reg.get<Animation>(entity);
@@ -107,7 +109,7 @@ TEST_CASE("Animation system", "[ecs][animation]") {
 
     SECTION("one-shot animation stops at end") {
         auto entity = reg.create();
-        reg.emplace<Sprite>(entity, std::string{"test"}, 0, 0, 16, 16, 0);
+        reg.emplace<Sprite>(entity, interner.intern("test"), 0, 0, 16, 16, 0);
         reg.emplace<Animation>(entity, 0, 2, 0.1f, 0.f, 0, false);
 
         // Advance well past the end
@@ -123,7 +125,7 @@ TEST_CASE("Animation system", "[ecs][animation]") {
 
     SECTION("frame_x syncs with current_frame") {
         auto entity = reg.create();
-        reg.emplace<Sprite>(entity, std::string{"test"}, 0, 0, 16, 16, 0);
+        reg.emplace<Sprite>(entity, interner.intern("test"), 0, 0, 16, 16, 0);
         reg.emplace<Animation>(entity, 0, 3, 0.1f, 0.f, 0, true);
 
         for (int i = 0; i < 3; ++i) {
@@ -136,7 +138,7 @@ TEST_CASE("Animation system", "[ecs][animation]") {
 
     SECTION("animation does not touch frame_y") {
         auto entity = reg.create();
-        reg.emplace<Sprite>(entity, std::string{"test"}, 0, 5, 16, 16, 0);
+        reg.emplace<Sprite>(entity, interner.intern("test"), 0, 5, 16, 16, 0);
         reg.emplace<Animation>(entity, 0, 3, 0.1f, 0.f, 0, true);
 
         for (int i = 0; i < 8; ++i) {

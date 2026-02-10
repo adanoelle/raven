@@ -1,11 +1,14 @@
+#include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/shooting_system.hpp"
 
 #include <entt/entt.hpp>
 
+#include <algorithm>
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
+#include <vector>
 
 using namespace raven;
 
@@ -13,6 +16,7 @@ namespace {
 
 /// @brief Create a minimal player entity with shooting components.
 entt::entity make_player(entt::registry& reg, float x, float y) {
+    auto& interner = reg.ctx().get<StringInterner>();
     auto player = reg.create();
     reg.emplace<Transform2D>(player, x, y);
     reg.emplace<PreviousTransform>(player, x, y);
@@ -20,6 +24,8 @@ entt::entity make_player(entt::registry& reg, float x, float y) {
     reg.emplace<Player>(player);
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
+    auto& weapon = reg.emplace<Weapon>(player);
+    weapon.bullet_sheet = interner.intern("projectiles");
     return player;
 }
 
@@ -37,6 +43,7 @@ int count_bullets(entt::registry& reg) {
 
 TEST_CASE("Shooting cooldown", "[shooting]") {
     entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
     constexpr float dt = 1.f / 120.f;
 
     SECTION("bullet spawned when shoot held and cooldown expired") {
@@ -55,7 +62,8 @@ TEST_CASE("Shooting cooldown", "[shooting]") {
             REQUIRE(bullet.owner == Bullet::Owner::Player);
             REQUIRE(tf.x == Catch::Approx(100.f));
             REQUIRE(tf.y == Catch::Approx(100.f));
-            REQUIRE(sprite.sheet_id == "projectiles");
+            auto& interner = reg.ctx().get<StringInterner>();
+            REQUIRE(interner.resolve(sprite.sheet_id) == "projectiles");
             REQUIRE(sprite.frame_x == 1);
             REQUIRE(sprite.frame_y == 0);
             REQUIRE(sprite.width == 8);
@@ -104,6 +112,7 @@ TEST_CASE("Shooting cooldown", "[shooting]") {
 
 TEST_CASE("Aim direction resolution", "[shooting]") {
     entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
     constexpr float dt = 1.f / 120.f;
 
     SECTION("right stick sets aim direction") {
@@ -319,5 +328,96 @@ TEST_CASE("Aim direction resolution", "[shooting]") {
             REQUIRE(vel.dx == Catch::Approx(300.f).margin(0.1f));
             REQUIRE(vel.dy == Catch::Approx(0.f).margin(0.1f));
         }
+    }
+
+    SECTION("weapon properties override defaults") {
+        auto player = make_player(reg, 100.f, 100.f);
+        auto& weapon = reg.get<Weapon>(player);
+        weapon.bullet_speed = 500.f;
+        weapon.bullet_damage = 3.f;
+        weapon.bullet_lifetime = 5.f;
+        weapon.bullet_hitbox = 4.f;
+        weapon.bullet_frame_x = 0;
+
+        InputState input{};
+        input.shoot = true;
+
+        systems::update_shooting(reg, input, dt);
+
+        REQUIRE(count_bullets(reg) == 1);
+        auto bullet_view =
+            reg.view<Bullet, Velocity, DamageOnContact, Lifetime, CircleHitbox, Sprite>();
+        for (auto [entity, bullet, vel, dmg, life, hb, sprite] : bullet_view.each()) {
+            float speed = std::sqrt(vel.dx * vel.dx + vel.dy * vel.dy);
+            REQUIRE(speed == Catch::Approx(500.f).margin(1.f));
+            REQUIRE(dmg.damage == Catch::Approx(3.f));
+            REQUIRE(life.remaining == Catch::Approx(5.f));
+            REQUIRE(hb.radius == Catch::Approx(4.f));
+            REQUIRE(sprite.frame_x == 0);
+        }
+    }
+
+    SECTION("multi-shot fires correct number of bullets") {
+        auto player = make_player(reg, 100.f, 100.f);
+        auto& weapon = reg.get<Weapon>(player);
+        weapon.bullet_count = 3;
+        weapon.spread_angle = 30.f;
+
+        InputState input{};
+        input.shoot = true;
+
+        systems::update_shooting(reg, input, dt);
+
+        REQUIRE(count_bullets(reg) == 3);
+    }
+
+    SECTION("multi-shot spread distributes evenly") {
+        auto player = make_player(reg, 100.f, 100.f);
+        auto& weapon = reg.get<Weapon>(player);
+        weapon.bullet_count = 3;
+        weapon.spread_angle = 30.f;
+
+        InputState input{};
+        input.shoot = true;
+
+        systems::update_shooting(reg, input, dt);
+
+        REQUIRE(count_bullets(reg) == 3);
+
+        // Collect bullet angles from velocities
+        constexpr float PI = 3.14159265358979323846f;
+        std::vector<float> angles;
+        auto bullet_view = reg.view<Bullet, Velocity>();
+        for (auto [entity, bullet, vel] : bullet_view.each()) {
+            angles.push_back(std::atan2(vel.dy, vel.dx));
+        }
+
+        std::sort(angles.begin(), angles.end());
+
+        // Sector-centered formula: 3 bullets in 30° arc aimed right (0 rad)
+        // Expected angles: -10°, 0°, +10° (each centered in a 10° sector)
+        float expected[] = {-10.f * PI / 180.f, 0.f, 10.f * PI / 180.f};
+        for (size_t i = 0; i < angles.size(); ++i) {
+            REQUIRE(angles[i] == Catch::Approx(expected[i]).margin(0.001f));
+        }
+    }
+
+    SECTION("piercing weapon creates Piercing tag on bullets") {
+        auto player = make_player(reg, 100.f, 100.f);
+        auto& weapon = reg.get<Weapon>(player);
+        weapon.piercing = true;
+
+        InputState input{};
+        input.shoot = true;
+
+        systems::update_shooting(reg, input, dt);
+
+        REQUIRE(count_bullets(reg) == 1);
+        auto view = reg.view<Bullet, Piercing>();
+        int piercing_count = 0;
+        for ([[maybe_unused]] auto entity : view) {
+            ++piercing_count;
+        }
+        REQUIRE(piercing_count == 1);
     }
 }

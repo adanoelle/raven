@@ -133,10 +133,9 @@ animation state logic   velocity → idle/walk switch
 update_animation        tick frames
 update_movement         velocity → position
 update_tile_collision   resolve wall overlaps
-update_projectiles      tick bullet lifetimes
 update_collision        circle-circle hit tests
 update_damage           apply DamageOnContact
-update_cleanup          despawn off-screen / expired entities
+update_cleanup          tick lifetimes, despawn off-screen / expired entities
 ```
 
 Running shooting right after input ensures the aim direction reflects the

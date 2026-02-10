@@ -1,3 +1,4 @@
+#include "core/string_id.hpp"
 #include "patterns/pattern_library.hpp"
 
 #include <catch2/catch_approx.hpp>
@@ -55,7 +56,9 @@ TEST_CASE("Bullet velocity from angle and speed", "[patterns]") {
 }
 
 TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
+    StringInterner interner;
     PatternLibrary lib;
+    lib.set_interner(interner);
 
     SECTION("Valid JSON parses correctly") {
         nlohmann::json j = {{"name", "test_spiral"},
