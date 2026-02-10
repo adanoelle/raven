@@ -6,11 +6,13 @@ add_executable(raven_tests
     test_patterns.cpp
     test_ecs.cpp
     test_tilemap.cpp
+    test_shooting.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/patterns/pattern_library.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/collision_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/animation_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/ecs/systems/shooting_system.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/tilemap.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/tile_collision_system.cpp
 )

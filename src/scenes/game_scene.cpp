@@ -10,6 +10,7 @@
 #include "ecs/systems/movement_system.hpp"
 #include "ecs/systems/projectile_system.hpp"
 #include "ecs/systems/render_system.hpp"
+#include "ecs/systems/shooting_system.hpp"
 #include "ecs/systems/tile_collision_system.hpp"
 #include "ecs/systems/tilemap_render_system.hpp"
 
@@ -20,6 +21,8 @@ namespace raven {
 void GameScene::on_enter(Game& game) {
     spdlog::info("Entered game scene");
 
+    game.input().set_renderer(game.renderer().sdl_renderer());
+    game.input().set_window(game.renderer().sdl_window());
     tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", "Test_Room");
 
     spawn_player(game);
@@ -54,6 +57,8 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<Sprite>(player, std::string{"player"}, 0, 0, 16, 16, 10);
     reg.emplace<Animation>(player, 0, 3, 0.25f, 0.f, 0, true);
     reg.emplace<AnimationState>(player);
+    reg.emplace<AimDirection>(player, 1.f, 0.f);
+    reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
 
     spdlog::debug("Player spawned at ({}, {})", spawn_x, spawn_y);
 }
@@ -64,6 +69,7 @@ void GameScene::update(Game& game, float dt) {
 
     // Run ECS systems in order
     systems::update_input(reg, input, dt);
+    systems::update_shooting(reg, input, dt);
 
     // Animation state switching (velocity → idle/walk)
     auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();

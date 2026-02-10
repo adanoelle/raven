@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cmath>
 
 namespace raven {
@@ -27,9 +28,23 @@ Input::~Input() {
     }
 }
 
+void Input::set_renderer(SDL_Renderer* renderer) {
+    renderer_ = renderer;
+}
+
+void Input::set_window(SDL_Window* window) {
+    window_ = window;
+}
+
 void Input::begin_frame() {
+    bool was_mouse_active = current_.mouse_active;
+    float prev_mouse_x = current_.mouse_x;
+    float prev_mouse_y = current_.mouse_y;
     previous_ = current_;
     current_ = InputState{};
+    current_.mouse_active = was_mouse_active;
+    current_.mouse_x = prev_mouse_x;
+    current_.mouse_y = prev_mouse_y;
 }
 
 void Input::process_event(const SDL_Event& event) {
@@ -64,7 +79,45 @@ void Input::process_event(const SDL_Event& event) {
 void Input::update() {
     update_from_keyboard();
     update_from_gamepad();
+    update_mouse();
     compute_edges();
+}
+
+void Input::update_mouse() {
+    if (!window_)
+        return;
+
+    int wx, wy;
+    Uint32 buttons = SDL_GetMouseState(&wx, &wy);
+
+    // Manual window-to-virtual resolution conversion (480x270).
+    // This avoids SDL_RenderWindowToLogical which gives incorrect results
+    // when a render-target texture is combined with SDL_RenderSetLogicalSize.
+    int win_w, win_h;
+    SDL_GetWindowSize(window_, &win_w, &win_h);
+
+    constexpr double VIRTUAL_W = 480.0;
+    constexpr double VIRTUAL_H = 270.0;
+
+    double scale = std::min(static_cast<double>(win_w) / VIRTUAL_W,
+                            static_cast<double>(win_h) / VIRTUAL_H);
+    double offset_x = (static_cast<double>(win_w) - VIRTUAL_W * scale) / 2.0;
+    double offset_y = (static_cast<double>(win_h) - VIRTUAL_H * scale) / 2.0;
+
+    float lx = static_cast<float>((static_cast<double>(wx) - offset_x) / scale);
+    float ly = static_cast<float>((static_cast<double>(wy) - offset_y) / scale);
+
+    spdlog::debug("mouse: win=({},{}) logical=({:.1f},{:.1f}) scale={:.2f}", wx, wy, lx, ly,
+                  scale);
+
+    if (lx != current_.mouse_x || ly != current_.mouse_y) {
+        mouse_moved_ = true;
+    }
+    current_.mouse_x = lx;
+    current_.mouse_y = ly;
+
+    // Left mouse button also triggers shoot
+    current_.shoot = current_.shoot || (buttons & SDL_BUTTON_LMASK);
 }
 
 void Input::update_from_keyboard() {
@@ -105,6 +158,17 @@ void Input::update_from_gamepad() {
     if (std::abs(ly) > DEADZONE)
         current_.move_y += ly;
 
+    // Right stick (aim)
+    float rx = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_RIGHTX)) /
+               32767.f;
+    float ry = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_RIGHTY)) /
+               32767.f;
+    if (std::abs(rx) > DEADZONE || std::abs(ry) > DEADZONE) {
+        current_.aim_x = rx;
+        current_.aim_y = ry;
+        mouse_moved_ = false; // stick takes priority
+    }
+
     // D-pad
     if (SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_DPAD_LEFT))
         current_.move_x -= 1.f;
@@ -139,6 +203,15 @@ void Input::compute_edges() {
     // Clamp movement
     current_.move_x = std::clamp(current_.move_x, -1.f, 1.f);
     current_.move_y = std::clamp(current_.move_y, -1.f, 1.f);
+
+    // Resolve mouse_active: mouse movement activates, right stick deactivates
+    if (mouse_moved_) {
+        current_.mouse_active = true;
+    }
+    if (current_.aim_x * current_.aim_x + current_.aim_y * current_.aim_y > 0.04f) {
+        current_.mouse_active = false;
+    }
+    mouse_moved_ = false;
 }
 
 } // namespace raven

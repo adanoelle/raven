@@ -137,6 +137,20 @@ struct AnimationState {
     State current = State::Idle; ///< The active animation state.
 };
 
+// ── Aiming / Shooting ───────────────────────────────────────────
+
+/// @brief Resolved aim direction for shooting. Updated each tick from input.
+struct AimDirection {
+    float x = 1.f; ///< Aim X component (unit vector).
+    float y = 0.f; ///< Aim Y component (unit vector).
+};
+
+/// @brief Cooldown timer for shooting. Prevents firing every tick.
+struct ShootCooldown {
+    float remaining = 0.f; ///< Time until next shot allowed (seconds).
+    float rate = 0.2f;     ///< Minimum interval between shots (seconds).
+};
+
 // ── Tags (empty structs for filtering) ───────────────────────────
 
 /// @brief Tag: entity is removed when it leaves the play area.
