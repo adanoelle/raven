@@ -1,12 +1,13 @@
 #pragma once
 
+#include "rendering/tilemap.hpp"
 #include "scenes/scene.hpp"
 
 namespace raven {
 
 /// @brief Main gameplay scene. Manages the player, enemies, and all ECS systems.
 class GameScene : public Scene {
-public:
+  public:
     /// @brief Spawn the player and initialise gameplay state.
     /// @param game The Game instance providing access to subsystems.
     void on_enter(Game& game) override;
@@ -24,10 +25,12 @@ public:
     /// @param game The Game instance.
     void render(Game& game) override;
 
-private:
+  private:
     /// @brief Create the player entity with all required components.
     /// @param game The Game instance providing registry and sprite access.
     void spawn_player(Game& game);
+
+    Tilemap tilemap_; ///< Tilemap loaded from LDtk for the current room.
 };
 
 } // namespace raven

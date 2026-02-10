@@ -39,6 +39,8 @@ add_executable(raven
     # Rendering
     src/rendering/renderer.cpp
     src/rendering/sprite_sheet.cpp
+    src/rendering/tilemap.cpp
+    src/rendering/tilemap_loader.cpp
 
     # ECS Systems
     src/ecs/systems/movement_system.cpp
@@ -48,6 +50,9 @@ add_executable(raven
     src/ecs/systems/input_system.cpp
     src/ecs/systems/cleanup_system.cpp
     src/ecs/systems/damage_system.cpp
+    src/ecs/systems/animation_system.cpp
+    src/ecs/systems/tilemap_render_system.cpp
+    src/ecs/systems/tile_collision_system.cpp
 
     # Patterns
     src/patterns/pattern_library.cpp
@@ -66,6 +71,7 @@ target_link_libraries(raven PRIVATE
     EnTT::EnTT
     nlohmann_json::nlohmann_json
     spdlog::spdlog
+    LDtkLoader::LDtkLoader
 )
 
 if(RAVEN_ENABLE_IMGUI)

@@ -42,6 +42,15 @@ CPMAddPackage(
     OPTIONS "SPDLOG_FMT_EXTERNAL OFF"
 )
 
+CPMAddPackage(
+    NAME LDtkLoader
+    GITHUB_REPOSITORY Madour/LDtkLoader
+    GIT_TAG 1.5.3.1
+    SYSTEM YES
+    OPTIONS
+        "LDTK_NO_THROW OFF"
+)
+
 # Testing framework
 if(RAVEN_ENABLE_TESTS)
     CPMAddPackage(

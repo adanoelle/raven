@@ -26,6 +26,10 @@
         "projectile_large_red":   { "sheet": "projectiles", "frame_x": 0, "frame_y": 1 },
         "projectile_large_blue":  { "sheet": "projectiles", "frame_x": 1, "frame_y": 1 }
     },
+    "tilemap": {
+        "ldtk_project": "assets/maps/raven.ldtk",
+        "default_level": "Test_Room"
+    },
     "debug": {
         "show_hitboxes": false,
         "show_fps": true,
