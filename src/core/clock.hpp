@@ -35,6 +35,13 @@ struct Clock {
             ++tick_count;
         }
 
+        // If we hit the step cap, drain excess accumulator to prevent
+        // interpolation_alpha from exceeding 1.0 (which turns interpolation
+        // into extrapolation, flinging rendered positions off-screen).
+        if (steps >= MAX_STEPS_PER_FRAME && accumulator > TICK_RATE) {
+            accumulator = 0.f;
+        }
+
         // Compute interpolation alpha for rendering between ticks
         interpolation_alpha = accumulator / TICK_RATE;
 

@@ -20,8 +20,8 @@ entt::entity spawn_bullet(entt::registry& reg, const BulletSpawnParams& params) 
     reg.emplace<DamageOnContact>(entity, params.damage);
     reg.emplace<Lifetime>(entity, params.lifetime);
     reg.emplace<CircleHitbox>(entity, params.hitbox_radius);
-    reg.emplace<Sprite>(entity, std::string{params.sheet_id}, params.frame_x, params.frame_y,
-                        params.width, params.height, 5);
+    reg.emplace<Sprite>(entity, params.sheet_id, params.frame_x, params.frame_y, params.width,
+                        params.height, 5);
     reg.emplace<OffScreenDespawn>(entity);
 
     if (params.piercing) {

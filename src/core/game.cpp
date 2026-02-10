@@ -1,5 +1,6 @@
 #include "core/game.hpp"
 
+#include "core/string_id.hpp"
 #include "scenes/title_scene.hpp"
 
 #include <SDL2/SDL.h>
@@ -43,6 +44,13 @@ bool Game::init() {
     if (!load_assets()) {
         return false;
     }
+
+    // Pre-intern known sprite sheet IDs
+    auto& interner = registry_.ctx().emplace<StringInterner>();
+    interner.intern("player");
+    interner.intern("enemies");
+    interner.intern("projectiles");
+    interner.intern("pickups");
 
     // Start with title scene
     scenes_.push(std::make_unique<TitleScene>(), *this);

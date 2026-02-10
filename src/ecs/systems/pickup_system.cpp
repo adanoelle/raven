@@ -1,22 +1,9 @@
 #include "ecs/systems/pickup_system.hpp"
 
 #include "ecs/components.hpp"
-
-#include <cmath>
+#include "ecs/systems/hitbox_math.hpp"
 
 namespace raven::systems {
-
-namespace {
-
-bool circles_overlap(float x1, float y1, float r1, float x2, float y2, float r2) {
-    float dx = x2 - x1;
-    float dy = y2 - y1;
-    float dist_sq = dx * dx + dy * dy;
-    float radii = r1 + r2;
-    return dist_sq <= radii * radii;
-}
-
-} // anonymous namespace
 
 void update_pickups(entt::registry& reg) {
     auto players = reg.view<Transform2D, CircleHitbox, Player, Weapon>();

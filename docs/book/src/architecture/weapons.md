@@ -192,12 +192,11 @@ animation state logic     velocity → idle/walk switch
 update_animation          tick frames
 update_movement           velocity → position
 update_tile_collision     resolve wall overlaps
-update_projectiles        tick bullet lifetimes
 update_collision          circle-circle hit tests
 update_pickups         ←  weapon + stabilizer collection
 update_weapon_decay    ←  tick decay timers, handle explosion
 update_damage             apply DamageOnContact, spawn drops
-update_cleanup            despawn off-screen / expired entities
+update_cleanup            tick lifetimes, despawn off-screen / expired entities
 ```
 
 Key ordering detail: `update_pickups` runs before `update_weapon_decay`, so a

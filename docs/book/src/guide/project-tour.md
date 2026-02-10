@@ -34,11 +34,10 @@ One file per system. Systems are free functions that operate on registry views.
 
 - **`movement_system`** — Applies velocity to position, clamps player to screen.
 - **`collision_system`** — Circle-circle and AABB collision detection.
-- **`projectile_system`** — Manages bullet lifetimes and despawn.
 - **`render_system`** — Draws sprites sorted by layer.
 - **`input_system`** — Maps InputState to player velocity and actions.
 - **`damage_system`** — Processes contact damage, invulnerability, and death.
-- **`cleanup_system`** — Removes off-screen entities.
+- **`cleanup_system`** — Ticks lifetimes and removes expired or off-screen entities.
 
 ### `src/rendering/`
 SDL2 rendering abstraction.

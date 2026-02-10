@@ -76,7 +76,7 @@ std::vector<std::string> PatternLibrary::names() const {
     return result;
 }
 
-PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) {
+PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) const {
     PatternDef def;
     def.name = j.at("name").get<std::string>();
 
@@ -95,7 +95,7 @@ PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) {
     return def;
 }
 
-EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j) {
+EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j) const {
     EmitterDef def;
 
     auto type_str = j.value("type", "radial");
@@ -112,7 +112,7 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j) {
     def.fire_rate = j.value("fire_rate", 0.1f);
     def.spread_angle = j.value("spread_angle", 360.f);
     def.start_angle = j.value("start_angle", 0.f);
-    def.bullet_sheet = j.value("bullet_sheet", "projectiles");
+    def.bullet_sheet = interner_->intern(j.value("bullet_sheet", "projectiles"));
     def.bullet_frame_x = j.value("bullet_frame_x", 0);
     def.bullet_frame_y = j.value("bullet_frame_y", 0);
     def.bullet_width = j.value("bullet_width", 8);

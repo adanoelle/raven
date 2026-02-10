@@ -1,3 +1,4 @@
+#include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/emitter_system.hpp"
 #include "patterns/pattern_library.hpp"
@@ -39,7 +40,9 @@ void load_radial_pattern(PatternLibrary& lib, const std::string& name, int count
 
 TEST_CASE("Emitter system", "[emitters]") {
     entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
+    patterns.set_interner(interner);
     constexpr float dt = 1.f / 120.f;
 
     SECTION("Radial emitter fires on first tick") {
@@ -48,7 +51,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         auto enemy = reg.create();
         reg.emplace<Transform2D>(enemy, 50.f, 50.f);
         BulletEmitter emitter;
-        emitter.pattern_name = "test_radial";
+        emitter.pattern_name = interner.intern("test_radial");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
         systems::update_emitters(reg, patterns, dt);
@@ -69,7 +72,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         auto enemy = reg.create();
         reg.emplace<Transform2D>(enemy, 50.f, 50.f);
         BulletEmitter emitter;
-        emitter.pattern_name = "cooldown_test";
+        emitter.pattern_name = interner.intern("cooldown_test");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
         // First tick fires
@@ -87,7 +90,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         auto enemy = reg.create();
         reg.emplace<Transform2D>(enemy, 50.f, 50.f);
         BulletEmitter emitter;
-        emitter.pattern_name = "inactive_test";
+        emitter.pattern_name = interner.intern("inactive_test");
         emitter.active = false;
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
@@ -100,7 +103,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         auto enemy = reg.create();
         reg.emplace<Transform2D>(enemy, 50.f, 50.f);
         BulletEmitter emitter;
-        emitter.pattern_name = "nonexistent";
+        emitter.pattern_name = interner.intern("nonexistent");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
         systems::update_emitters(reg, patterns, dt);
@@ -127,7 +130,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         auto enemy = reg.create();
         reg.emplace<Transform2D>(enemy, 50.f, 50.f);
         BulletEmitter emitter;
-        emitter.pattern_name = "aimed_test";
+        emitter.pattern_name = interner.intern("aimed_test");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
         systems::update_emitters(reg, patterns, dt);
@@ -148,7 +151,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         auto enemy = reg.create();
         reg.emplace<Transform2D>(enemy, 123.f, 456.f);
         BulletEmitter emitter;
-        emitter.pattern_name = "pos_test";
+        emitter.pattern_name = interner.intern("pos_test");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
         systems::update_emitters(reg, patterns, dt);

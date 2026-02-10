@@ -75,11 +75,10 @@ raven/
 │   │   └── systems/
 │   │       ├── movement_system.hpp / .cpp
 │   │       ├── collision_system.hpp / .cpp    # Circle-circle + AABB collision
-│   │       ├── projectile_system.hpp / .cpp   # Projectile lifecycle
 │   │       ├── render_system.hpp / .cpp       # Sprite batching, layer sorting
 │   │       ├── input_system.hpp / .cpp        # Maps input -> player intent
 │   │       ├── damage_system.hpp / .cpp       # Health, invuln frames, death
-│   │       └── cleanup_system.hpp / .cpp      # Despawn off-screen / expired
+│   │       └── cleanup_system.hpp / .cpp      # Lifetime tick, despawn off-screen / expired
 │   │
 │   ├── rendering/
 │   │   ├── renderer.hpp / .cpp    # SDL_Renderer wrapper, virtual resolution scaling

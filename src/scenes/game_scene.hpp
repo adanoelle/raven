@@ -31,6 +31,10 @@ class GameScene : public Scene {
     /// @param game The Game instance providing registry and sprite access.
     void spawn_player(Game& game);
 
+    /// @brief Spawn playtest enemies with varying tiers and bullet patterns.
+    /// @param game The Game instance providing registry and sprite access.
+    void spawn_enemies(Game& game);
+
     Tilemap tilemap_;            ///< Tilemap loaded from LDtk for the current room.
     PatternLibrary pattern_lib_; ///< Bullet pattern definitions for enemy emitters.
 };

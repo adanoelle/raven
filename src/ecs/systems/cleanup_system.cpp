@@ -6,7 +6,13 @@
 
 namespace raven::systems {
 
-void update_cleanup(entt::registry& reg, int screen_w, int screen_h) {
+void update_cleanup(entt::registry& reg, float dt, int screen_w, int screen_h) {
+    // Tick down lifetimes
+    auto tick_view = reg.view<Lifetime>();
+    for (auto [entity, life] : tick_view.each()) {
+        life.remaining -= dt;
+    }
+
     std::vector<entt::entity> to_destroy;
 
     // Remove entities past their lifetime

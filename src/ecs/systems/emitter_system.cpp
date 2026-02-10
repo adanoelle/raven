@@ -1,5 +1,6 @@
 #include "ecs/systems/emitter_system.hpp"
 
+#include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/bullet_spawn.hpp"
 
@@ -79,6 +80,8 @@ void fire_burst(entt::registry& reg, const EmitterDef& emitter, float center_ang
 } // anonymous namespace
 
 void update_emitters(entt::registry& reg, const PatternLibrary& patterns, float dt) {
+    const auto& interner = reg.ctx().get<StringInterner>();
+
     float player_x = 0.f;
     float player_y = 0.f;
     bool has_player = find_player_position(reg, player_x, player_y);
@@ -89,7 +92,7 @@ void update_emitters(entt::registry& reg, const PatternLibrary& patterns, float 
             continue;
         }
 
-        const auto* pattern = patterns.get(emitter.pattern_name);
+        const auto* pattern = patterns.get(interner.resolve(emitter.pattern_name));
         if (!pattern) {
             continue;
         }

@@ -231,10 +231,9 @@ animation state          velocity → idle/walk
 update_animation         tick frames
 update_movement          velocity → position (snapshots PreviousTransform)
 update_tile_collision    push out of solid tiles, zero blocked velocity
-update_projectiles       bullet lifetime
 update_collision         entity-vs-entity (circle-circle)
 update_damage            apply damage
-update_cleanup           despawn off-screen
+update_cleanup           tick lifetimes, despawn off-screen / expired entities
 ```
 
 ## LDtk project structure

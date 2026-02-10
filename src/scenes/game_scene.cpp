@@ -1,6 +1,7 @@
 #include "scenes/game_scene.hpp"
 
 #include "core/game.hpp"
+#include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/animation_system.hpp"
 #include "ecs/systems/cleanup_system.hpp"
@@ -10,7 +11,6 @@
 #include "ecs/systems/input_system.hpp"
 #include "ecs/systems/movement_system.hpp"
 #include "ecs/systems/pickup_system.hpp"
-#include "ecs/systems/projectile_system.hpp"
 #include "ecs/systems/render_system.hpp"
 #include "ecs/systems/shooting_system.hpp"
 #include "ecs/systems/tile_collision_system.hpp"
@@ -28,11 +28,15 @@ void GameScene::on_enter(Game& game) {
     game.input().set_renderer(game.renderer().sdl_renderer());
     game.input().set_window(game.renderer().sdl_window());
     tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", "Test_Room");
+
+    auto& interner = game.registry().ctx().get<StringInterner>();
+    pattern_lib_.set_interner(interner);
     pattern_lib_.load_manifest("assets/data/patterns/manifest.json");
 
     game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
 
     spawn_player(game);
+    spawn_enemies(game);
 }
 
 void GameScene::on_exit(Game& game) {
@@ -43,6 +47,7 @@ void GameScene::on_exit(Game& game) {
 
 void GameScene::spawn_player(Game& game) {
     auto& reg = game.registry();
+    auto& interner = reg.ctx().get<StringInterner>();
     auto player = reg.create();
 
     float spawn_x = static_cast<float>(Renderer::VIRTUAL_WIDTH) / 2.f;
@@ -61,14 +66,53 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<Health>(player, 1.f, 1.f);
     reg.emplace<CircleHitbox>(player, 6.f);
     reg.emplace<RectHitbox>(player, 12.f, 14.f, 0.f, 2.f);
-    reg.emplace<Sprite>(player, std::string{"player"}, 0, 0, 16, 16, 10);
+    reg.emplace<Sprite>(player, interner.intern("player"), 0, 0, 16, 16, 10);
     reg.emplace<Animation>(player, 0, 3, 0.25f, 0.f, 0, true);
     reg.emplace<AnimationState>(player);
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
-    reg.emplace<Weapon>(player);
+    auto& weapon = reg.emplace<Weapon>(player);
+    weapon.bullet_sheet = interner.intern("projectiles");
 
     spdlog::debug("Player spawned at ({}, {})", spawn_x, spawn_y);
+}
+
+void GameScene::spawn_enemies(Game& game) {
+    auto& reg = game.registry();
+    auto& interner = reg.ctx().get<StringInterner>();
+
+    struct EnemyDef {
+        float x;
+        float y;
+        Enemy::Type type;
+        float hp;
+        std::string pattern;
+        int score;
+        int frame;
+    };
+
+    const EnemyDef defs[] = {
+        {100.f, 60.f, Enemy::Type::Grunt, 1.f, "spiral_3way", 100, 0},
+        {240.f, 50.f, Enemy::Type::Grunt, 1.f, "spiral_3way", 100, 0},
+        {240.f, 200.f, Enemy::Type::Grunt, 1.f, "spiral_3way", 100, 0},
+        {380.f, 60.f, Enemy::Type::Mid, 3.f, "aimed_burst", 300, 1},
+        {140.f, 140.f, Enemy::Type::Mid, 3.f, "aimed_burst", 300, 1},
+        {340.f, 140.f, Enemy::Type::Boss, 10.f, "nova_legendary", 1000, 2},
+    };
+
+    for (const auto& def : defs) {
+        auto enemy = reg.create();
+        reg.emplace<Transform2D>(enemy, def.x, def.y);
+        reg.emplace<PreviousTransform>(enemy, def.x, def.y);
+        reg.emplace<Enemy>(enemy, def.type);
+        reg.emplace<Health>(enemy, def.hp, def.hp);
+        reg.emplace<CircleHitbox>(enemy, 7.f);
+        reg.emplace<Sprite>(enemy, interner.intern("enemies"), def.frame, 0, 16, 16, 10);
+        reg.emplace<ScoreValue>(enemy, def.score);
+        reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def.pattern), {}, {}});
+    }
+
+    spdlog::debug("Spawned {} playtest enemies", std::size(defs));
 }
 
 void GameScene::update(Game& game, float dt) {
@@ -105,22 +149,23 @@ void GameScene::update(Game& game, float dt) {
             anim.elapsed = 0.f;
         }
 
-        // Flip sprite based on horizontal velocity
-        if (vel.dx > 1.f)
-            sprite.flip_x = false;
-        else if (vel.dx < -1.f)
-            sprite.flip_x = true;
+        // Flip sprite to face aim direction
+        if (auto* aim = reg.try_get<AimDirection>(entity)) {
+            if (aim->x > 0.f)
+                sprite.flip_x = false;
+            else if (aim->x < 0.f)
+                sprite.flip_x = true;
+        }
     }
 
     systems::update_animation(reg, dt);
     systems::update_movement(reg, dt);
     systems::update_tile_collision(reg, tilemap_);
-    systems::update_projectiles(reg, dt);
     systems::update_collision(reg);
     systems::update_pickups(reg);
     systems::update_weapon_decay(reg, dt);
-    systems::update_damage(reg, pattern_lib_);
-    systems::update_cleanup(reg, Renderer::VIRTUAL_WIDTH, Renderer::VIRTUAL_HEIGHT);
+    systems::update_damage(reg, pattern_lib_, dt);
+    systems::update_cleanup(reg, dt, Renderer::VIRTUAL_WIDTH, Renderer::VIRTUAL_HEIGHT);
 
     // Check for pause
     if (input.pause_pressed) {

@@ -22,21 +22,21 @@ struct EmitterDef {
         Linear  ///< Bullets fired in a straight line.
     };
 
-    Type type = Type::Radial;                 ///< Emission shape.
-    int count = 1;                            ///< Bullets per burst.
-    float speed = 100.f;                      ///< Bullet speed in pixels/sec.
-    float angular_velocity = 0.f;             ///< Emitter rotation in degrees/sec.
-    float fire_rate = 0.1f;                   ///< Seconds between bursts.
-    float spread_angle = 360.f;               ///< Arc width in degrees.
-    float start_angle = 0.f;                  ///< Initial angle offset in degrees.
-    std::string bullet_sheet = "projectiles"; ///< Sprite sheet ID for emitted bullets.
-    int bullet_frame_x = 0;                   ///< Frame column in the sheet.
-    int bullet_frame_y = 0;                   ///< Frame row in the sheet.
-    int bullet_width = 8;                     ///< Pixel width of bullet frame.
-    int bullet_height = 8;                    ///< Pixel height of bullet frame.
-    float lifetime = 5.f;                     ///< Bullet lifetime in seconds.
-    float damage = 1.f;                       ///< Damage dealt per bullet on contact.
-    float hitbox_radius = 3.f;                ///< Bullet collision radius in pixels.
+    Type type = Type::Radial;     ///< Emission shape.
+    int count = 1;                ///< Bullets per burst.
+    float speed = 100.f;          ///< Bullet speed in pixels/sec.
+    float angular_velocity = 0.f; ///< Emitter rotation in degrees/sec.
+    float fire_rate = 0.1f;       ///< Seconds between bursts.
+    float spread_angle = 360.f;   ///< Arc width in degrees.
+    float start_angle = 0.f;      ///< Initial angle offset in degrees.
+    StringId bullet_sheet;        ///< Interned sprite sheet ID for emitted bullets.
+    int bullet_frame_x = 0;       ///< Frame column in the sheet.
+    int bullet_frame_y = 0;       ///< Frame row in the sheet.
+    int bullet_width = 8;         ///< Pixel width of bullet frame.
+    int bullet_height = 8;        ///< Pixel height of bullet frame.
+    float lifetime = 5.f;         ///< Bullet lifetime in seconds.
+    float damage = 1.f;           ///< Damage dealt per bullet on contact.
+    float hitbox_radius = 3.f;    ///< Bullet collision radius in pixels.
 };
 
 /// @brief A complete bullet pattern composed of one or more emitters.
@@ -73,11 +73,16 @@ class PatternLibrary {
     /// @return Vector of pattern name strings.
     [[nodiscard]] std::vector<std::string> names() const;
 
+    /// @brief Set the string interner used for bullet_sheet fields during parsing.
+    /// @param interner The StringInterner to use. Must outlive the library.
+    void set_interner(StringInterner& interner) { interner_ = &interner; }
+
   private:
     std::unordered_map<std::string, PatternDef> patterns_;
+    StringInterner* interner_ = nullptr;
 
-    static PatternDef parse_pattern(const nlohmann::json& j);
-    static EmitterDef parse_emitter(const nlohmann::json& j);
+    PatternDef parse_pattern(const nlohmann::json& j) const;
+    EmitterDef parse_emitter(const nlohmann::json& j) const;
 };
 
 } // namespace raven

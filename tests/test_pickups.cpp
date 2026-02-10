@@ -1,3 +1,4 @@
+#include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/damage_system.hpp"
 #include "ecs/systems/pickup_system.hpp"
@@ -155,6 +156,8 @@ TEST_CASE("Weapon decay and revert", "[pickups]") {
 }
 
 TEST_CASE("weapon_from_emitter conversion", "[pickups]") {
+    StringInterner interner;
+
     EmitterDef emitter;
     emitter.speed = 200.f;
     emitter.damage = 2.f;
@@ -163,7 +166,7 @@ TEST_CASE("weapon_from_emitter conversion", "[pickups]") {
     emitter.fire_rate = 0.5f;
     emitter.count = 3;
     emitter.spread_angle = 45.f;
-    emitter.bullet_sheet = "projectiles";
+    emitter.bullet_sheet = interner.intern("projectiles");
     emitter.bullet_frame_x = 1;
     emitter.bullet_frame_y = 1;
 
@@ -176,14 +179,17 @@ TEST_CASE("weapon_from_emitter conversion", "[pickups]") {
     REQUIRE(weapon.fire_rate == Catch::Approx(0.5f));
     REQUIRE(weapon.bullet_count == 3);
     REQUIRE(weapon.spread_angle == Catch::Approx(45.f));
-    REQUIRE(weapon.bullet_sheet == "projectiles");
+    REQUIRE(interner.resolve(weapon.bullet_sheet) == "projectiles");
     REQUIRE(weapon.bullet_frame_x == 1);
     REQUIRE(weapon.bullet_frame_y == 1);
 }
 
 TEST_CASE("Enemy death spawns weapon pickup", "[pickups]") {
     entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
+    patterns.set_interner(interner);
+    constexpr float dt = 1.f / 120.f;
 
     // Load a test pattern
     nlohmann::json j = {{"name", "test_pattern"},
@@ -202,10 +208,10 @@ TEST_CASE("Enemy death spawns weapon pickup", "[pickups]") {
     reg.emplace<Enemy>(enemy);
     reg.emplace<Health>(enemy, 0.f, 3.f); // already dead
     BulletEmitter emitter;
-    emitter.pattern_name = "test_pattern";
+    emitter.pattern_name = interner.intern("test_pattern");
     reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-    systems::update_damage(reg, patterns);
+    systems::update_damage(reg, patterns, dt);
 
     // Enemy should be destroyed
     REQUIRE_FALSE(reg.valid(enemy));
@@ -410,8 +416,11 @@ TEST_CASE("Stabilizer pickup collection", "[pickups][stabilizer]") {
 // ── Stabilizer drops ───────────────────────────────────────────
 
 TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
+    constexpr float dt = 1.f / 120.f;
+
     SECTION("Boss enemy always drops stabilizer") {
         entt::registry reg;
+        reg.ctx().emplace<StringInterner>();
         reg.ctx().emplace<std::mt19937>(42u); // seed doesn't matter for boss
         PatternLibrary patterns;
 
@@ -421,7 +430,7 @@ TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
         reg.emplace<Enemy>(enemy, Enemy::Type::Boss);
         reg.emplace<Health>(enemy, 0.f, 3.f);
 
-        systems::update_damage(reg, patterns);
+        systems::update_damage(reg, patterns, dt);
 
         auto stab_view = reg.view<StabilizerPickup, Transform2D, Lifetime>();
         int stab_count = 0;
@@ -436,6 +445,7 @@ TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
 
     SECTION("Grunt enemy never drops stabilizer") {
         entt::registry reg;
+        reg.ctx().emplace<StringInterner>();
         reg.ctx().emplace<std::mt19937>(42u);
         PatternLibrary patterns;
 
@@ -445,7 +455,7 @@ TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
         reg.emplace<Enemy>(enemy, Enemy::Type::Grunt);
         reg.emplace<Health>(enemy, 0.f, 3.f);
 
-        systems::update_damage(reg, patterns);
+        systems::update_damage(reg, patterns, dt);
 
         auto stab_view = reg.view<StabilizerPickup>();
         int stab_count = 0;
@@ -479,6 +489,7 @@ TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
 
         // Better approach: single registry, 100 enemies
         reg = entt::registry{};
+        reg.ctx().emplace<StringInterner>();
         reg.ctx().emplace<std::mt19937>(12345u);
         for (int i = 0; i < 100; ++i) {
             auto enemy = reg.create();
@@ -488,7 +499,7 @@ TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
             reg.emplace<Health>(enemy, 0.f, 3.f);
         }
 
-        systems::update_damage(reg, patterns);
+        systems::update_damage(reg, patterns, dt);
 
         auto stab_view = reg.view<StabilizerPickup>();
         for ([[maybe_unused]] auto ent : stab_view) {
@@ -504,7 +515,10 @@ TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
 
 TEST_CASE("Weapon tier flows from PatternDef to pickup", "[pickups][tier]") {
     entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
+    patterns.set_interner(interner);
+    constexpr float dt = 1.f / 120.f;
 
     nlohmann::json j = {{"name", "rare_pattern"},
                         {"tier", "rare"},
@@ -522,10 +536,10 @@ TEST_CASE("Weapon tier flows from PatternDef to pickup", "[pickups][tier]") {
     reg.emplace<Enemy>(enemy);
     reg.emplace<Health>(enemy, 0.f, 3.f);
     BulletEmitter emitter;
-    emitter.pattern_name = "rare_pattern";
+    emitter.pattern_name = interner.intern("rare_pattern");
     reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-    systems::update_damage(reg, patterns);
+    systems::update_damage(reg, patterns, dt);
 
     auto pickup_view = reg.view<WeaponPickup>();
     int count = 0;
@@ -539,7 +553,9 @@ TEST_CASE("Weapon tier flows from PatternDef to pickup", "[pickups][tier]") {
 // ── Pattern tier parsing ───────────────────────────────────────
 
 TEST_CASE("PatternDef tier parsed from JSON", "[pickups][tier]") {
+    StringInterner interner;
     PatternLibrary patterns;
+    patterns.set_interner(interner);
 
     SECTION("Explicit tier fields") {
         nlohmann::json j_common = {

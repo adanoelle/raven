@@ -28,6 +28,12 @@
 
 ---
 
+# Playtesting
+
+- [Playtest Playbook](playtest.md)
+
+---
+
 # Art & Animation
 
 - [Art Specification](art-spec.md)
@@ -50,3 +56,5 @@
 - [ADR-0003: Virtual Resolution 480x270](decisions/0003-virtual-resolution-480x270.md)
 - [ADR-0004: Data-Driven Patterns via JSON](decisions/0004-data-driven-patterns.md)
 - [ADR-0005: No std::filesystem](decisions/0005-no-std-filesystem.md)
+- [ADR-0006: No Third-Party Engine](decisions/0006-no-third-party-engine.md)
+- [ADR-0007: Deferred Entity Destruction](decisions/0007-deferred-entity-destruction.md)

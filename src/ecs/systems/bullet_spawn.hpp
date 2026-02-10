@@ -4,8 +4,6 @@
 
 #include <entt/entt.hpp>
 
-#include <string>
-
 namespace raven::systems {
 
 /// @brief Parameters for spawning a single bullet entity.
@@ -18,7 +16,7 @@ struct BulletSpawnParams {
     float lifetime = 3.f;                        ///< Lifetime in seconds.
     float hitbox_radius = 2.f;                   ///< Collision radius in pixels.
     Bullet::Owner owner = Bullet::Owner::Player; ///< Who fired this bullet.
-    std::string sheet_id = "projectiles";        ///< Sprite sheet identifier.
+    StringId sheet_id;                           ///< Interned sprite sheet identifier.
     int frame_x = 1;                             ///< Frame column in the sheet.
     int frame_y = 0;                             ///< Frame row in the sheet.
     int width = 8;                               ///< Pixel width of bullet frame.

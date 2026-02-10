@@ -46,7 +46,6 @@ add_executable(raven
     src/ecs/systems/movement_system.cpp
     src/ecs/systems/render_system.cpp
     src/ecs/systems/collision_system.cpp
-    src/ecs/systems/projectile_system.cpp
     src/ecs/systems/input_system.cpp
     src/ecs/systems/cleanup_system.cpp
     src/ecs/systems/damage_system.cpp

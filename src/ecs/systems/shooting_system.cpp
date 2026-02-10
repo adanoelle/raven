@@ -69,11 +69,11 @@ void update_shooting(entt::registry& reg, const InputState& input, float dt) {
                 spawn_bullet(reg, params);
             } else {
                 float spread_rad = weapon.spread_angle * PI / 180.f;
-                float step = spread_rad / static_cast<float>(weapon.bullet_count - 1);
+                float step = spread_rad / static_cast<float>(weapon.bullet_count);
                 float start = base_angle - spread_rad / 2.f;
 
                 for (int i = 0; i < weapon.bullet_count; ++i) {
-                    params.angle_rad = start + step * static_cast<float>(i);
+                    params.angle_rad = start + step * static_cast<float>(i) + step / 2.f;
                     spawn_bullet(reg, params);
                 }
             }

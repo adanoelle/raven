@@ -14,6 +14,7 @@ namespace raven::systems {
 /// dies, spawns a weapon pickup derived from the first emitter.
 /// @param reg The ECS registry containing damageable entities.
 /// @param patterns The loaded pattern library (for deriving weapon pickups).
-void update_damage(entt::registry& reg, const PatternLibrary& patterns);
+/// @param dt Fixed timestep delta in seconds.
+void update_damage(entt::registry& reg, const PatternLibrary& patterns, float dt);
 
 } // namespace raven::systems

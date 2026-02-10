@@ -1,9 +1,10 @@
 #pragma once
 
+#include "core/string_id.hpp"
+
 #include <entt/entt.hpp>
 
 #include <cstdint>
-#include <string>
 #include <vector>
 
 namespace raven {
@@ -35,13 +36,13 @@ struct PreviousTransform {
 
 /// @brief Sprite rendering data referencing a frame within a sprite sheet.
 struct Sprite {
-    std::string sheet_id; ///< Identifier of the SpriteSheet to draw from.
-    int frame_x = 0;      ///< Frame column index in the sheet.
-    int frame_y = 0;      ///< Frame row index in the sheet.
-    int width = 16;       ///< Pixel width of one frame.
-    int height = 16;      ///< Pixel height of one frame.
-    int layer = 0;        ///< Render order (higher values draw on top).
-    bool flip_x = false;  ///< Flip the sprite horizontally when drawing.
+    StringId sheet_id;   ///< Interned identifier of the SpriteSheet to draw from.
+    int frame_x = 0;     ///< Frame column index in the sheet.
+    int frame_y = 0;     ///< Frame row index in the sheet.
+    int width = 16;      ///< Pixel width of one frame.
+    int height = 16;     ///< Pixel height of one frame.
+    int layer = 0;       ///< Render order (higher values draw on top).
+    bool flip_x = false; ///< Flip the sprite horizontally when drawing.
 };
 
 /// @brief Frame-based animation state for cycling through sprite frames.
@@ -163,27 +164,27 @@ struct Weapon {
         Legendary ///< Top-tier drops. Cannot be stabilized.
     };
 
-    Tier tier = Tier::Common;                 ///< This weapon's rarity tier.
-    float bullet_speed = 300.f;               ///< Bullet travel speed in pixels/sec.
-    float bullet_damage = 1.f;                ///< Damage dealt per bullet on contact.
-    float bullet_lifetime = 3.f;              ///< Bullet lifetime in seconds.
-    float bullet_hitbox = 2.f;                ///< Bullet collision radius in pixels.
-    float fire_rate = 0.2f;                   ///< Minimum interval between shots (seconds).
-    int bullet_count = 1;                     ///< Bullets per shot.
-    float spread_angle = 0.f;                 ///< Arc width in degrees (0 = single line).
-    std::string bullet_sheet = "projectiles"; ///< Sprite sheet ID for bullets.
-    int bullet_frame_x = 1;                   ///< Frame column in the sheet.
-    int bullet_frame_y = 0;                   ///< Frame row in the sheet.
-    int bullet_width = 8;                     ///< Pixel width of bullet frame.
-    int bullet_height = 8;                    ///< Pixel height of bullet frame.
-    bool piercing = false;                    ///< Whether bullets pass through targets.
+    Tier tier = Tier::Common;    ///< This weapon's rarity tier.
+    float bullet_speed = 300.f;  ///< Bullet travel speed in pixels/sec.
+    float bullet_damage = 1.f;   ///< Damage dealt per bullet on contact.
+    float bullet_lifetime = 3.f; ///< Bullet lifetime in seconds.
+    float bullet_hitbox = 2.f;   ///< Bullet collision radius in pixels.
+    float fire_rate = 0.2f;      ///< Minimum interval between shots (seconds).
+    int bullet_count = 1;        ///< Bullets per shot.
+    float spread_angle = 0.f;    ///< Arc width in degrees (0 = single line).
+    StringId bullet_sheet;       ///< Interned sprite sheet ID for bullets.
+    int bullet_frame_x = 1;      ///< Frame column in the sheet.
+    int bullet_frame_y = 0;      ///< Frame row in the sheet.
+    int bullet_width = 8;        ///< Pixel width of bullet frame.
+    int bullet_height = 8;       ///< Pixel height of bullet frame.
+    bool piercing = false;       ///< Whether bullets pass through targets.
 };
 
 // ── Emitter ─────────────────────────────────────────────────────
 
 /// @brief Drives a bullet pattern from the pattern library on an entity.
 struct BulletEmitter {
-    std::string pattern_name;          ///< Name of the PatternDef to execute.
+    StringId pattern_name;             ///< Interned name of the PatternDef to execute.
     std::vector<float> cooldowns;      ///< Per-emitter cooldown timers (seconds).
     std::vector<float> current_angles; ///< Per-emitter current rotation angles (degrees).
     bool active = true;                ///< Whether this emitter is currently firing.

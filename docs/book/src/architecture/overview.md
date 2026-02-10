@@ -16,10 +16,9 @@ Input → Fixed Update (120 Hz) → Render (vsync)
           │
           ├─ input_system      (InputState → Velocity)
           ├─ movement_system   (Velocity → Transform2D)
-          ├─ projectile_system (Lifetime countdown)
           ├─ collision_system  (Hitbox checks → flags)
           ├─ damage_system     (Health reduction, death)
-          └─ cleanup_system    (Off-screen despawn)
+          └─ cleanup_system    (Lifetime tick, off-screen despawn)
 ```
 
 ## Ownership
