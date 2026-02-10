@@ -17,7 +17,7 @@
     },
     "sprite_sheets": [
         { "id": "player",      "path": "assets/sprites/player.png",      "frame_w": 16, "frame_h": 16 },
-        { "id": "projectiles", "path": "assets/sprites/projectiles.png", "frame_w": 8,  "frame_h": 8  },
+        { "id": "projectiles", "path": "assets/sprites/bullets.png", "frame_w": 8,  "frame_h": 8  },
         { "id": "enemies",     "path": "assets/sprites/enemies.png",     "frame_w": 16, "frame_h": 16 }
     ],
     "sprite_defs": {
