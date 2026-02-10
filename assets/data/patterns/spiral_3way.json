@@ -1,5 +1,6 @@
 {
     "name": "spiral_3way",
+    "tier": "common",
     "emitters": [
         {
             "type": "radial",
@@ -9,7 +10,11 @@
             "fire_rate": 0.08,
             "spread_angle": 360.0,
             "start_angle": 0.0,
-            "bullet_sprite": "bullet_small_red",
+            "bullet_sheet": "projectiles",
+            "bullet_frame_x": 0,
+            "bullet_frame_y": 0,
+            "bullet_width": 8,
+            "bullet_height": 8,
             "lifetime": 4.0,
             "damage": 1.0,
             "hitbox_radius": 3.0

@@ -1,6 +1,7 @@
 #include "ecs/systems/shooting_system.hpp"
 
 #include "ecs/components.hpp"
+#include "ecs/systems/bullet_spawn.hpp"
 
 #include <cmath>
 
@@ -9,7 +10,7 @@ namespace raven::systems {
 namespace {
 
 constexpr float AIM_DEADZONE = 0.2f;
-constexpr float BULLET_SPEED = 300.f;
+constexpr float PI = 3.14159265358979323846f;
 
 } // namespace
 
@@ -41,23 +42,41 @@ void update_shooting(entt::registry& reg, const InputState& input, float dt) {
     }
 
     // Spawn bullets
-    auto shoot_view = reg.view<Player, Transform2D, AimDirection, ShootCooldown>();
-    for (auto [entity, player, tf, aim, cd] : shoot_view.each()) {
+    auto shoot_view = reg.view<Player, Transform2D, AimDirection, ShootCooldown, Weapon>();
+    for (auto [entity, player, tf, aim, cd, weapon] : shoot_view.each()) {
         if (input.shoot && cd.remaining <= 0.f) {
-            cd.remaining = cd.rate;
+            cd.remaining = weapon.fire_rate;
 
-            auto bullet = reg.create();
-            float rotation = std::atan2(aim.y, aim.x);
+            float base_angle = std::atan2(aim.y, aim.x);
 
-            reg.emplace<Transform2D>(bullet, tf.x, tf.y, rotation);
-            reg.emplace<PreviousTransform>(bullet, tf.x, tf.y);
-            reg.emplace<Velocity>(bullet, aim.x * BULLET_SPEED, aim.y * BULLET_SPEED);
-            reg.emplace<Bullet>(bullet, Bullet::Owner::Player);
-            reg.emplace<DamageOnContact>(bullet, 1.f);
-            reg.emplace<Lifetime>(bullet, 3.f);
-            reg.emplace<CircleHitbox>(bullet, 2.f);
-            reg.emplace<Sprite>(bullet, std::string{"projectiles"}, 1, 0, 8, 8, 5);
-            reg.emplace<OffScreenDespawn>(bullet);
+            BulletSpawnParams params;
+            params.origin_x = tf.x;
+            params.origin_y = tf.y;
+            params.speed = weapon.bullet_speed;
+            params.damage = weapon.bullet_damage;
+            params.lifetime = weapon.bullet_lifetime;
+            params.hitbox_radius = weapon.bullet_hitbox;
+            params.owner = Bullet::Owner::Player;
+            params.sheet_id = weapon.bullet_sheet;
+            params.frame_x = weapon.bullet_frame_x;
+            params.frame_y = weapon.bullet_frame_y;
+            params.width = weapon.bullet_width;
+            params.height = weapon.bullet_height;
+            params.piercing = weapon.piercing;
+
+            if (weapon.bullet_count <= 1) {
+                params.angle_rad = base_angle;
+                spawn_bullet(reg, params);
+            } else {
+                float spread_rad = weapon.spread_angle * PI / 180.f;
+                float step = spread_rad / static_cast<float>(weapon.bullet_count - 1);
+                float start = base_angle - spread_rad / 2.f;
+
+                for (int i = 0; i < weapon.bullet_count; ++i) {
+                    params.angle_rad = start + step * static_cast<float>(i);
+                    spawn_bullet(reg, params);
+                }
+            }
         }
     }
 }

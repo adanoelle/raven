@@ -20,6 +20,7 @@ entt::entity make_player(entt::registry& reg, float x, float y) {
     reg.emplace<Player>(player);
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
+    reg.emplace<Weapon>(player);
     return player;
 }
 
@@ -319,5 +320,65 @@ TEST_CASE("Aim direction resolution", "[shooting]") {
             REQUIRE(vel.dx == Catch::Approx(300.f).margin(0.1f));
             REQUIRE(vel.dy == Catch::Approx(0.f).margin(0.1f));
         }
+    }
+
+    SECTION("weapon properties override defaults") {
+        auto player = make_player(reg, 100.f, 100.f);
+        auto& weapon = reg.get<Weapon>(player);
+        weapon.bullet_speed = 500.f;
+        weapon.bullet_damage = 3.f;
+        weapon.bullet_lifetime = 5.f;
+        weapon.bullet_hitbox = 4.f;
+        weapon.bullet_frame_x = 0;
+
+        InputState input{};
+        input.shoot = true;
+
+        systems::update_shooting(reg, input, dt);
+
+        REQUIRE(count_bullets(reg) == 1);
+        auto bullet_view =
+            reg.view<Bullet, Velocity, DamageOnContact, Lifetime, CircleHitbox, Sprite>();
+        for (auto [entity, bullet, vel, dmg, life, hb, sprite] : bullet_view.each()) {
+            float speed = std::sqrt(vel.dx * vel.dx + vel.dy * vel.dy);
+            REQUIRE(speed == Catch::Approx(500.f).margin(1.f));
+            REQUIRE(dmg.damage == Catch::Approx(3.f));
+            REQUIRE(life.remaining == Catch::Approx(5.f));
+            REQUIRE(hb.radius == Catch::Approx(4.f));
+            REQUIRE(sprite.frame_x == 0);
+        }
+    }
+
+    SECTION("multi-shot fires correct number of bullets") {
+        auto player = make_player(reg, 100.f, 100.f);
+        auto& weapon = reg.get<Weapon>(player);
+        weapon.bullet_count = 3;
+        weapon.spread_angle = 30.f;
+
+        InputState input{};
+        input.shoot = true;
+
+        systems::update_shooting(reg, input, dt);
+
+        REQUIRE(count_bullets(reg) == 3);
+    }
+
+    SECTION("piercing weapon creates Piercing tag on bullets") {
+        auto player = make_player(reg, 100.f, 100.f);
+        auto& weapon = reg.get<Weapon>(player);
+        weapon.piercing = true;
+
+        InputState input{};
+        input.shoot = true;
+
+        systems::update_shooting(reg, input, dt);
+
+        REQUIRE(count_bullets(reg) == 1);
+        auto view = reg.view<Bullet, Piercing>();
+        int piercing_count = 0;
+        for ([[maybe_unused]] auto entity : view) {
+            ++piercing_count;
+        }
+        REQUIRE(piercing_count == 1);
     }
 }

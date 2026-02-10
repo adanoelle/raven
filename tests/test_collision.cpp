@@ -126,3 +126,109 @@ TEST_CASE("Collision system integration", "[collision]") {
         REQUIRE(hp.current == Catch::Approx(1.f));
     }
 }
+
+TEST_CASE("Player bullet vs enemy collision", "[collision]") {
+    entt::registry reg;
+
+    // Create an enemy
+    auto enemy = reg.create();
+    reg.emplace<Transform2D>(enemy, 100.f, 100.f);
+    reg.emplace<CircleHitbox>(enemy, 6.f, 0.f, 0.f);
+    reg.emplace<Enemy>(enemy);
+    reg.emplace<Health>(enemy, 3.f, 3.f);
+
+    SECTION("Player bullet hits enemy") {
+        auto bullet = reg.create();
+        reg.emplace<Transform2D>(bullet, 103.f, 100.f); // overlaps enemy
+        reg.emplace<CircleHitbox>(bullet, 3.f, 0.f, 0.f);
+        reg.emplace<Bullet>(bullet, Bullet::Owner::Player);
+        reg.emplace<DamageOnContact>(bullet, 1.f);
+
+        systems::update_collision(reg);
+
+        // Bullet should be destroyed
+        REQUIRE_FALSE(reg.valid(bullet));
+
+        // Enemy should have taken damage
+        auto& hp = reg.get<Health>(enemy);
+        REQUIRE(hp.current == Catch::Approx(2.f));
+    }
+
+    SECTION("Separated player bullet does not hit enemy") {
+        auto bullet = reg.create();
+        reg.emplace<Transform2D>(bullet, 200.f, 200.f); // far away
+        reg.emplace<CircleHitbox>(bullet, 3.f, 0.f, 0.f);
+        reg.emplace<Bullet>(bullet, Bullet::Owner::Player);
+        reg.emplace<DamageOnContact>(bullet, 1.f);
+
+        systems::update_collision(reg);
+
+        // Bullet should still exist
+        REQUIRE(reg.valid(bullet));
+
+        // Enemy HP unchanged
+        auto& hp = reg.get<Health>(enemy);
+        REQUIRE(hp.current == Catch::Approx(3.f));
+    }
+
+    SECTION("Enemy bullet does not damage enemy") {
+        auto bullet = reg.create();
+        reg.emplace<Transform2D>(bullet, 103.f, 100.f); // overlaps enemy
+        reg.emplace<CircleHitbox>(bullet, 3.f, 0.f, 0.f);
+        reg.emplace<Bullet>(bullet, Bullet::Owner::Enemy);
+        reg.emplace<DamageOnContact>(bullet, 1.f);
+
+        systems::update_collision(reg);
+
+        // Bullet should still exist (enemy bullet doesn't hit enemies)
+        REQUIRE(reg.valid(bullet));
+
+        // Enemy HP unchanged
+        auto& hp = reg.get<Health>(enemy);
+        REQUIRE(hp.current == Catch::Approx(3.f));
+    }
+
+    SECTION("Piercing bullet passes through enemy") {
+        auto bullet = reg.create();
+        reg.emplace<Transform2D>(bullet, 103.f, 100.f); // overlaps enemy
+        reg.emplace<CircleHitbox>(bullet, 3.f, 0.f, 0.f);
+        reg.emplace<Bullet>(bullet, Bullet::Owner::Player);
+        reg.emplace<DamageOnContact>(bullet, 1.f);
+        reg.emplace<Piercing>(bullet);
+
+        systems::update_collision(reg);
+
+        // Bullet should still exist (piercing)
+        REQUIRE(reg.valid(bullet));
+
+        // Enemy should have taken damage
+        auto& hp = reg.get<Health>(enemy);
+        REQUIRE(hp.current == Catch::Approx(2.f));
+    }
+
+    SECTION("Piercing bullet hits multiple enemies") {
+        auto enemy2 = reg.create();
+        reg.emplace<Transform2D>(enemy2, 103.f, 100.f); // same spot
+        reg.emplace<CircleHitbox>(enemy2, 6.f, 0.f, 0.f);
+        reg.emplace<Enemy>(enemy2);
+        reg.emplace<Health>(enemy2, 3.f, 3.f);
+
+        auto bullet = reg.create();
+        reg.emplace<Transform2D>(bullet, 103.f, 100.f);
+        reg.emplace<CircleHitbox>(bullet, 3.f, 0.f, 0.f);
+        reg.emplace<Bullet>(bullet, Bullet::Owner::Player);
+        reg.emplace<DamageOnContact>(bullet, 1.f);
+        reg.emplace<Piercing>(bullet);
+
+        systems::update_collision(reg);
+
+        // Bullet should still exist (piercing)
+        REQUIRE(reg.valid(bullet));
+
+        // Both enemies should have taken damage
+        auto& hp1 = reg.get<Health>(enemy);
+        auto& hp2 = reg.get<Health>(enemy2);
+        REQUIRE(hp1.current == Catch::Approx(2.f));
+        REQUIRE(hp2.current == Catch::Approx(2.f));
+    }
+}

@@ -52,6 +52,9 @@ add_executable(raven
     src/ecs/systems/damage_system.cpp
     src/ecs/systems/animation_system.cpp
     src/ecs/systems/shooting_system.cpp
+    src/ecs/systems/bullet_spawn.cpp
+    src/ecs/systems/emitter_system.cpp
+    src/ecs/systems/pickup_system.cpp
     src/ecs/systems/tilemap_render_system.cpp
     src/ecs/systems/tile_collision_system.cpp
 

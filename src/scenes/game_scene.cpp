@@ -6,8 +6,10 @@
 #include "ecs/systems/cleanup_system.hpp"
 #include "ecs/systems/collision_system.hpp"
 #include "ecs/systems/damage_system.hpp"
+#include "ecs/systems/emitter_system.hpp"
 #include "ecs/systems/input_system.hpp"
 #include "ecs/systems/movement_system.hpp"
+#include "ecs/systems/pickup_system.hpp"
 #include "ecs/systems/projectile_system.hpp"
 #include "ecs/systems/render_system.hpp"
 #include "ecs/systems/shooting_system.hpp"
@@ -15,6 +17,8 @@
 #include "ecs/systems/tilemap_render_system.hpp"
 
 #include <spdlog/spdlog.h>
+
+#include <random>
 
 namespace raven {
 
@@ -24,6 +28,9 @@ void GameScene::on_enter(Game& game) {
     game.input().set_renderer(game.renderer().sdl_renderer());
     game.input().set_window(game.renderer().sdl_window());
     tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", "Test_Room");
+    pattern_lib_.load_manifest("assets/data/patterns/manifest.json");
+
+    game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
 
     spawn_player(game);
 }
@@ -59,6 +66,7 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<AnimationState>(player);
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
+    reg.emplace<Weapon>(player);
 
     spdlog::debug("Player spawned at ({}, {})", spawn_x, spawn_y);
 }
@@ -70,6 +78,7 @@ void GameScene::update(Game& game, float dt) {
     // Run ECS systems in order
     systems::update_input(reg, input, dt);
     systems::update_shooting(reg, input, dt);
+    systems::update_emitters(reg, pattern_lib_, dt);
 
     // Animation state switching (velocity → idle/walk)
     auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();
@@ -108,7 +117,9 @@ void GameScene::update(Game& game, float dt) {
     systems::update_tile_collision(reg, tilemap_);
     systems::update_projectiles(reg, dt);
     systems::update_collision(reg);
-    systems::update_damage(reg);
+    systems::update_pickups(reg);
+    systems::update_weapon_decay(reg, dt);
+    systems::update_damage(reg, pattern_lib_);
     systems::update_cleanup(reg, Renderer::VIRTUAL_WIDTH, Renderer::VIRTUAL_HEIGHT);
 
     // Check for pause
