@@ -20,6 +20,8 @@
 - [Rendering Pipeline](architecture/rendering.md)
 - [Input Handling](architecture/input.md)
 - [Smooth Character Movement](architecture/smooth-movement.md)
+- [Sprite Animation](architecture/sprite-animation.md)
+- [Tilemaps and LDtk Integration](architecture/tilemaps.md)
 - [Scene Management](architecture/scenes.md)
 
 ---
