@@ -1,10 +1,10 @@
 # Sprite Animation
 
-Raven uses a frame-based animation system driven by ECS components.
-The `Animation` component ticks elapsed time forward each update,
-advancing a frame index that the render system reads to select the
-correct sprite sheet column.  A separate `AnimationState` component
-tracks high-level states (idle, walk) to avoid redundant transitions.
+Raven uses a frame-based animation system driven by ECS components. The
+`Animation` component ticks elapsed time forward each update, advancing a frame
+index that the render system reads to select the correct sprite sheet column. A
+separate `AnimationState` component tracks high-level states (idle, walk) to
+avoid redundant transitions.
 
 ## Components
 
@@ -23,9 +23,8 @@ struct Animation {
 };
 ```
 
-The animation system writes `current_frame` back to `Sprite::frame_x`
-each tick, so the render system always draws the correct frame without
-any extra coupling.
+The animation system writes `current_frame` back to `Sprite::frame_x` each tick,
+so the render system always draws the correct frame without any extra coupling.
 
 ### AnimationState
 
@@ -39,16 +38,15 @@ struct AnimationState {
 };
 ```
 
-This component exists to detect state *transitions*.  The game scene
-compares the desired state (derived from velocity) against the current
-state.  Only when they differ does it reset the animation parameters,
-preventing a moving entity from restarting its walk animation every
-tick.
+This component exists to detect state _transitions_. The game scene compares the
+desired state (derived from velocity) against the current state. Only when they
+differ does it reset the animation parameters, preventing a moving entity from
+restarting its walk animation every tick.
 
 ## The animation system
 
-`update_animation()` in `src/ecs/systems/animation_system.cpp` is a
-free function that runs once per fixed-timestep tick:
+`update_animation()` in `src/ecs/systems/animation_system.cpp` is a free
+function that runs once per fixed-timestep tick:
 
 ```cpp
 void update_animation(entt::registry& reg, float dt);
@@ -68,9 +66,8 @@ The while-loop handles the case where a large `dt` (or a very short
 
 ## State switching
 
-The player's animation state is managed inline in
-`GameScene::update()`, after the input system runs but before
-`update_animation()`:
+The player's animation state is managed inline in `GameScene::update()`, after
+the input system runs but before `update_animation()`:
 
 ```cpp
 bool moving = (vel.dx * vel.dx + vel.dy * vel.dy) > 1.f;
@@ -97,19 +94,18 @@ if (state.current != desired) {
 
 Key details:
 
-- **`frame_y`** selects the sprite sheet row (animation state).
-  The `Animation` component does not touch `frame_y` — that is set
-  only on state transitions.
-- **`frame_x`** selects the column within the row.  The animation
-  system drives this via `current_frame`.
-- **Velocity threshold** of `1.f` (squared magnitude) prevents
-  flickering between idle and walk when velocity smoothing produces
-  near-zero values during deceleration.
+- **`frame_y`** selects the sprite sheet row (animation state). The `Animation`
+  component does not touch `frame_y` — that is set only on state transitions.
+- **`frame_x`** selects the column within the row. The animation system drives
+  this via `current_frame`.
+- **Velocity threshold** of `1.f` (squared magnitude) prevents flickering
+  between idle and walk when velocity smoothing produces near-zero values during
+  deceleration.
 
 ### Horizontal flip
 
-After the state check, the sprite's `flip_x` flag is set from the
-horizontal velocity direction:
+After the state check, the sprite's `flip_x` flag is set from the horizontal
+velocity direction:
 
 ```cpp
 if (vel.dx > 1.f)
@@ -118,15 +114,14 @@ else if (vel.dx < -1.f)
     sprite.flip_x = true;
 ```
 
-All art faces right.  The engine mirrors for leftward movement.  The
-dead zone of `[-1, 1]` prevents flipping during velocity smoothing
-when the player stops.
+All art faces right. The engine mirrors for leftward movement. The dead zone of
+`[-1, 1]` prevents flipping during velocity smoothing when the player stops.
 
 ## One-shot animations
 
-For non-looping animations (attack, hurt, death), set `looping = false`.
-The animation system stops advancing when `current_frame == end_frame`.
-Game logic can detect completion:
+For non-looping animations (attack, hurt, death), set `looping = false`. The
+animation system stops advancing when `current_frame == end_frame`. Game logic
+can detect completion:
 
 ```cpp
 bool finished = !anim.looping && anim.current_frame == anim.end_frame;
@@ -145,31 +140,30 @@ update_movement        velocity → position
 ...
 ```
 
-Running animation before movement means the displayed frame reflects
-the current tick's input, not the previous tick's.
+Running animation before movement means the displayed frame reflects the current
+tick's input, not the previous tick's.
 
 ## Timing reference
 
-The art spec defines animation speed in FPS.  Convert to
-`frame_duration`:
+The art spec defines animation speed in FPS. Convert to `frame_duration`:
 
 ```
 frame_duration = 1.0 / anim_fps
 ```
 
-| Anim FPS | frame_duration | Use case |
-|----------|----------------|----------|
-| 4 | 0.250s | Idle breathing |
-| 8 | 0.125s | Slow walk |
-| 10 | 0.100s | Normal walk |
-| 12 | 0.083s | Fast action |
-| 15 | 0.067s | Attack / VFX |
+| Anim FPS | frame_duration | Use case       |
+| -------- | -------------- | -------------- |
+| 4        | 0.250s         | Idle breathing |
+| 8        | 0.125s         | Slow walk      |
+| 10       | 0.100s         | Normal walk    |
+| 12       | 0.083s         | Fast action    |
+| 15       | 0.067s         | Attack / VFX   |
 
 ## Key files
 
-| File | Role |
-|------|------|
-| `src/ecs/components.hpp` | `Animation`, `AnimationState`, `Sprite` components |
-| `src/ecs/systems/animation_system.cpp` | `update_animation()` — frame advancement |
-| `src/scenes/game_scene.cpp` | State switching logic (idle/walk) |
-| `src/ecs/systems/render_system.cpp` | Reads `Sprite::frame_x` to select source rect |
+| File                                   | Role                                               |
+| -------------------------------------- | -------------------------------------------------- |
+| `src/ecs/components.hpp`               | `Animation`, `AnimationState`, `Sprite` components |
+| `src/ecs/systems/animation_system.cpp` | `update_animation()` — frame advancement           |
+| `src/scenes/game_scene.cpp`            | State switching logic (idle/walk)                  |
+| `src/ecs/systems/render_system.cpp`    | Reads `Sprite::frame_x` to select source rect      |
