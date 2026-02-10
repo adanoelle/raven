@@ -1,9 +1,9 @@
 #pragma once
 
+#include <entt/entt.hpp>
+
 #include <cstdint>
 #include <string>
-
-#include <entt/entt.hpp>
 
 namespace raven {
 
@@ -34,13 +34,13 @@ struct PreviousTransform {
 
 /// @brief Sprite rendering data referencing a frame within a sprite sheet.
 struct Sprite {
-    std::string sheet_id;  ///< Identifier of the SpriteSheet to draw from.
+    std::string sheet_id; ///< Identifier of the SpriteSheet to draw from.
     int frame_x = 0;      ///< Frame column index in the sheet.
     int frame_y = 0;      ///< Frame row index in the sheet.
-    int width = 16;        ///< Pixel width of one frame.
-    int height = 16;       ///< Pixel height of one frame.
-    int layer = 0;         ///< Render order (higher values draw on top).
-    bool flip_x = false;   ///< Flip the sprite horizontally when drawing.
+    int width = 16;       ///< Pixel width of one frame.
+    int height = 16;      ///< Pixel height of one frame.
+    int layer = 0;        ///< Render order (higher values draw on top).
+    bool flip_x = false;  ///< Flip the sprite horizontally when drawing.
 };
 
 /// @brief Frame-based animation state for cycling through sprite frames.
@@ -57,17 +57,17 @@ struct Animation {
 
 /// @brief Circular hitbox for collision detection (circle-circle checks).
 struct CircleHitbox {
-    float radius = 6.f;    ///< Hitbox radius in pixels.
-    float offset_x = 0.f;  ///< X offset from the entity's Transform2D position.
-    float offset_y = 0.f;  ///< Y offset from the entity's Transform2D position.
+    float radius = 6.f;   ///< Hitbox radius in pixels.
+    float offset_x = 0.f; ///< X offset from the entity's Transform2D position.
+    float offset_y = 0.f; ///< Y offset from the entity's Transform2D position.
 };
 
 /// @brief Axis-aligned rectangular hitbox for collision detection.
 struct RectHitbox {
-    float width = 16.f;    ///< Hitbox width in pixels.
-    float height = 16.f;   ///< Hitbox height in pixels.
-    float offset_x = 0.f;  ///< X offset from the entity's Transform2D position.
-    float offset_y = 0.f;  ///< Y offset from the entity's Transform2D position.
+    float width = 16.f;   ///< Hitbox width in pixels.
+    float height = 16.f;  ///< Hitbox height in pixels.
+    float offset_x = 0.f; ///< X offset from the entity's Transform2D position.
+    float offset_y = 0.f; ///< Y offset from the entity's Transform2D position.
 };
 
 // ── Gameplay ─────────────────────────────────────────────────────
@@ -123,6 +123,18 @@ struct Invulnerable {
 /// @brief Score value awarded when this entity is destroyed.
 struct ScoreValue {
     int points = 100; ///< Points awarded to the player on kill.
+};
+
+// ── Animation State ─────────────────────────────────────────────
+
+/// @brief Tracks the current animation state to avoid redundant transitions.
+struct AnimationState {
+    /// @brief Animation state for state-switching logic.
+    enum class State : uint8_t {
+        Idle, ///< Standing still / idle animation.
+        Walk  ///< Moving / walk animation.
+    };
+    State current = State::Idle; ///< The active animation state.
 };
 
 // ── Tags (empty structs for filtering) ───────────────────────────
