@@ -1,0 +1,39 @@
+{
+    "name": "stage_01",
+    "level": "Test_Room",
+    "waves": [
+        {
+            "enemies": [
+                {
+                    "spawn_index": 0,
+                    "type": "grunt",
+                    "pattern": "spiral_3way",
+                    "hp": 1.0,
+                    "score": 100,
+                    "ai": "chaser",
+                    "contact_damage": true
+                },
+                {
+                    "spawn_index": 1,
+                    "type": "grunt",
+                    "pattern": "spiral_3way",
+                    "hp": 1.0,
+                    "score": 100,
+                    "ai": "drifter"
+                }
+            ]
+        },
+        {
+            "enemies": [
+                {
+                    "spawn_index": 0,
+                    "type": "mid",
+                    "pattern": "aimed_burst",
+                    "hp": 3.0,
+                    "score": 300,
+                    "ai": "stalker"
+                }
+            ]
+        }
+    ]
+}
