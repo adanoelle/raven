@@ -138,8 +138,24 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
         } else if (layer_type == ldtk::LayerType::Entities) {
             for (const auto& entity : layer.allEntities()) {
                 auto pos = entity.getPosition();
-                spawns_.push_back(
-                    {entity.getName(), static_cast<float>(pos.x), static_cast<float>(pos.y)});
+                SpawnPoint sp{
+                    entity.getName(), static_cast<float>(pos.x), static_cast<float>(pos.y), {}};
+
+                // Extract string fields from LDtk entity
+                for (const auto& field_def : entity.allFields()) {
+                    if (field_def.type == ldtk::FieldType::String) {
+                        try {
+                            const auto& field = entity.getField<std::string>(field_def.name);
+                            if (!field.is_null()) {
+                                sp.fields[field_def.name] = field.value();
+                            }
+                        } catch (...) {
+                            // Field access can throw on type mismatch; skip silently
+                        }
+                    }
+                }
+
+                spawns_.push_back(std::move(sp));
             }
         }
     }
