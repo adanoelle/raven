@@ -28,14 +28,20 @@ void handle_player_death(entt::registry& reg, entt::entity entity, raven::Health
         reg.emplace_or_replace<raven::Invulnerable>(entity, 3.f);
         spdlog::info("Player died, {} lives remaining", player.lives);
     } else {
+        auto* state = reg.ctx().find<raven::GameState>();
+        if (state) {
+            state->game_over = true;
+        }
         spdlog::info("Game over!");
-        // TODO: transition to game over scene
     }
 }
 
 void handle_enemy_death(entt::registry& reg, entt::entity entity, raven::StringInterner& interner) {
     if (auto* score = reg.try_get<raven::ScoreValue>(entity)) {
-        // TODO: add to score counter
+        auto* state = reg.ctx().find<raven::GameState>();
+        if (state) {
+            state->score += score->points;
+        }
         spdlog::debug("Enemy destroyed, +{} points", score->points);
     }
 
