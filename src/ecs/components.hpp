@@ -133,8 +133,10 @@ struct ScoreValue {
 struct AnimationState {
     /// @brief Animation state for state-switching logic.
     enum class State : uint8_t {
-        Idle, ///< Standing still / idle animation.
-        Walk  ///< Moving / walk animation.
+        Idle,  ///< Standing still / idle animation.
+        Walk,  ///< Moving / walk animation.
+        Melee, ///< Melee attack animation.
+        Dash   ///< Dash animation.
     };
     State current = State::Idle; ///< The active animation state.
 };
@@ -207,7 +209,80 @@ struct DefaultWeapon {
     Weapon weapon; ///< The player's original weapon.
 };
 
+// ── Enemy AI ────────────────────────────────────────────────────
+
+/// @brief AI behavior configuration for enemy entities.
+struct AiBehavior {
+    /// @brief Enemy movement archetype.
+    enum class Archetype : uint8_t { Chaser, Drifter, Stalker, Coward };
+
+    /// @brief Current behavioral phase (simple state machine).
+    enum class Phase : uint8_t { Idle, Advance, Attack, Retreat };
+
+    Archetype archetype = Archetype::Chaser; ///< Movement archetype.
+    Phase phase = Phase::Idle;               ///< Current phase.
+
+    float move_speed = 60.f;        ///< Movement speed in pixels/s.
+    float activation_range = 200.f; ///< Distance at which AI activates.
+    float preferred_range = 0.f;    ///< Desired distance from player (Stalker).
+    float attack_range = 80.f;      ///< Range at which emitter activates.
+    float phase_timer = 0.f;        ///< Timer for phase transitions.
+    float strafe_dir = 1.f;         ///< Strafe direction multiplier (+1/-1).
+};
+
+/// @brief Deals damage on spatial overlap (e.g. Chaser body damage).
+struct ContactDamage {
+    float damage = 1.f;    ///< Damage dealt per hit.
+    float cooldown = 0.5f; ///< Minimum interval between hits (seconds).
+    float timer = 0.f;     ///< Time until next hit allowed.
+};
+
+/// @brief Knockback impulse applied to an enemy when hit by a bullet.
+struct Knockback {
+    float dx = 0.f;        ///< Knockback velocity X in pixels/s.
+    float dy = 0.f;        ///< Knockback velocity Y in pixels/s.
+    float remaining = 0.f; ///< Duration remaining in seconds.
+};
+
+// ── Melee / Dash ────────────────────────────────────────────────
+
+/// @brief Active melee attack arc hitbox.
+struct MeleeAttack {
+    float damage = 2.f;        ///< Per-enemy damage.
+    float range = 30.f;        ///< Arc reach in pixels.
+    float half_angle = 0.785f; ///< ~45 deg half-angle (90 deg total cone).
+    float knockback = 250.f;   ///< Knockback speed on hit.
+    float remaining = 0.1f;    ///< Active hitbox duration.
+    float aim_x = 1.f;         ///< Aim direction snapshot X.
+    float aim_y = 0.f;         ///< Aim direction snapshot Y.
+    bool hit_checked = false;  ///< Ensures arc check runs exactly once.
+};
+
+/// @brief Cooldown timer between melee attacks.
+struct MeleeCooldown {
+    float remaining = 0.f; ///< Time until next melee allowed (seconds).
+    float rate = 0.4f;     ///< Minimum interval between attacks (seconds).
+};
+
+/// @brief Active dash state with burst velocity override.
+struct Dash {
+    float speed = 400.f;     ///< Dash travel speed in pixels/s.
+    float duration = 0.12f;  ///< Total dash duration.
+    float remaining = 0.12f; ///< Time remaining in the dash.
+    float dir_x = 1.f;       ///< Dash direction X.
+    float dir_y = 0.f;       ///< Dash direction Y.
+};
+
+/// @brief Cooldown timer between dashes.
+struct DashCooldown {
+    float remaining = 0.f; ///< Time until next dash allowed (seconds).
+    float rate = 0.6f;     ///< Minimum interval between dashes (seconds).
+};
+
 // ── Tags (empty structs for filtering) ───────────────────────────
+
+/// @brief Tag: enemy lost its BulletEmitter via melee disarm.
+struct Disarmed {};
 
 /// @brief Tag: entity is removed when it leaves the play area.
 struct OffScreenDespawn {};

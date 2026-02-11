@@ -22,12 +22,16 @@ struct InputState {
     bool shoot = false;   ///< Shoot button held this frame.
     bool focus = false;   ///< Focus button held (slow movement + show hitbox).
     bool bomb = false;    ///< Bomb button held this frame.
+    bool melee = false;   ///< Melee button held this frame.
+    bool dash = false;    ///< Dash button held this frame.
     bool pause = false;   ///< Pause button held this frame.
     bool confirm = false; ///< Confirm/accept button held this frame.
     bool cancel = false;  ///< Cancel/back button held this frame.
 
     bool shoot_pressed = false;   ///< Shoot button pressed this frame (edge).
     bool bomb_pressed = false;    ///< Bomb button pressed this frame (edge).
+    bool melee_pressed = false;   ///< Melee button pressed this frame (edge).
+    bool dash_pressed = false;    ///< Dash button pressed this frame (edge).
     bool pause_pressed = false;   ///< Pause button pressed this frame (edge).
     bool confirm_pressed = false; ///< Confirm button pressed this frame (edge).
     bool cancel_pressed = false;  ///< Cancel button pressed this frame (edge).
