@@ -11,6 +11,7 @@ add_executable(raven_tests
     test_pickups.cpp
     test_ai.cpp
     test_melee_dash.cpp
+    test_waves.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/patterns/pattern_library.cpp
@@ -27,6 +28,7 @@ add_executable(raven_tests
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/melee_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/dash_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/input_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/ecs/systems/wave_system.cpp
 )
 
 target_include_directories(raven_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
