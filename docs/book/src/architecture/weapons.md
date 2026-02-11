@@ -1,11 +1,17 @@
 # Weapons and Pickups
 
-Raven's weapon system lets enemies drop their weapons on death. The player
-collects a stolen weapon, which runs on a 10-second decay timer. When the timer
-expires the weapon explodes — dealing damage and reverting to the player's
-default gun. Stabilizer pickups, dropped by tougher enemies, can freeze a stolen
-weapon in place permanently. A three-tier rarity system (Common, Rare,
-Legendary) gates which weapons can be stabilized.
+Raven's weapon system lets the player steal enemy weapons via melee disarm. The
+player must close distance and land a melee arc attack on an armed enemy to
+knock loose their weapon as a pickup. Collected weapons run on a 10-second decay
+timer. When the timer expires the weapon explodes — dealing damage and reverting
+to the player's default gun. Stabilizer pickups, dropped by tougher enemies, can
+freeze a stolen weapon in place permanently. A three-tier rarity system (Common,
+Rare, Legendary) gates which weapons can be stabilized.
+
+> **Note:** Enemies no longer drop weapons on death. See
+> [Melee and Dash](melee-and-dash.md) for the disarm system and
+> [ADR-0008](../decisions/0008-melee-disarm-over-death-drops.md) for the design
+> rationale.
 
 ## Components
 
@@ -97,15 +103,17 @@ has a 0.5 s `Lifetime` and is cleaned up by the normal despawn system.
 
 ## Weapon steal
 
-When an enemy dies in `update_damage()`, the system checks for a
-`BulletEmitter` component. If the enemy had one:
+Weapons are obtained exclusively via melee disarm (see
+[Melee and Dash](melee-and-dash.md)). When the melee arc hits an enemy with a
+`BulletEmitter`, the melee system:
 
-1. Look up the `PatternDef` by `emitter.pattern_name` in the `PatternLibrary`.
-2. Call `weapon_from_emitter()` on the first `EmitterDef` to build a `Weapon`
+1. Looks up the `PatternDef` by `emitter.pattern_name` in the `PatternLibrary`.
+2. Calls `weapon_from_emitter()` on the first `EmitterDef` to build a `Weapon`
    with matching bullet speed, damage, fire rate, spread, etc.
-3. Copy the pattern's `tier` onto the weapon.
-4. Spawn a `WeaponPickup` entity at the enemy's death position with a 5 s
-   lifetime and 8 px collection radius.
+3. Copies the pattern's `tier` onto the weapon.
+4. Spawns a `WeaponPickup` entity at the enemy's position with a 5 s lifetime
+   and 8 px collection radius.
+5. Removes the enemy's `BulletEmitter` and emplaces the `Disarmed` tag.
 
 The tier flows from JSON all the way through to the pickup:
 
@@ -185,24 +193,27 @@ Legendary weapons can never be stabilized. They always decay and explode.
 `GameScene::update()` pipeline, after movement and collision:
 
 ```
-update_input              read keyboard/gamepad → target velocity
+update_input              read keyboard/gamepad → target velocity (skip during dash)
+update_melee              arc check, disarm, spawn weapon pickups
+update_dash               burst velocity, invulnerability
 update_shooting           aim resolution + bullet spawn
 update_emitters           enemy bullet pattern firing
-animation state logic     velocity → idle/walk switch
+update_ai                 archetype dispatch + disarmed override
+animation state logic     Melee > Dash > Walk > Idle switch
 update_animation          tick frames
 update_movement           velocity → position
 update_tile_collision     resolve wall overlaps
 update_collision          circle-circle hit tests
 update_pickups         ←  weapon + stabilizer collection
 update_weapon_decay    ←  tick decay timers, handle explosion
-update_damage             apply DamageOnContact, spawn drops
+update_damage             apply DamageOnContact, stabilizer drops (no weapon drops)
 update_cleanup            tick lifetimes, despawn off-screen / expired entities
 ```
 
 Key ordering detail: `update_pickups` runs before `update_weapon_decay`, so a
-stabilizer collected on the same tick prevents the explosion from firing. And
-`update_damage` runs after both, so weapon pickups spawned from enemy deaths
-are available for collection on the **next** tick.
+stabilizer collected on the same tick prevents the explosion from firing.
+`update_melee` runs early so that weapon pickups spawned from disarms are
+available for collection later in the same frame.
 
 ## Gameplay possibilities
 
@@ -239,7 +250,7 @@ The component design enables several gameplay dynamics:
 | Decay timer ticks down | `remaining` decreases by `dt` each frame |
 | Second pickup while decaying does not overwrite DefaultWeapon | Original default preserved across chained steals |
 | weapon_from_emitter conversion | All emitter fields map to correct weapon fields |
-| Enemy death spawns weapon pickup | Pickup at death position with correct weapon stats |
+| Enemy death does not spawn weapon pickup | Weapons only via melee disarm |
 | Decay expires — damage, invulnerability, revert | 1 HP lost, 2 s invulnerability granted, weapon reverted |
 | Decay expires while invulnerable — no damage | HP unchanged, weapon still reverts |
 | Explosion spawns ExplosionVfx entity | VFX at player position with 0.5 s lifetime |
@@ -250,7 +261,7 @@ The component design enables several gameplay dynamics:
 | Boss always drops stabilizer | 100% drop rate verified |
 | Grunt never drops stabilizer | 0% drop rate verified |
 | Mid drops stabilizer probabilistically | Statistical check over 100 enemies |
-| Weapon tier flows from PatternDef to pickup | JSON tier string → enum → pickup weapon tier |
+| Weapon tier flows from PatternDef to melee pickup | JSON tier string → enum → melee disarm pickup weapon tier |
 | PatternDef tier parsed from JSON | Explicit common/rare/legendary and missing-defaults-to-common |
 
 ## Key files
