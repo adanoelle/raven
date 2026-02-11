@@ -49,5 +49,5 @@ docs/            mdBook, devlog, ADRs
 
 - just book build / just book serve   — mdBook
 - just api build  / just api serve    — Doxygen API reference
-- docs/decisions/     ADRs (NNNN-title.md, MADR format)
-- docs/devlog/        Date-prefixed entries (YYYY-MM-DD-title.md)
+- docs/book/src/decisions/   ADRs (NNNN-title.md, MADR format)
+- docs/book/src/devlog/     Date-prefixed entries (YYYY-MM-DD-title.md)

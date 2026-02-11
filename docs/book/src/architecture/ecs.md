@@ -204,4 +204,4 @@ fields including the sprite sheet reference are trivial copies.
 | `src/core/string_id.hpp` | `StringId` and `StringInterner` |
 | `src/ecs/systems/hitbox_math.hpp` | Shared `circles_overlap()` helper |
 | `src/scenes/game_scene.cpp` | System execution order |
-| `docs/decisions/0007-deferred-entity-destruction.md` | ADR for the collect-then-destroy convention |
+| `docs/book/src/decisions/0007-deferred-entity-destruction.md` | ADR for the collect-then-destroy convention |

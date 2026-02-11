@@ -47,7 +47,7 @@ long enough that it can't be spammed.
 - `src/ecs/systems/melee_system.hpp/.cpp` — melee attack system
 - `src/ecs/systems/dash_system.hpp/.cpp` — dash system
 - `tests/test_melee_dash.cpp` — 20 new Catch2 tests
-- `docs/decisions/0008-melee-disarm-over-death-drops.md` — ADR
+- `docs/book/src/decisions/0008-melee-disarm-over-death-drops.md` — ADR
 - `docs/book/src/architecture/melee-and-dash.md` — architecture chapter
 
 ## Test results
