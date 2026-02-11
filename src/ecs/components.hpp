@@ -5,6 +5,7 @@
 #include <entt/entt.hpp>
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace raven {
@@ -295,5 +296,24 @@ struct StabilizerPickup {};
 
 /// @brief Tag: marks a visual-only explosion effect entity.
 struct ExplosionVfx {};
+
+// ── Room / Wave ────────────────────────────────────────────────
+
+/// @brief Exit entity that transports the player to another room.
+struct Exit {
+    std::string target_level; ///< LDtk level name to load.
+    bool open = false;        ///< Active only after room is cleared.
+};
+
+// ── Game Context (registry singleton) ──────────────────────────
+
+/// @brief Persistent session state stored in registry context.
+struct GameState {
+    int score = 0;             ///< Accumulated score for the session.
+    int current_wave = 0;      ///< Index of the currently active wave.
+    int total_waves = 0;       ///< Total number of waves in the current stage.
+    bool room_cleared = false; ///< True when all waves are exhausted.
+    bool game_over = false;    ///< True when the player has lost all lives.
+};
 
 } // namespace raven
