@@ -56,6 +56,9 @@ add_executable(raven
     src/ecs/systems/pickup_system.cpp
     src/ecs/systems/tilemap_render_system.cpp
     src/ecs/systems/tile_collision_system.cpp
+    src/ecs/systems/ai_system.cpp
+    src/ecs/systems/melee_system.cpp
+    src/ecs/systems/dash_system.cpp
 
     # Patterns
     src/patterns/pattern_library.cpp

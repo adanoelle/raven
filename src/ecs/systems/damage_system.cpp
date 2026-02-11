@@ -2,7 +2,6 @@
 
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
-#include "ecs/systems/pickup_system.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -34,32 +33,13 @@ void handle_player_death(entt::registry& reg, entt::entity entity, raven::Health
     }
 }
 
-void handle_enemy_death(entt::registry& reg, entt::entity entity,
-                        const raven::PatternLibrary& patterns, raven::StringInterner& interner) {
+void handle_enemy_death(entt::registry& reg, entt::entity entity, raven::StringInterner& interner) {
     if (auto* score = reg.try_get<raven::ScoreValue>(entity)) {
         // TODO: add to score counter
         spdlog::debug("Enemy destroyed, +{} points", score->points);
     }
 
-    // Spawn weapon pickup if enemy had a bullet emitter
-    if (auto* emitter = reg.try_get<raven::BulletEmitter>(entity)) {
-        auto* tf = reg.try_get<raven::Transform2D>(entity);
-        if (tf && emitter->pattern_name.valid()) {
-            const auto* pattern = patterns.get(interner.resolve(emitter->pattern_name));
-            if (pattern && !pattern->emitters.empty()) {
-                auto pickup_ent = reg.create();
-                reg.emplace<raven::Transform2D>(pickup_ent, tf->x, tf->y);
-                reg.emplace<raven::PreviousTransform>(pickup_ent, tf->x, tf->y);
-                reg.emplace<raven::CircleHitbox>(pickup_ent, 8.f);
-                reg.emplace<raven::Lifetime>(pickup_ent, 5.f);
-                reg.emplace<raven::Sprite>(pickup_ent, interner.intern("pickups"), 0, 0, 16, 16, 5);
-                auto weapon = raven::systems::weapon_from_emitter(pattern->emitters[0]);
-                weapon.tier = pattern->tier;
-                reg.emplace<raven::WeaponPickup>(pickup_ent,
-                                                 raven::WeaponPickup{std::move(weapon)});
-            }
-        }
-    }
+    // Weapons are only obtained via melee disarm — no death drops.
 
     // Spawn stabilizer pickup based on enemy type
     if (auto* enemy_comp = reg.try_get<raven::Enemy>(entity)) {
@@ -94,7 +74,7 @@ void handle_enemy_death(entt::registry& reg, entt::entity entity,
 
 namespace raven::systems {
 
-void update_damage(entt::registry& reg, const PatternLibrary& patterns, float dt) {
+void update_damage(entt::registry& reg, const PatternLibrary& /*patterns*/, float dt) {
     auto& interner = reg.ctx().get<StringInterner>();
 
     tick_invulnerability(reg, dt);
@@ -107,7 +87,7 @@ void update_damage(entt::registry& reg, const PatternLibrary& patterns, float dt
             if (auto* player = reg.try_get<Player>(entity)) {
                 handle_player_death(reg, entity, hp, *player);
             } else {
-                handle_enemy_death(reg, entity, patterns, interner);
+                handle_enemy_death(reg, entity, interner);
                 to_destroy.push_back(entity);
             }
         }

@@ -3,6 +3,7 @@
 #include "ecs/components.hpp"
 #include "ecs/systems/hitbox_math.hpp"
 
+#include <cmath>
 #include <vector>
 
 namespace raven::systems {
@@ -59,6 +60,18 @@ void update_collision(entt::registry& reg) {
             if (circles_overlap(b_tf.x + b_hb.offset_x, b_tf.y + b_hb.offset_y, b_hb.radius,
                                 e_tf.x + e_hb.offset_x, e_tf.y + e_hb.offset_y, e_hb.radius)) {
                 e_hp.current -= dmg.damage;
+
+                // Apply knockback from bullet impact
+                if (reg.any_of<Velocity>(e_ent)) {
+                    auto& b_vel_comp = reg.get<Velocity>(b_ent);
+                    float bvx = b_vel_comp.dx;
+                    float bvy = b_vel_comp.dy;
+                    float len = std::sqrt(bvx * bvx + bvy * bvy);
+                    if (len > 0.f) {
+                        reg.emplace_or_replace<Knockback>(e_ent, bvx / len * 150.f,
+                                                          bvy / len * 150.f, 0.1f);
+                    }
+                }
 
                 if (!reg.any_of<Piercing>(b_ent)) {
                     bullets_to_destroy.push_back(b_ent);
