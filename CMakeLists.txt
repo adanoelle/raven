@@ -59,6 +59,8 @@ add_executable(raven
     src/ecs/systems/ai_system.cpp
     src/ecs/systems/melee_system.cpp
     src/ecs/systems/dash_system.cpp
+    src/ecs/systems/wave_system.cpp
+    src/ecs/systems/hud_system.cpp
 
     # Patterns
     src/patterns/pattern_library.cpp
@@ -67,6 +69,7 @@ add_executable(raven
     src/scenes/scene_manager.cpp
     src/scenes/game_scene.cpp
     src/scenes/title_scene.cpp
+    src/scenes/game_over_scene.cpp
 )
 
 target_include_directories(raven PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
