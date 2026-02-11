@@ -22,6 +22,7 @@
 - [Aiming and Shooting](architecture/shooting.md)
 - [Weapons and Pickups](architecture/weapons.md)
 - [Melee Attack and Dash](architecture/melee-and-dash.md)
+- [Room Progression and Waves](architecture/room-progression.md)
 - [Smooth Character Movement](architecture/smooth-movement.md)
 - [Sprite Animation](architecture/sprite-animation.md)
 - [Tilemaps and LDtk Integration](architecture/tilemaps.md)
@@ -48,6 +49,7 @@
 - [Project Setup](devlog/2026-02-08-project-setup.md)
 - [From Danmaku to Roguelike](devlog/2026-02-08-danmaku-to-roguelike.md)
 - [Melee and Dash System](devlog/2026-02-10-melee-dash-system.md)
+- [Room Progression and HUD](devlog/2026-02-11-room-progression.md)
 
 ---
 
@@ -61,3 +63,4 @@
 - [ADR-0006: No Third-Party Engine](decisions/0006-no-third-party-engine.md)
 - [ADR-0007: Deferred Entity Destruction](decisions/0007-deferred-entity-destruction.md)
 - [ADR-0008: Melee Disarm Over Death Drops](decisions/0008-melee-disarm-over-death-drops.md)
+- [ADR-0009: Data-Driven Wave Definitions](decisions/0009-data-driven-wave-definitions.md)
