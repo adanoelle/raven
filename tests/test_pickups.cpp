@@ -1,6 +1,8 @@
+#include "core/input.hpp"
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/damage_system.hpp"
+#include "ecs/systems/melee_system.hpp"
 #include "ecs/systems/pickup_system.hpp"
 #include "patterns/pattern_library.hpp"
 
@@ -184,7 +186,7 @@ TEST_CASE("weapon_from_emitter conversion", "[pickups]") {
     REQUIRE(weapon.bullet_frame_y == 1);
 }
 
-TEST_CASE("Enemy death spawns weapon pickup", "[pickups]") {
+TEST_CASE("Enemy death does not spawn weapon pickup", "[pickups]") {
     entt::registry reg;
     auto& interner = reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
@@ -216,19 +218,13 @@ TEST_CASE("Enemy death spawns weapon pickup", "[pickups]") {
     // Enemy should be destroyed
     REQUIRE_FALSE(reg.valid(enemy));
 
-    // A WeaponPickup entity should exist at the enemy's death position
-    auto pickup_view = reg.view<WeaponPickup, Transform2D, Lifetime>();
+    // Weapons are only obtained via melee disarm — no death drops
+    auto pickup_view = reg.view<WeaponPickup>();
     int pickup_count = 0;
-    for (auto [ent, wp, tf, life] : pickup_view.each()) {
+    for ([[maybe_unused]] auto ent : pickup_view) {
         ++pickup_count;
-        REQUIRE(tf.x == Catch::Approx(50.f));
-        REQUIRE(tf.y == Catch::Approx(75.f));
-        REQUIRE(wp.weapon.bullet_speed == Catch::Approx(200.f));
-        REQUIRE(wp.weapon.bullet_count == 5);
-        REQUIRE(wp.weapon.spread_angle == Catch::Approx(60.f));
-        REQUIRE(life.remaining == Catch::Approx(5.f));
     }
-    REQUIRE(pickup_count == 1);
+    REQUIRE(pickup_count == 0);
 }
 
 // ── Explosion on decay ─────────────────────────────────────────
@@ -513,12 +509,11 @@ TEST_CASE("Stabilizer drop on enemy death", "[pickups][stabilizer]") {
 
 // ── Weapon tier from PatternDef ────────────────────────────────
 
-TEST_CASE("Weapon tier flows from PatternDef to pickup", "[pickups][tier]") {
+TEST_CASE("Weapon tier flows from PatternDef to melee pickup", "[pickups][tier]") {
     entt::registry reg;
     auto& interner = reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
     patterns.set_interner(interner);
-    constexpr float dt = 1.f / 120.f;
 
     nlohmann::json j = {{"name", "rare_pattern"},
                         {"tier", "rare"},
@@ -530,16 +525,27 @@ TEST_CASE("Weapon tier flows from PatternDef to pickup", "[pickups][tier]") {
                            {"spread_angle", 45.f}}}}};
     patterns.load_from_json(j);
 
+    // Player aims +x at enemy 20px away
+    auto player = reg.create();
+    reg.emplace<Transform2D>(player, 50.f, 75.f);
+    reg.emplace<Player>(player);
+    reg.emplace<Velocity>(player);
+    reg.emplace<AimDirection>(player, 1.f, 0.f);
+    reg.emplace<MeleeCooldown>(player);
+
     auto enemy = reg.create();
-    reg.emplace<Transform2D>(enemy, 50.f, 75.f);
-    reg.emplace<CircleHitbox>(enemy, 6.f);
+    reg.emplace<Transform2D>(enemy, 70.f, 75.f);
+    reg.emplace<CircleHitbox>(enemy, 7.f);
     reg.emplace<Enemy>(enemy);
-    reg.emplace<Health>(enemy, 0.f, 3.f);
+    reg.emplace<Health>(enemy, 3.f, 3.f);
     BulletEmitter emitter;
     emitter.pattern_name = interner.intern("rare_pattern");
     reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-    systems::update_damage(reg, patterns, dt);
+    InputState input{};
+    input.melee = true;
+    input.melee_pressed = true;
+    systems::update_melee(reg, input, patterns, 1.f / 120.f);
 
     auto pickup_view = reg.view<WeaponPickup>();
     int count = 0;

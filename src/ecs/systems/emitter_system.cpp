@@ -3,6 +3,7 @@
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/bullet_spawn.hpp"
+#include "ecs/systems/player_utils.hpp"
 
 #include <cmath>
 
@@ -12,21 +13,6 @@ namespace {
 
 constexpr float PI = 3.14159265358979323846f;
 constexpr float DEG_TO_RAD = PI / 180.f;
-
-/// @brief Find the player position, if any player exists.
-/// @param reg The ECS registry.
-/// @param out_x Output X position.
-/// @param out_y Output Y position.
-/// @return True if a player was found.
-bool find_player_position(const entt::registry& reg, float& out_x, float& out_y) {
-    auto view = reg.view<Player, Transform2D>();
-    for (auto [entity, player, tf] : view.each()) {
-        out_x = tf.x;
-        out_y = tf.y;
-        return true;
-    }
-    return false;
-}
 
 /// @brief Fire a burst of bullets from an emitter at a given angle.
 void fire_burst(entt::registry& reg, const EmitterDef& emitter, float center_angle_deg,

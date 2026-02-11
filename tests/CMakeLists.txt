@@ -9,6 +9,8 @@ add_executable(raven_tests
     test_shooting.cpp
     test_emitters.cpp
     test_pickups.cpp
+    test_ai.cpp
+    test_melee_dash.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/patterns/pattern_library.cpp
@@ -21,6 +23,10 @@ add_executable(raven_tests
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/damage_system.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/tilemap.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/tile_collision_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/ecs/systems/ai_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/ecs/systems/melee_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/ecs/systems/dash_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/ecs/systems/input_system.cpp
 )
 
 target_include_directories(raven_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)

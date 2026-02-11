@@ -10,6 +10,10 @@ void update_input(entt::registry& reg, const InputState& input, float dt) {
     auto view = reg.view<Player, Velocity>();
 
     for (auto [entity, player, vel] : view.each()) {
+        // Dash overrides player velocity — skip input-driven movement
+        if (reg.any_of<Dash>(entity)) {
+            continue;
+        }
         float speed = player.speed;
 
         float mx = input.move_x;

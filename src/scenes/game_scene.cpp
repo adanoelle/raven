@@ -3,12 +3,15 @@
 #include "core/game.hpp"
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
+#include "ecs/systems/ai_system.hpp"
 #include "ecs/systems/animation_system.hpp"
 #include "ecs/systems/cleanup_system.hpp"
 #include "ecs/systems/collision_system.hpp"
 #include "ecs/systems/damage_system.hpp"
+#include "ecs/systems/dash_system.hpp"
 #include "ecs/systems/emitter_system.hpp"
 #include "ecs/systems/input_system.hpp"
+#include "ecs/systems/melee_system.hpp"
 #include "ecs/systems/movement_system.hpp"
 #include "ecs/systems/pickup_system.hpp"
 #include "ecs/systems/render_system.hpp"
@@ -71,6 +74,8 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<AnimationState>(player);
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
+    reg.emplace<MeleeCooldown>(player);
+    reg.emplace<DashCooldown>(player);
     auto& weapon = reg.emplace<Weapon>(player);
     weapon.bullet_sheet = interner.intern("projectiles");
 
@@ -89,27 +94,88 @@ void GameScene::spawn_enemies(Game& game) {
         std::string pattern;
         int score;
         int frame;
+        AiBehavior ai;
+        bool contact_damage;
     };
 
     const EnemyDef defs[] = {
-        {100.f, 60.f, Enemy::Type::Grunt, 1.f, "spiral_3way", 100, 0},
-        {240.f, 50.f, Enemy::Type::Grunt, 1.f, "spiral_3way", 100, 0},
-        {240.f, 200.f, Enemy::Type::Grunt, 1.f, "spiral_3way", 100, 0},
-        {380.f, 60.f, Enemy::Type::Mid, 3.f, "aimed_burst", 300, 1},
-        {140.f, 140.f, Enemy::Type::Mid, 3.f, "aimed_burst", 300, 1},
-        {340.f, 140.f, Enemy::Type::Boss, 10.f, "nova_legendary", 1000, 2},
+        {100.f,
+         60.f,
+         Enemy::Type::Grunt,
+         1.f,
+         "spiral_3way",
+         100,
+         0,
+         {AiBehavior::Archetype::Chaser, AiBehavior::Phase::Idle, 70.f, 160.f, 0.f, 80.f, 0.f, 1.f},
+         true},
+        {240.f,
+         50.f,
+         Enemy::Type::Grunt,
+         1.f,
+         "spiral_3way",
+         100,
+         0,
+         {AiBehavior::Archetype::Chaser, AiBehavior::Phase::Idle, 70.f, 160.f, 0.f, 80.f, 0.f, 1.f},
+         true},
+        {240.f,
+         200.f,
+         Enemy::Type::Grunt,
+         1.f,
+         "spiral_3way",
+         100,
+         0,
+         {AiBehavior::Archetype::Drifter, AiBehavior::Phase::Idle, 40.f, 200.f, 0.f, 100.f, 0.f,
+          1.f},
+         false},
+        {380.f,
+         60.f,
+         Enemy::Type::Mid,
+         3.f,
+         "aimed_burst",
+         300,
+         1,
+         {AiBehavior::Archetype::Stalker, AiBehavior::Phase::Idle, 90.f, 160.f, 90.f, 120.f, 0.f,
+          1.f},
+         false},
+        {140.f,
+         140.f,
+         Enemy::Type::Mid,
+         3.f,
+         "aimed_burst",
+         300,
+         1,
+         {AiBehavior::Archetype::Stalker, AiBehavior::Phase::Idle, 90.f, 160.f, 90.f, 120.f, 0.f,
+          1.f},
+         false},
+        {340.f,
+         140.f,
+         Enemy::Type::Boss,
+         10.f,
+         "nova_legendary",
+         1000,
+         2,
+         {AiBehavior::Archetype::Coward, AiBehavior::Phase::Idle, 110.f, 200.f, 0.f, 999.f, 0.f,
+          1.f},
+         false},
     };
 
     for (const auto& def : defs) {
         auto enemy = reg.create();
         reg.emplace<Transform2D>(enemy, def.x, def.y);
         reg.emplace<PreviousTransform>(enemy, def.x, def.y);
+        reg.emplace<Velocity>(enemy);
         reg.emplace<Enemy>(enemy, def.type);
         reg.emplace<Health>(enemy, def.hp, def.hp);
         reg.emplace<CircleHitbox>(enemy, 7.f);
+        reg.emplace<RectHitbox>(enemy, 12.f, 14.f, 0.f, 0.f);
         reg.emplace<Sprite>(enemy, interner.intern("enemies"), def.frame, 0, 16, 16, 10);
         reg.emplace<ScoreValue>(enemy, def.score);
         reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def.pattern), {}, {}});
+        reg.emplace<AiBehavior>(enemy, def.ai);
+
+        if (def.contact_damage) {
+            reg.emplace<ContactDamage>(enemy);
+        }
     }
 
     spdlog::debug("Spawned {} playtest enemies", std::size(defs));
@@ -121,29 +187,59 @@ void GameScene::update(Game& game, float dt) {
 
     // Run ECS systems in order
     systems::update_input(reg, input, dt);
+    systems::update_melee(reg, input, pattern_lib_, dt);
+    systems::update_dash(reg, input, dt);
     systems::update_shooting(reg, input, dt);
     systems::update_emitters(reg, pattern_lib_, dt);
+    systems::update_ai(reg, tilemap_, dt);
 
-    // Animation state switching (velocity → idle/walk)
+    // Animation state switching (priority: Melee > Dash > Walk > Idle)
     auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();
     for (auto [entity, player, vel, anim, sprite, state] : anim_view.each()) {
-        bool moving = (vel.dx * vel.dx + vel.dy * vel.dy) > 1.f;
+        AnimationState::State desired;
+        if (reg.any_of<MeleeAttack>(entity)) {
+            desired = AnimationState::State::Melee;
+        } else if (reg.any_of<Dash>(entity)) {
+            desired = AnimationState::State::Dash;
+        } else if ((vel.dx * vel.dx + vel.dy * vel.dy) > 1.f) {
+            desired = AnimationState::State::Walk;
+        } else {
+            desired = AnimationState::State::Idle;
+        }
 
-        auto desired = moving ? AnimationState::State::Walk : AnimationState::State::Idle;
         if (state.current != desired) {
             state.current = desired;
-            if (desired == AnimationState::State::Walk) {
+            switch (desired) {
+            case AnimationState::State::Melee:
+                // TODO: melee animation frames (placeholder: use walk row)
+                sprite.frame_y = 1;
+                anim.start_frame = 0;
+                anim.end_frame = 2;
+                anim.frame_duration = 0.05f;
+                anim.looping = false;
+                break;
+            case AnimationState::State::Dash:
+                // TODO: dash animation frames (placeholder: use walk row)
+                sprite.frame_y = 1;
+                anim.start_frame = 0;
+                anim.end_frame = 2;
+                anim.frame_duration = 0.04f;
+                anim.looping = false;
+                break;
+            case AnimationState::State::Walk:
                 sprite.frame_y = 1;
                 anim.start_frame = 0;
                 anim.end_frame = 5;
                 anim.frame_duration = 0.1f;
                 anim.looping = true;
-            } else {
+                break;
+            case AnimationState::State::Idle:
                 sprite.frame_y = 0;
                 anim.start_frame = 0;
                 anim.end_frame = 3;
                 anim.frame_duration = 0.25f;
                 anim.looping = true;
+                break;
             }
             anim.current_frame = anim.start_frame;
             anim.elapsed = 0.f;

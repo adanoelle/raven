@@ -117,6 +117,9 @@ void Input::update_mouse() {
 
     // Left mouse button also triggers shoot
     current_.shoot = current_.shoot || (buttons & SDL_BUTTON_LMASK);
+
+    // Right mouse button triggers melee
+    current_.melee = current_.melee || (buttons & SDL_BUTTON_RMASK);
 }
 
 void Input::update_from_keyboard() {
@@ -134,6 +137,8 @@ void Input::update_from_keyboard() {
     current_.shoot = current_.shoot || keyboard_[SDL_SCANCODE_Z];
     current_.focus = current_.focus || keyboard_[SDL_SCANCODE_LSHIFT];
     current_.bomb = current_.bomb || keyboard_[SDL_SCANCODE_X];
+    current_.melee = current_.melee || keyboard_[SDL_SCANCODE_C];
+    current_.dash = current_.dash || keyboard_[SDL_SCANCODE_SPACE];
     current_.pause = current_.pause || keyboard_[SDL_SCANCODE_ESCAPE];
     current_.confirm =
         current_.confirm || keyboard_[SDL_SCANCODE_Z] || keyboard_[SDL_SCANCODE_RETURN];
@@ -182,6 +187,10 @@ void Input::update_from_gamepad() {
     current_.shoot =
         current_.shoot || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_A);
     current_.bomb = current_.bomb || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_B);
+    current_.melee =
+        current_.melee || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_X);
+    current_.dash =
+        current_.dash || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
     current_.focus = current_.focus ||
                      SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
     current_.pause =
@@ -195,6 +204,8 @@ void Input::update_from_gamepad() {
 void Input::compute_edges() {
     current_.shoot_pressed = current_.shoot && !previous_.shoot;
     current_.bomb_pressed = current_.bomb && !previous_.bomb;
+    current_.melee_pressed = current_.melee && !previous_.melee;
+    current_.dash_pressed = current_.dash && !previous_.dash;
     current_.pause_pressed = current_.pause && !previous_.pause;
     current_.confirm_pressed = current_.confirm && !previous_.confirm;
     current_.cancel_pressed = current_.cancel && !previous_.cancel;
