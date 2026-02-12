@@ -1,7 +1,7 @@
 #include "scenes/title_scene.hpp"
 
 #include "core/game.hpp"
-#include "scenes/game_scene.hpp"
+#include "scenes/char_select_scene.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -19,7 +19,7 @@ void TitleScene::update(Game& game, float dt) {
     }
 
     if (game.input().state().confirm_pressed) {
-        game.scenes().swap(std::make_unique<GameScene>(), game);
+        game.scenes().swap(std::make_unique<CharacterSelectScene>(), game);
     }
 }
 

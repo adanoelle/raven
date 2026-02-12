@@ -44,6 +44,9 @@ void update_shooting(entt::registry& reg, const InputState& input, float dt) {
     // Spawn bullets
     auto shoot_view = reg.view<Player, Transform2D, AimDirection, ShootCooldown, Weapon>();
     for (auto [entity, player, tf, aim, cd, weapon] : shoot_view.each()) {
+        if (reg.any_of<ChargedShot>(entity)) {
+            continue;
+        }
         if (input.shoot && cd.remaining <= 0.f) {
             cd.remaining = weapon.fire_rate;
 

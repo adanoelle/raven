@@ -34,6 +34,13 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
         }
 
         MeleeAttack attack;
+        if (auto* stats = reg.try_get<MeleeStats>(entity)) {
+            attack.damage = stats->damage;
+            attack.range = stats->range;
+            attack.half_angle = stats->half_angle;
+            attack.knockback = stats->knockback;
+            attack.remaining = stats->duration;
+        }
         attack.aim_x = aim.x;
         attack.aim_y = aim.y;
         attack.hit_checked = false;

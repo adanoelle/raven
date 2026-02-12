@@ -15,6 +15,9 @@ void update_input(entt::registry& reg, const InputState& input, float dt) {
             continue;
         }
         float speed = player.speed;
+        if (auto* cs = reg.try_get<ChargedShot>(entity); cs && cs->charging) {
+            speed *= cs->move_penalty;
+        }
 
         float mx = input.move_x;
         float my = input.move_y;

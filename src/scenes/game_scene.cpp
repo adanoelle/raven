@@ -3,13 +3,17 @@
 #include "core/game.hpp"
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
+#include "ecs/player_class.hpp"
 #include "ecs/systems/ai_system.hpp"
 #include "ecs/systems/animation_system.hpp"
+#include "ecs/systems/charged_shot_system.hpp"
 #include "ecs/systems/cleanup_system.hpp"
 #include "ecs/systems/collision_system.hpp"
+#include "ecs/systems/concussion_shot_system.hpp"
 #include "ecs/systems/damage_system.hpp"
 #include "ecs/systems/dash_system.hpp"
 #include "ecs/systems/emitter_system.hpp"
+#include "ecs/systems/ground_slam_system.hpp"
 #include "ecs/systems/hud_system.hpp"
 #include "ecs/systems/input_system.hpp"
 #include "ecs/systems/melee_system.hpp"
@@ -29,6 +33,8 @@
 
 namespace raven {
 
+GameScene::GameScene(ClassId::Id player_class) : selected_class_(player_class) {}
+
 void GameScene::on_enter(Game& game) {
     spdlog::info("Entered game scene");
 
@@ -40,7 +46,8 @@ void GameScene::on_enter(Game& game) {
     pattern_lib_.load_manifest("assets/data/patterns/manifest.json");
 
     game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
-    game.registry().ctx().emplace<GameState>();
+    auto& game_state = game.registry().ctx().emplace<GameState>();
+    game_state.player_class = selected_class_;
 
     // Load stage manifest
     stage_loader_.load_manifest("assets/data/stages/stage_manifest.json");
@@ -93,6 +100,16 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<DashCooldown>(player);
     auto& weapon = reg.emplace<Weapon>(player);
     weapon.bullet_sheet = interner.intern("projectiles");
+
+    // Apply class recipe
+    switch (selected_class_) {
+    case ClassId::Id::Brawler:
+        apply_brawler(reg, player);
+        break;
+    case ClassId::Id::Sharpshooter:
+        apply_sharpshooter(reg, player);
+        break;
+    }
 
     spdlog::debug("Player spawned at ({}, {})", spawn_x, spawn_y);
 }
@@ -173,9 +190,12 @@ void GameScene::update(Game& game, float dt) {
     auto& input = game.input().state();
 
     // Run ECS systems in order
+    systems::update_charged_shot(reg, input, dt);
     systems::update_input(reg, input, dt);
     systems::update_melee(reg, input, pattern_lib_, dt);
     systems::update_dash(reg, input, dt);
+    systems::update_ground_slam(reg, input, dt);
+    systems::update_concussion_shot(reg, input, dt);
     systems::update_shooting(reg, input, dt);
     systems::update_emitters(reg, pattern_lib_, dt);
     systems::update_ai(reg, tilemap_, dt);
@@ -184,7 +204,7 @@ void GameScene::update(Game& game, float dt) {
     auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();
     for (auto [entity, player, vel, anim, sprite, state] : anim_view.each()) {
         AnimationState::State desired;
-        if (reg.any_of<MeleeAttack>(entity)) {
+        if (reg.any_of<MeleeAttack>(entity) || reg.any_of<GroundSlam>(entity)) {
             desired = AnimationState::State::Melee;
         } else if (reg.any_of<Dash>(entity)) {
             desired = AnimationState::State::Dash;

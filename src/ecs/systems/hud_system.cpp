@@ -74,6 +74,76 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
                 SDL_RenderFillRect(renderer, &decay_fill);
             }
         }
+
+        // ── Ability cooldown bar (bottom-left) ──────────────────
+        constexpr int ability_bar_w = 30;
+        constexpr int ability_bar_h = 3;
+        constexpr int ability_bar_x = margin;
+        int ability_bar_y = 270 - margin - ability_bar_h; // bottom of 480x270
+
+        float ability_ratio = 0.f;
+        bool has_ability = false;
+        if (auto* slam_cd = reg.try_get<GroundSlamCooldown>(entity)) {
+            has_ability = true;
+            ability_ratio =
+                (slam_cd->rate > 0.f) ? (1.f - slam_cd->remaining / slam_cd->rate) : 1.f;
+        } else if (auto* conc_cd = reg.try_get<ConcussionShotCooldown>(entity)) {
+            has_ability = true;
+            ability_ratio =
+                (conc_cd->rate > 0.f) ? (1.f - conc_cd->remaining / conc_cd->rate) : 1.f;
+        }
+
+        if (has_ability) {
+            if (ability_ratio < 0.f)
+                ability_ratio = 0.f;
+            if (ability_ratio > 1.f)
+                ability_ratio = 1.f;
+
+            // Background
+            SDL_Rect ability_bg{ability_bar_x, ability_bar_y, ability_bar_w, ability_bar_h};
+            SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+            SDL_RenderFillRect(renderer, &ability_bg);
+
+            // Cyan fill (ready = full)
+            int ability_fill_w =
+                static_cast<int>(static_cast<float>(ability_bar_w) * ability_ratio);
+            if (ability_fill_w > 0) {
+                SDL_Rect ability_fill{ability_bar_x, ability_bar_y, ability_fill_w, ability_bar_h};
+                if (ability_ratio >= 1.f) {
+                    SDL_SetRenderDrawColor(renderer, 100, 220, 255, 255);
+                } else {
+                    SDL_SetRenderDrawColor(renderer, 50, 110, 130, 255);
+                }
+                SDL_RenderFillRect(renderer, &ability_fill);
+            }
+        }
+
+        // ── Charge indicator (bottom-left, above ability bar) ───
+        if (auto* cs = reg.try_get<ChargedShot>(entity); cs && cs->charging) {
+            constexpr int charge_bar_w = 30;
+            constexpr int charge_bar_h = 3;
+            int charge_bar_y = ability_bar_y - charge_bar_h - 2;
+
+            // Background
+            SDL_Rect charge_bg{margin, charge_bar_y, charge_bar_w, charge_bar_h};
+            SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
+            SDL_RenderFillRect(renderer, &charge_bg);
+
+            // Orange fill
+            float charge = cs->charge;
+            if (charge > 1.f)
+                charge = 1.f;
+            int charge_fill_w = static_cast<int>(static_cast<float>(charge_bar_w) * charge);
+            if (charge_fill_w > 0) {
+                SDL_Rect charge_fill{margin, charge_bar_y, charge_fill_w, charge_bar_h};
+                if (cs->charge >= cs->full_charge_threshold) {
+                    SDL_SetRenderDrawColor(renderer, 255, 200, 50, 255);
+                } else {
+                    SDL_SetRenderDrawColor(renderer, 200, 120, 40, 255);
+                }
+                SDL_RenderFillRect(renderer, &charge_fill);
+            }
+        }
     }
 
     // ── Score (top-right) ──────────────────────────────────────────
