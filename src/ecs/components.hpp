@@ -233,7 +233,7 @@ struct AiBehavior {
 
 /// @brief Deals damage on spatial overlap (e.g. Chaser body damage).
 struct ContactDamage {
-    float damage = 1.f;    ///< Damage dealt per hit.
+    float damage = 15.f;   ///< Damage dealt per hit.
     float cooldown = 0.5f; ///< Minimum interval between hits (seconds).
     float timer = 0.f;     ///< Time until next hit allowed.
 };
