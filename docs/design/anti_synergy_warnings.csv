@@ -1,0 +1,14 @@
+Item,Anti-Synergy Tags,Affected Classes,Warning Text,Severity
+Heavy Rounds,"sustained, dot_focused","Tactician, Alchemist",Reduces fire rate - your DoT application will suffer,WARNING
+Heavy Rounds,"sustained, dot_focused","Tactician, Alchemist",Your sustained damage output depends on fire rate,WARNING
+Glass Armor,tank,Brawler,DANGER: Your max HP becomes 1,DANGER
+Glass Armor,tank,Brawler,This removes your tankiness entirely,DANGER
+Explosive Ammo,melee,Brawler,WARNING: You will take splash damage at close range,WARNING
+Explosive Ammo,melee,Brawler,Self-damage is catastrophic in melee,WARNING
+Berserker Mask,has_healing_items,All classes if healing items collected,CONFLICT: Disables all healing you've collected,DANGER
+Berserker Mask,tank,Brawler,Works best at low HP - conflicts with your high HP pool,INFO
+Adrenaline Shot,tank,Brawler,Removes your HP advantage - your main strength,WARNING
+Greed Ring,fragile,"Sharpshooter, Alchemist",+30% enemy HP may be too much for your low damage output,INFO
+Homing Chip,precision,Sharpshooter,Wastes your precision - projectile speed severely reduced,WARNING
+Rapid Fire,precision,Sharpshooter,Reduces damage per shot - your crits will be weaker,INFO
+Rapid Fire,burst,Sharpshooter,Converts burst into spray - not your playstyle,INFO

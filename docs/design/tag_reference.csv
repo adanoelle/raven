@@ -1,0 +1,43 @@
+Tag,Category,Meaning,Used By
+melee,Range,Close-range combat,"Brawler, Swarm, Juggernaut"
+short,Range,Short-range (slightly beyond melee),Viper
+medium,Range,Mid-range combat,"Tactician, Alchemist, Bomber"
+long,Range,Long-range combat,"Sharpshooter, Kiter, Sniper"
+burst,Pace,High damage in short window,"Sharpshooter, Kiter, Swarm, Viper"
+sustained,Pace,Consistent damage over time,"Brawler, Tactician, Juggernaut"
+ramp,Pace,Damage increases over time,Alchemist
+tank,Defense,High HP / damage reduction,"Brawler, Juggernaut"
+dodge,Defense,Avoidance-based defense,"Tactician, Kiter, Viper"
+fragile,Defense,Low HP / relies on positioning,"Sharpshooter, Alchemist, most enemies"
+static,Mobility,Doesn't move much,"Sharpshooter, Bomber, Sniper"
+mobile,Mobility,High movement speed,Most classes and enemies
+dash,Mobility,Has dash ability,(Reserved for future)
+single,Target,Single-target damage,"Sharpshooter, Kiter, Viper"
+aoe,Target,Area-of-effect damage,"Brawler, Tactician, Alchemist, Bomber"
+pierce,Target,Shots go through enemies,Piercing Shot item
+health_scaling,Resource,Power scales with HP,"Brawler, Berserker Mask"
+kill_scaling,Resource,Power scales with kills,(Reserved for future)
+time_scaling,Resource,Power scales with time,(Reserved for future)
+cc_focused,Mechanic,Crowd control specialist,Tactician
+cc_immune,Mechanic,Immune to crowd control,Juggernaut
+dot_focused,Mechanic,Damage over time specialist,Alchemist
+precision,Mechanic,High accuracy / critical hits,Sharpshooter
+cleanse,Mechanic,Removes debuffs,Viper
+armor_pierce,Mechanic,Ignores armor,Sniper
+damage_up,Item Effect,Increases damage,Heavy Rounds
+damage_down,Item Effect,Decreases damage,"Rapid Fire, Piercing Shot"
+firerate_up,Item Effect,Increases fire rate,Rapid Fire
+firerate_down,Item Effect,Decreases fire rate,Heavy Rounds
+speed_up,Item Effect,Increases movement speed,Adrenaline Shot
+hp_down,Item Effect,Decreases max HP,"Glass Armor, Adrenaline Shot"
+armor_up,Item Effect,Increases armor,Glass Armor
+self_damage,Item Effect,Damages player,Explosive Ammo
+homing,Item Effect,Projectiles track enemies,Homing Chip
+projectile_speed_down,Item Effect,Reduces projectile speed,Homing Chip
+shield,Item Effect,Provides regenerating shield,Shield Generator
+speed_down,Item Effect,Reduces movement speed,Shield Generator
+gold_up,Item Effect,Increases coin drops,Greed Ring
+enemy_hp_up,Item Effect,Increases enemy HP,Greed Ring
+scaling_power,Item Effect,Power scales with conditions,Berserker Mask
+no_healing,Item Effect,Disables healing,Berserker Mask
+solo_bonus,Item Effect,Only active in solo play,"Lone Wolf Emblem, Self-Reliance, Focused Mind"
