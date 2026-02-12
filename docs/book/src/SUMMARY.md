@@ -60,6 +60,7 @@
 - [Melee and Dash System](devlog/2026-02-10-melee-dash-system.md)
 - [Room Progression and HUD](devlog/2026-02-11-room-progression.md)
 - [Player Class System](devlog/2026-02-12-player-class-system.md)
+- [SDL3 Migration](devlog/2026-02-12-sdl3-migration.md)
 
 ---
 
@@ -77,3 +78,4 @@
 - [ADR-0010: SDL_mixer for Audio](decisions/0010-sdl2-mixer-audio.md)
 - [ADR-0011: Player Classes as Component Recipes](decisions/0011-class-as-component-recipe.md)
 - [ADR-0012: Concussion Shot VFX](decisions/0012-concussion-shot-vfx.md)
+- [ADR-0013: SDL3 Migration](decisions/0013-sdl3-migration.md)

@@ -19,9 +19,9 @@ struct Exit {
 };
 ```
 
-Created from LDtk `Exit` entities during `enter_room`. Starts closed; opened
-by `update_waves` when all waves are exhausted. `check_exit_overlap` detects
-player collision with open exits to trigger room transitions.
+Created from LDtk `Exit` entities during `enter_room`. Starts closed; opened by
+`update_waves` when all waves are exhausted. `check_exit_overlap` detects player
+collision with open exits to trigger room transitions.
 
 ### GameState
 
@@ -44,11 +44,11 @@ A `stage_manifest.json` lists stage files in play order:
 
 ```json
 {
-    "stages": [
-        "assets/data/stages/stage_01.json",
-        "assets/data/stages/stage_02.json",
-        "assets/data/stages/stage_03.json"
-    ]
+  "stages": [
+    "assets/data/stages/stage_01.json",
+    "assets/data/stages/stage_02.json",
+    "assets/data/stages/stage_03.json"
+  ]
 }
 ```
 
@@ -56,43 +56,43 @@ Each stage file names an LDtk level and defines ordered waves:
 
 ```json
 {
-    "name": "stage_01",
-    "level": "Test_Room",
-    "waves": [
+  "name": "stage_01",
+  "level": "Test_Room",
+  "waves": [
+    {
+      "enemies": [
         {
-            "enemies": [
-                {
-                    "spawn_index": 0,
-                    "type": "grunt",
-                    "pattern": "spiral_3way",
-                    "hp": 1.0,
-                    "score": 100,
-                    "ai": "chaser",
-                    "contact_damage": true
-                },
-                {
-                    "spawn_index": 1,
-                    "type": "grunt",
-                    "pattern": "spiral_3way",
-                    "hp": 1.0,
-                    "score": 100,
-                    "ai": "drifter"
-                }
-            ]
+          "spawn_index": 0,
+          "type": "grunt",
+          "pattern": "spiral_3way",
+          "hp": 1.0,
+          "score": 100,
+          "ai": "chaser",
+          "contact_damage": true
         },
         {
-            "enemies": [
-                {
-                    "spawn_index": 0,
-                    "type": "mid",
-                    "pattern": "aimed_burst",
-                    "hp": 3.0,
-                    "score": 300,
-                    "ai": "stalker"
-                }
-            ]
+          "spawn_index": 1,
+          "type": "grunt",
+          "pattern": "spiral_3way",
+          "hp": 1.0,
+          "score": 100,
+          "ai": "drifter"
         }
-    ]
+      ]
+    },
+    {
+      "enemies": [
+        {
+          "spawn_index": 0,
+          "type": "mid",
+          "pattern": "aimed_burst",
+          "hp": 3.0,
+          "score": 300,
+          "ai": "stalker"
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -160,8 +160,8 @@ check_exit_overlap(reg) -> std::string
 
 Finds the player position, then iterates all `Exit` entities. Returns the
 `target_level` of the first open exit whose position overlaps the player
-(circle-circle check with 12 px exit radius and 6 px player radius). Returns
-an empty string if no transition should occur.
+(circle-circle check with 12 px exit radius and 6 px player radius). Returns an
+empty string if no transition should occur.
 
 ## Room transitions
 
@@ -176,13 +176,13 @@ an empty string if no transition should occur.
    spawn point (or center if none found).
 4. **Spawn exit entities** — creates `Exit` entities from tilemap `Exit` spawn
    points, reading `target_level` from the spawn's fields map.
-5. **Reset wave state** — sets `current_wave = 0`, `total_waves` from the
-   stage definition, `room_cleared = false`.
+5. **Reset wave state** — sets `current_wave = 0`, `total_waves` from the stage
+   definition, `room_cleared = false`.
 6. **Spawn wave 0** — calls `spawn_wave` for the first wave.
 
-When the player clears the final stage and steps on an exit,
-`GameScene::update` increments `current_stage_` and checks for a next stage. If
-none exists, it swaps to `TitleScene` (victory).
+When the player clears the final stage and steps on an exit, `GameScene::update`
+increments `current_stage_` and checks for a next stage. If none exists, it
+swaps to `TitleScene` (victory).
 
 ## Score and game over
 
@@ -195,22 +195,22 @@ zero. It sets `GameState::game_over = true`. On the next tick,
 `GameScene::update` detects the flag and swaps to `GameOverScene`.
 
 `GameOverScene` captures the final score from `GameState` in `on_enter`, then
-renders a dark red background, a title placeholder, score digits, and a
-blinking restart prompt. Pressing confirm swaps to `TitleScene`. `on_exit`
-clears the registry and erases `GameState` for a fresh start.
+renders a dark red background, a title placeholder, score digits, and a blinking
+restart prompt. Pressing confirm swaps to `TitleScene`. `on_exit` clears the
+registry and erases `GameState` for a fresh start.
 
 ## HUD
 
-`render_hud()` in `src/ecs/systems/hud_system.cpp` draws all HUD elements
-using SDL primitives at the 480x270 virtual resolution:
+`render_hud()` in `src/ecs/systems/hud_system.cpp` draws all HUD elements using
+SDL primitives at the 480x270 virtual resolution:
 
-| Element | Position | Visual |
-| ------- | -------- | ------ |
-| Health bar | Top-left (4, 4) | 40x4 px, dark gray background, red fill (white when invulnerable) |
-| Lives pips | Right of health bar | 4x4 px white squares, one per remaining life |
-| Weapon decay | Below health bar | 30x3 px, yellow fill proportional to remaining time |
-| Score | Top-right | 5x7 px digit rectangles, right-aligned, brightness varies by digit value |
-| Wave dots | Top-center | 3x3 px dots — bright gray (completed), yellow (current), hollow (remaining) |
+| Element      | Position            | Visual                                                                      |
+| ------------ | ------------------- | --------------------------------------------------------------------------- |
+| Health bar   | Top-left (4, 4)     | 40x4 px, dark gray background, red fill (white when invulnerable)           |
+| Lives pips   | Right of health bar | 4x4 px white squares, one per remaining life                                |
+| Weapon decay | Below health bar    | 30x3 px, yellow fill proportional to remaining time                         |
+| Score        | Top-right           | 5x7 px digit rectangles, right-aligned, brightness varies by digit value    |
+| Wave dots    | Top-center          | 3x3 px dots — bright gray (completed), yellow (current), hollow (remaining) |
 
 The decay timer only renders when the player has a `WeaponDecay` component
 (i.e., is carrying a stolen weapon). All other elements are always visible.
@@ -242,39 +242,40 @@ render_hud              <- HUD overlay on top of gameplay
 ```
 
 `update_waves` runs after `update_damage` so that enemies destroyed in the
-current tick are already gone when the wave-clear check runs. `check_exit_overlap`
-runs after waves so that exits opened this tick can be detected immediately.
-`render_hud` runs last in the render pass to draw on top of all gameplay sprites.
+current tick are already gone when the wave-clear check runs.
+`check_exit_overlap` runs after waves so that exits opened this tick can be
+detected immediately. `render_hud` runs last in the render pass to draw on top
+of all gameplay sprites.
 
 ## Tests
 
 `tests/test_waves.cpp` covers the wave, room, and scoring systems:
 
-| Test case | What it verifies |
-| --------- | ---------------- |
-| `spawn_wave` creates correct enemy count | 3 enemies spawned from a 3-enemy wave |
-| `spawn_wave` assigns contact damage to first enemy only | `ContactDamage` on first, absent on second |
-| `update_waves` advances to next wave when all enemies dead | `current_wave` incremented, new enemies spawned |
-| `update_waves` sets `room_cleared` when all waves exhausted | `room_cleared = true` after last wave cleared |
-| Exit entities marked open when room cleared | `Exit::open` set to true |
-| `check_exit_overlap` returns empty when exit closed | No transition from closed exit |
-| `check_exit_overlap` returns `target_level` when open and overlapping | Correct level string returned |
-| `check_exit_overlap` returns empty when player far from exit | Distance check works |
-| Score accumulates on enemy death via `update_damage` | `GameState::score` incremented |
-| Game over flag set when player loses all lives | `GameState::game_over = true` |
-| `StageLoader` parses stage JSON correctly | All fields round-trip through JSON parsing |
-| Enemy type strings map to correct enums | `"grunt"/"mid"/"boss"` and `"chaser"/"drifter"/"stalker"/"coward"` |
+| Test case                                                             | What it verifies                                                   |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `spawn_wave` creates correct enemy count                              | 3 enemies spawned from a 3-enemy wave                              |
+| `spawn_wave` assigns contact damage to first enemy only               | `ContactDamage` on first, absent on second                         |
+| `update_waves` advances to next wave when all enemies dead            | `current_wave` incremented, new enemies spawned                    |
+| `update_waves` sets `room_cleared` when all waves exhausted           | `room_cleared = true` after last wave cleared                      |
+| Exit entities marked open when room cleared                           | `Exit::open` set to true                                           |
+| `check_exit_overlap` returns empty when exit closed                   | No transition from closed exit                                     |
+| `check_exit_overlap` returns `target_level` when open and overlapping | Correct level string returned                                      |
+| `check_exit_overlap` returns empty when player far from exit          | Distance check works                                               |
+| Score accumulates on enemy death via `update_damage`                  | `GameState::score` incremented                                     |
+| Game over flag set when player loses all lives                        | `GameState::game_over = true`                                      |
+| `StageLoader` parses stage JSON correctly                             | All fields round-trip through JSON parsing                         |
+| Enemy type strings map to correct enums                               | `"grunt"/"mid"/"boss"` and `"chaser"/"drifter"/"stalker"/"coward"` |
 
 ## Key files
 
-| File | Role |
-| ---- | ---- |
-| `src/ecs/components.hpp` | `Exit`, `GameState`, `ScoreValue` |
-| `src/ecs/systems/wave_system.hpp/.cpp` | `StageLoader`, `spawn_wave`, `update_waves`, `check_exit_overlap` |
-| `src/ecs/systems/hud_system.hpp/.cpp` | `render_hud` (health, lives, score, decay, waves) |
-| `src/ecs/systems/damage_system.cpp` | Score accumulation, game over trigger |
-| `src/scenes/game_scene.hpp/.cpp` | `enter_room`, `clear_room_entities`, system wiring |
-| `src/scenes/game_over_scene.hpp/.cpp` | Game over screen with score display |
-| `assets/data/stages/stage_manifest.json` | Stage file manifest |
-| `assets/data/stages/stage_01.json` | First stage definition |
-| `tests/test_waves.cpp` | Catch2 tests |
+| File                                     | Role                                                              |
+| ---------------------------------------- | ----------------------------------------------------------------- |
+| `src/ecs/components.hpp`                 | `Exit`, `GameState`, `ScoreValue`                                 |
+| `src/ecs/systems/wave_system.hpp/.cpp`   | `StageLoader`, `spawn_wave`, `update_waves`, `check_exit_overlap` |
+| `src/ecs/systems/hud_system.hpp/.cpp`    | `render_hud` (health, lives, score, decay, waves)                 |
+| `src/ecs/systems/damage_system.cpp`      | Score accumulation, game over trigger                             |
+| `src/scenes/game_scene.hpp/.cpp`         | `enter_room`, `clear_room_entities`, system wiring                |
+| `src/scenes/game_over_scene.hpp/.cpp`    | Game over screen with score display                               |
+| `assets/data/stages/stage_manifest.json` | Stage file manifest                                               |
+| `assets/data/stages/stage_01.json`       | First stage definition                                            |
+| `tests/test_waves.cpp`                   | Catch2 tests                                                      |

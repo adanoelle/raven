@@ -7,8 +7,8 @@ patterns that keep the ECS layer consistent as the codebase grows.
 
 ## Component design
 
-Components live in a single header, `src/ecs/components.hpp`, inside the
-`raven` namespace. Every component is a small POD struct with sensible defaults:
+Components live in a single header, `src/ecs/components.hpp`, inside the `raven`
+namespace. Every component is a small POD struct with sensible defaults:
 
 ```cpp
 struct Velocity {
@@ -39,8 +39,8 @@ Several components reference sprite sheets or pattern names by string. Storing a
 copyability.
 
 `StringId` solves this with string interning. A `StringInterner` (stored in the
-registry context via `reg.ctx()`) maps strings to `uint16_t` indices at
-setup time. Components store the lightweight `StringId` instead:
+registry context via `reg.ctx()`) maps strings to `uint16_t` indices at setup
+time. Components store the lightweight `StringId` instead:
 
 ```cpp
 struct Sprite {
@@ -50,9 +50,9 @@ struct Sprite {
 };
 ```
 
-Copies are O(1) — just a 2-byte integer copy instead of a heap allocation.
-When the actual string is needed (e.g. for a sprite sheet lookup), systems
-resolve it through the interner:
+Copies are O(1) — just a 2-byte integer copy instead of a heap allocation. When
+the actual string is needed (e.g. for a sprite sheet lookup), systems resolve it
+through the interner:
 
 ```cpp
 const auto& interner = reg.ctx().get<StringInterner>();
@@ -63,7 +63,8 @@ const auto* sheet = sprites.get(interner.resolve(sprite.sheet_id));
 
 Systems are free functions in the `raven::systems` namespace, one per file in
 `src/ecs/systems/`. Each system takes an `entt::registry&` and whatever
-additional context it needs (delta time, input state, a tilemap reference, etc.):
+additional context it needs (delta time, input state, a tilemap reference,
+etc.):
 
 ```cpp
 void update_movement(entt::registry& reg, float dt);
@@ -89,7 +90,8 @@ at the top of the `.cpp` file. This keeps them out of the public API while
 co-locating them with the system that uses them. Examples:
 
 - `emitter_system.cpp` — `find_player_position()` and `fire_burst()` are
-  anonymous-namespace helpers that the public `update_emitters()` function calls.
+  anonymous-namespace helpers that the public `update_emitters()` function
+  calls.
 - `damage_system.cpp` — `tick_invulnerability()`, `handle_player_death()`, and
   `handle_enemy_death()` break the damage system into focused steps.
 
@@ -197,11 +199,11 @@ fields including the sprite sheet reference are trivial copies.
 
 ## Key files
 
-| File | Role |
-| ---- | ---- |
-| `src/ecs/components.hpp` | All component structs, grouped by domain |
-| `src/ecs/systems/` | One `.cpp`/`.hpp` pair per system |
-| `src/core/string_id.hpp` | `StringId` and `StringInterner` |
-| `src/ecs/systems/hitbox_math.hpp` | Shared `circles_overlap()` helper |
-| `src/scenes/game_scene.cpp` | System execution order |
+| File                                                          | Role                                        |
+| ------------------------------------------------------------- | ------------------------------------------- |
+| `src/ecs/components.hpp`                                      | All component structs, grouped by domain    |
+| `src/ecs/systems/`                                            | One `.cpp`/`.hpp` pair per system           |
+| `src/core/string_id.hpp`                                      | `StringId` and `StringInterner`             |
+| `src/ecs/systems/hitbox_math.hpp`                             | Shared `circles_overlap()` helper           |
+| `src/scenes/game_scene.cpp`                                   | System execution order                      |
 | `docs/book/src/decisions/0007-deferred-entity-destruction.md` | ADR for the collect-then-destroy convention |

@@ -5,8 +5,8 @@ Date: 2026-02-10 Status: Accepted
 ## Context
 
 The initial weapon steal system had enemies drop their weapon on death. While
-functional, this made weapon acquisition passive — the player just shoots from
-a distance and picks up whatever falls. This clashes with the Blazing
+functional, this made weapon acquisition passive — the player just shoots from a
+distance and picks up whatever falls. This clashes with the Blazing
 Beaks-inspired design goal where the player must take deliberate risk to gain
 power.
 

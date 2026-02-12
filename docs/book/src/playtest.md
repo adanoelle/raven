@@ -1,7 +1,7 @@
 # Playtest Playbook
 
-A repeatable checklist for manually validating gameplay feel, visual correctness,
-and system interactions that unit tests cannot cover.
+A repeatable checklist for manually validating gameplay feel, visual
+correctness, and system interactions that unit tests cannot cover.
 
 ## Running the game
 
@@ -16,14 +16,14 @@ option. The overlay displays entity counts, component state, and frame timing.
 
 ## Controls reference
 
-| Action     | Keyboard       | Gamepad            | Mouse           |
-| ---------- | -------------- | ------------------ | --------------- |
-| Move       | WASD / Arrows  | Left stick / D-pad | —               |
-| Aim        | —              | Right stick        | Cursor position |
-| Shoot      | Z              | A button           | Left click      |
-| Focus      | Left Shift     | Right shoulder     | —               |
-| Bomb       | X              | B button           | —               |
-| Pause      | Escape         | Start              | —               |
+| Action | Keyboard      | Gamepad            | Mouse           |
+| ------ | ------------- | ------------------ | --------------- |
+| Move   | WASD / Arrows | Left stick / D-pad | —               |
+| Aim    | —             | Right stick        | Cursor position |
+| Shoot  | Z             | A button           | Left click      |
+| Focus  | Left Shift    | Right shoulder     | —               |
+| Bomb   | X             | B button           | —               |
+| Pause  | Escape        | Start              | —               |
 
 Keyboard and gamepad inputs stack — both can be used simultaneously. Mouse
 movement sets aim to cursor position; right stick input overrides it.
@@ -41,11 +41,13 @@ Work through each group in order. Check every box before moving on.
 - [ ] Mouse cursor aims toward the pointer; moving the mouse overrides stick
 - [ ] Right stick overrides stale mouse position when used
 - [ ] Releasing all aim inputs retains the last aim direction
-- [ ] Stick deadzone (0.2) filters out drift — no aim jitter when stick is centered
+- [ ] Stick deadzone (0.2) filters out drift — no aim jitter when stick is
+      centered
 
 ### 2. Shooting
 
-- [ ] Holding shoot fires at a steady rate (~5 shots/s at default 0.2 s cooldown)
+- [ ] Holding shoot fires at a steady rate (~5 shots/s at default 0.2 s
+      cooldown)
 - [ ] Releasing and re-pressing shoot respects the cooldown
 - [ ] Bullets travel in the current aim direction at 300 px/s
 - [ ] Bullets despawn after 3 s or when leaving the screen
@@ -53,20 +55,27 @@ Work through each group in order. Check every box before moving on.
 
 ### 3. Weapon steal loop
 
-- [ ] Killing an enemy with a `BulletEmitter` drops a weapon pickup at the death position
-- [ ] Walking over the pickup collects it — player's fire pattern changes immediately
+- [ ] Killing an enemy with a `BulletEmitter` drops a weapon pickup at the death
+      position
+- [ ] Walking over the pickup collects it — player's fire pattern changes
+      immediately
 - [ ] A 10 s decay timer starts on collection
-- [ ] When the timer expires: explosion VFX spawns, player takes 1 damage, 2 s invulnerability granted, weapon reverts to default
-- [ ] Collecting a second weapon while decaying resets the timer but preserves the original default weapon
+- [ ] When the timer expires: explosion VFX spawns, player takes 1 damage, 2 s
+      invulnerability granted, weapon reverts to default
+- [ ] Collecting a second weapon while decaying resets the timer but preserves
+      the original default weapon
 - [ ] After revert the player fires with the original default weapon
 
 ### 4. Stabilizer pickups
 
 - [ ] Mid-tier enemies drop stabilizers at ~15% rate; bosses drop at 100%
 - [ ] Grunts never drop stabilizers
-- [ ] Collecting a stabilizer while carrying a Common or Rare stolen weapon removes the decay timer permanently
-- [ ] Stabilizer has no effect if the player has no stolen weapon (no `WeaponDecay`)
-- [ ] Stabilizer does not work on Legendary weapons — pickup remains in the world
+- [ ] Collecting a stabilizer while carrying a Common or Rare stolen weapon
+      removes the decay timer permanently
+- [ ] Stabilizer has no effect if the player has no stolen weapon (no
+      `WeaponDecay`)
+- [ ] Stabilizer does not work on Legendary weapons — pickup remains in the
+      world
 
 ### 5. Piercing
 
@@ -77,7 +86,8 @@ Work through each group in order. Check every box before moving on.
 
 - [ ] Enemies with `BulletEmitter` fire patterns matching their JSON definitions
 - [ ] Bullet count, spread angle, speed, and fire rate match the pattern data
-- [ ] Enemy bullets have correct `Owner::Enemy` — they damage the player, not other enemies
+- [ ] Enemy bullets have correct `Owner::Enemy` — they damage the player, not
+      other enemies
 
 ### 7. Collision and damage
 
@@ -88,12 +98,15 @@ Work through each group in order. Check every box before moving on.
 
 ### 8. Edge cases
 
-- [ ] Chained steals: collect weapon A, then weapon B before A decays — original default is preserved through both
+- [ ] Chained steals: collect weapon A, then weapon B before A decays — original
+      default is preserved through both
 - [ ] Decay while invulnerable: weapon reverts but no damage is dealt
 - [ ] Stabilizer without stolen weapon: no crash, pickup stays in world
 - [ ] Stabilizer on Legendary: no crash, pickup stays in world
-- [ ] Rapid pickup collection: walk through multiple pickups quickly — only one collected per frame
-- [ ] Entity cleanup: bullets, pickups, and VFX despawn correctly — no entity leaks over a long session
+- [ ] Rapid pickup collection: walk through multiple pickups quickly — only one
+      collected per frame
+- [ ] Entity cleanup: bullets, pickups, and VFX despawn correctly — no entity
+      leaks over a long session
 
 ## What to look for
 
