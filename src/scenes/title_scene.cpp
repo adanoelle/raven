@@ -32,13 +32,13 @@ void TitleScene::render(Game& game) {
     SDL_RenderClear(r);
 
     // Title area
-    SDL_Rect title_rect{92, 100, 200, 40};
+    SDL_FRect title_rect{92.f, 100.f, 200.f, 40.f};
     SDL_SetRenderDrawColor(r, 180, 60, 120, 255);
     SDL_RenderFillRect(r, &title_rect);
 
     // Blinking "press start" indicator
     if (show_prompt_) {
-        SDL_Rect prompt_rect{132, 300, 120, 16};
+        SDL_FRect prompt_rect{132.f, 300.f, 120.f, 16.f};
         SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
         SDL_RenderFillRect(r, &prompt_rect);
     }

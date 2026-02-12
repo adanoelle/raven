@@ -2,7 +2,7 @@
 
 #include "rendering/sprite_sheet.hpp"
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <entt/entt.hpp>
 
 namespace raven::systems {

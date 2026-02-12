@@ -1,5 +1,6 @@
 #include "core/game.hpp"
 
+#include <SDL3/SDL_main.h>
 #include <spdlog/spdlog.h>
 
 int main(int /*argc*/, char* /*argv*/[]) {

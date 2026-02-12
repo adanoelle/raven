@@ -42,7 +42,7 @@ void GameOverScene::render(Game& game) {
     SDL_RenderClear(r);
 
     // "GAME OVER" placeholder rectangle
-    SDL_Rect title_rect{140, 80, 200, 40};
+    SDL_FRect title_rect{140.f, 80.f, 200.f, 40.f};
     SDL_SetRenderDrawColor(r, 200, 40, 40, 255);
     SDL_RenderFillRect(r, &title_rect);
 
@@ -72,7 +72,7 @@ void GameOverScene::render(Game& game) {
         // Draw each digit as a small filled rect with width proportional to value
         int start_x = 240 - (num_digits * 8) / 2;
         for (int i = 0; i < num_digits; ++i) {
-            SDL_Rect digit_rect{start_x + i * 8, 140, 6, 10};
+            SDL_FRect digit_rect{static_cast<float>(start_x + i * 8), 140.f, 6.f, 10.f};
             // Brightness varies with digit value for minimal visual differentiation
             int brightness = 120 + digits[i] * 13;
             SDL_SetRenderDrawColor(r, static_cast<Uint8>(brightness),
@@ -84,7 +84,7 @@ void GameOverScene::render(Game& game) {
 
     // Blinking "press start" indicator
     if (show_prompt_) {
-        SDL_Rect prompt_rect{160, 200, 160, 16};
+        SDL_FRect prompt_rect{160.f, 200.f, 160.f, 16.f};
         SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
         SDL_RenderFillRect(r, &prompt_rect);
     }

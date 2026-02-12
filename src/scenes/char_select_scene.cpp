@@ -18,6 +18,12 @@ void CharacterSelectScene::update(Game& game, float dt) {
         show_indicator_ = !show_indicator_;
     }
 
+    // Skip first frame to consume stale confirm_pressed from previous scene
+    if (first_frame_) {
+        first_frame_ = false;
+        return;
+    }
+
     const auto& input = game.input().state();
 
     // Left/right toggles between classes
@@ -49,7 +55,8 @@ void CharacterSelectScene::render(Game& game) {
     constexpr int box_y = 80;
 
     // Brawler box
-    SDL_Rect brawler_rect{start_x, box_y, box_w, box_h};
+    SDL_FRect brawler_rect{static_cast<float>(start_x), static_cast<float>(box_y),
+                           static_cast<float>(box_w), static_cast<float>(box_h)};
     if (selected_index_ == 0) {
         SDL_SetRenderDrawColor(r, 200, 80, 60, 255);
     } else {
@@ -58,7 +65,8 @@ void CharacterSelectScene::render(Game& game) {
     SDL_RenderFillRect(r, &brawler_rect);
 
     // Sharpshooter box
-    SDL_Rect sharp_rect{start_x + box_w + gap, box_y, box_w, box_h};
+    SDL_FRect sharp_rect{static_cast<float>(start_x + box_w + gap), static_cast<float>(box_y),
+                         static_cast<float>(box_w), static_cast<float>(box_h)};
     if (selected_index_ == 1) {
         SDL_SetRenderDrawColor(r, 60, 120, 200, 255);
     } else {
@@ -69,14 +77,15 @@ void CharacterSelectScene::render(Game& game) {
     // Selection indicator (blinking underline)
     if (show_indicator_) {
         int indicator_x = (selected_index_ == 0) ? start_x : start_x + box_w + gap;
-        SDL_Rect indicator{indicator_x, box_y + box_h + 4, box_w, 3};
+        SDL_FRect indicator{static_cast<float>(indicator_x), static_cast<float>(box_y + box_h + 4),
+                            static_cast<float>(box_w), 3.f};
         SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
         SDL_RenderFillRect(r, &indicator);
     }
 
     // Blinking "press confirm" prompt
     if (show_indicator_) {
-        SDL_Rect prompt_rect{180, 220, 120, 12};
+        SDL_FRect prompt_rect{180.f, 220.f, 120.f, 12.f};
         SDL_SetRenderDrawColor(r, 200, 200, 200, 255);
         SDL_RenderFillRect(r, &prompt_rect);
     }

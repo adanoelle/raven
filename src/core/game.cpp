@@ -3,9 +3,7 @@
 #include "core/string_id.hpp"
 #include "scenes/title_scene.hpp"
 
-#include <SDL2/SDL.h>
-#include <SDL_image.h>
-#include <SDL_mixer.h>
+#include <SDL3/SDL.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
@@ -18,18 +16,8 @@ Game::~Game() = default;
 
 bool Game::init() {
     // Initialize SDL subsystems
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD)) {
         spdlog::error("SDL_Init failed: {}", SDL_GetError());
-        return false;
-    }
-
-    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        spdlog::error("IMG_Init failed: {}", IMG_GetError());
-        return false;
-    }
-
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        spdlog::error("Mix_OpenAudio failed: {}", Mix_GetError());
         return false;
     }
 
@@ -108,7 +96,7 @@ void Game::run() {
             bool imgui_consumed = debug_overlay_.process_event(event);
 
             // Toggle overlay with F1
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F1 && !event.key.repeat) {
+            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_F1 && !event.key.repeat) {
                 debug_overlay_.toggle();
             }
 
@@ -168,8 +156,6 @@ void Game::shutdown() {
     sprites_ = SpriteSheetManager{}; // release all textures before renderer
     renderer_.shutdown();
 
-    Mix_CloseAudio();
-    IMG_Quit();
     SDL_Quit();
 
     spdlog::info("Game shutdown complete");

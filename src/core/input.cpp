@@ -11,20 +11,23 @@ Input::Input() {
     keyboard_ = SDL_GetKeyboardState(nullptr);
 
     // Try to open first available gamepad
-    for (int i = 0; i < SDL_NumJoysticks(); ++i) {
-        if (SDL_IsGameController(i)) {
-            gamepad_ = SDL_GameControllerOpen(i);
+    int count = 0;
+    SDL_JoystickID* gamepads = SDL_GetGamepads(&count);
+    if (gamepads) {
+        for (int i = 0; i < count; ++i) {
+            gamepad_ = SDL_OpenGamepad(gamepads[i]);
             if (gamepad_) {
-                spdlog::info("Gamepad connected: {}", SDL_GameControllerName(gamepad_));
+                spdlog::info("Gamepad connected: {}", SDL_GetGamepadName(gamepad_));
                 break;
             }
         }
+        SDL_free(gamepads);
     }
 }
 
 Input::~Input() {
     if (gamepad_) {
-        SDL_GameControllerClose(gamepad_);
+        SDL_CloseGamepad(gamepad_);
     }
 }
 
@@ -49,23 +52,22 @@ void Input::begin_frame() {
 
 void Input::process_event(const SDL_Event& event) {
     switch (event.type) {
-    case SDL_QUIT:
+    case SDL_EVENT_QUIT:
         quit_ = true;
         break;
 
-    case SDL_CONTROLLERDEVICEADDED:
+    case SDL_EVENT_GAMEPAD_ADDED:
         if (!gamepad_) {
-            gamepad_ = SDL_GameControllerOpen(event.cdevice.which);
+            gamepad_ = SDL_OpenGamepad(event.gdevice.which);
             if (gamepad_) {
-                spdlog::info("Gamepad connected: {}", SDL_GameControllerName(gamepad_));
+                spdlog::info("Gamepad connected: {}", SDL_GetGamepadName(gamepad_));
             }
         }
         break;
 
-    case SDL_CONTROLLERDEVICEREMOVED:
-        if (gamepad_ && event.cdevice.which ==
-                            SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(gamepad_))) {
-            SDL_GameControllerClose(gamepad_);
+    case SDL_EVENT_GAMEPAD_REMOVED:
+        if (gamepad_ && event.gdevice.which == SDL_GetGamepadID(gamepad_)) {
+            SDL_CloseGamepad(gamepad_);
             gamepad_ = nullptr;
             spdlog::info("Gamepad disconnected");
         }
@@ -87,8 +89,8 @@ void Input::update_mouse() {
     if (!window_)
         return;
 
-    int wx, wy;
-    Uint32 buttons = SDL_GetMouseState(&wx, &wy);
+    float wx, wy;
+    SDL_MouseButtonFlags buttons = SDL_GetMouseState(&wx, &wy);
 
     // Manual window-to-virtual resolution conversion (480x270).
     // This avoids SDL_RenderWindowToLogical which gives incorrect results
@@ -107,7 +109,8 @@ void Input::update_mouse() {
     float lx = static_cast<float>((static_cast<double>(wx) - offset_x) / scale);
     float ly = static_cast<float>((static_cast<double>(wy) - offset_y) / scale);
 
-    spdlog::debug("mouse: win=({},{}) logical=({:.1f},{:.1f}) scale={:.2f}", wx, wy, lx, ly, scale);
+    spdlog::debug("mouse: win=({:.0f},{:.0f}) logical=({:.1f},{:.1f}) scale={:.2f}", wx, wy, lx, ly,
+                  scale);
 
     if (lx != current_.mouse_x || ly != current_.mouse_y) {
         mouse_moved_ = true;
@@ -152,10 +155,8 @@ void Input::update_from_gamepad() {
 
     // Left stick
     constexpr float DEADZONE = 0.2f;
-    float lx = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_LEFTX)) /
-               32767.f;
-    float ly = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_LEFTY)) /
-               32767.f;
+    float lx = static_cast<float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_LEFTX)) / 32767.f;
+    float ly = static_cast<float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_LEFTY)) / 32767.f;
 
     if (std::abs(lx) > DEADZONE)
         current_.move_x += lx;
@@ -163,10 +164,8 @@ void Input::update_from_gamepad() {
         current_.move_y += ly;
 
     // Right stick (aim)
-    float rx = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_RIGHTX)) /
-               32767.f;
-    float ry = static_cast<float>(SDL_GameControllerGetAxis(gamepad_, SDL_CONTROLLER_AXIS_RIGHTY)) /
-               32767.f;
+    float rx = static_cast<float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_RIGHTX)) / 32767.f;
+    float ry = static_cast<float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_RIGHTY)) / 32767.f;
     if (std::abs(rx) > DEADZONE || std::abs(ry) > DEADZONE) {
         current_.aim_x = rx;
         current_.aim_y = ry;
@@ -174,31 +173,26 @@ void Input::update_from_gamepad() {
     }
 
     // D-pad
-    if (SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_DPAD_LEFT))
+    if (SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_DPAD_LEFT))
         current_.move_x -= 1.f;
-    if (SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
+    if (SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
         current_.move_x += 1.f;
-    if (SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_DPAD_UP))
+    if (SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_DPAD_UP))
         current_.move_y -= 1.f;
-    if (SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_DPAD_DOWN))
+    if (SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_DPAD_DOWN))
         current_.move_y += 1.f;
 
-    // Buttons (A = shoot, B = bomb, RB = focus)
-    current_.shoot =
-        current_.shoot || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_A);
-    current_.bomb = current_.bomb || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_B);
-    current_.melee =
-        current_.melee || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_X);
+    // Buttons (South = shoot, East = bomb, West = melee)
+    current_.shoot = current_.shoot || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_SOUTH);
+    current_.bomb = current_.bomb || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_EAST);
+    current_.melee = current_.melee || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_WEST);
     current_.dash =
-        current_.dash || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-    current_.focus = current_.focus ||
-                     SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-    current_.pause =
-        current_.pause || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_START);
-    current_.confirm =
-        current_.confirm || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_A);
-    current_.cancel =
-        current_.cancel || SDL_GameControllerGetButton(gamepad_, SDL_CONTROLLER_BUTTON_B);
+        current_.dash || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
+    current_.focus =
+        current_.focus || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+    current_.pause = current_.pause || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_START);
+    current_.confirm = current_.confirm || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_SOUTH);
+    current_.cancel = current_.cancel || SDL_GetGamepadButton(gamepad_, SDL_GAMEPAD_BUTTON_EAST);
 }
 
 void Input::compute_edges() {
