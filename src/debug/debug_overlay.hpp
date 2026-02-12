@@ -2,7 +2,7 @@
 
 #ifdef RAVEN_ENABLE_IMGUI
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <entt/entt.hpp>
 
 #include <array>
@@ -18,7 +18,7 @@ namespace raven {
 /// Conditionally compiled via RAVEN_ENABLE_IMGUI.
 class DebugOverlay {
   public:
-    /// @brief Initialise the ImGui context and SDL2 backend.
+    /// @brief Initialise the ImGui context and SDL3 backend.
     /// @param window The SDL_Window to attach ImGui to.
     /// @param renderer The SDL_Renderer used for ImGui drawing.
     void init(SDL_Window* window, SDL_Renderer* renderer);

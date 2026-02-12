@@ -32,29 +32,29 @@ The format:
 
 ```json
 {
-    "name": "stage_01",
-    "level": "Test_Room",
-    "waves": [
+  "name": "stage_01",
+  "level": "Test_Room",
+  "waves": [
+    {
+      "enemies": [
         {
-            "enemies": [
-                {
-                    "spawn_index": 0,
-                    "type": "grunt",
-                    "pattern": "spiral_3way",
-                    "hp": 1.0,
-                    "score": 100,
-                    "ai": "chaser",
-                    "contact_damage": true
-                }
-            ]
+          "spawn_index": 0,
+          "type": "grunt",
+          "pattern": "spiral_3way",
+          "hp": 1.0,
+          "score": 100,
+          "ai": "chaser",
+          "contact_damage": true
         }
-    ]
+      ]
+    }
+  ]
 }
 ```
 
-`spawn_index` is resolved at spawn time by looking up the tilemap's
-`EnemySpawn` list in order. If the index exceeds the number of available spawn
-points, it clamps to the last one.
+`spawn_index` is resolved at spawn time by looking up the tilemap's `EnemySpawn`
+list in order. If the index exceeds the number of available spawn points, it
+clamps to the last one.
 
 ## Consequences
 
@@ -76,5 +76,5 @@ points, it clamps to the last one.
   silently reassigns which enemy spawns where
 - There is no visual editor for wave design — authors must edit JSON by hand and
   playtest to verify
-- Two files must be kept in sync per room (LDtk level for layout, JSON stage
-  for waves), which increases the surface area for desync bugs
+- Two files must be kept in sync per room (LDtk level for layout, JSON stage for
+  waves), which increases the surface area for desync bugs

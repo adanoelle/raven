@@ -1,6 +1,12 @@
 # 10. SDL_mixer for Audio
 
-Date: 2026-02-11 Status: Accepted
+Date: 2026-02-11 Status: Superseded by [ADR-0013](0013-sdl3-migration.md)
+
+> **Note:** SDL_mixer was removed during the SDL3 migration. No audio loading or
+> playback code had been implemented — only init/shutdown calls existed. See
+> [ADR-0013](0013-sdl3-migration.md) for the migration rationale and
+> [Audio Integration Guide](../audio-integration.md) for the current audio path
+> forward.
 
 ## Context
 
@@ -24,8 +30,8 @@ audio middleware choice needed to be explicit. The alternatives considered:
   than FMOD.
 - **Raw SDL_audio** — Low-level callback API. Maximum control but requires
   implementing mixing, decoding, and format handling from scratch.
-- **OpenAL / OpenAL Soft** — 3D positional audio API. Overkill for a 2D
-  top-down game. Would require an additional dependency.
+- **OpenAL / OpenAL Soft** — 3D positional audio API. Overkill for a 2D top-down
+  game. Would require an additional dependency.
 
 ## Decision
 
@@ -56,7 +62,7 @@ requirement.
 - Limited DSP — no real-time reverb, filtering, or effects without manual
   implementation
 - Only one `Mix_Music` stream at a time (cannot layer two music tracks)
-- Migration to FMOD or Wwise later would require replacing all audio loading
-  and playback calls, though an `AudioManager` wrapper pattern can isolate
-  this behind a stable interface
+- Migration to FMOD or Wwise later would require replacing all audio loading and
+  playback calls, though an `AudioManager` wrapper pattern can isolate this
+  behind a stable interface
 - No visual authoring tool — all audio behavior is defined in code

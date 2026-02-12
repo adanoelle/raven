@@ -81,9 +81,8 @@ add_executable(raven
 
 target_include_directories(raven PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(raven PRIVATE
-    SDL2::SDL2
-    SDL2_image::SDL2_image
-    SDL2_mixer::SDL2_mixer
+    SDL3::SDL3
+    SDL3_image::SDL3_image
     EnTT::EnTT
     nlohmann_json::nlohmann_json
     spdlog::spdlog

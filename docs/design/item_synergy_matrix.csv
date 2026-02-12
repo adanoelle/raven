@@ -1,0 +1,14 @@
+Item,Brawler,Sharpshooter,Tactician,Alchemist,Why It Works / Doesn't Work
+Heavy Rounds,+,++,-,--,Burst enhances Sharpshooter crits / destroys Alchemist tick rate
+Rapid Fire,~,-,+,++,Enables Alchemist poison spread / wastes Sharpshooter's precision
+Piercing Shot,+,~,++,++,Synergizes with AoE classes / neutral for single-target
+Explosive Ammo,--,~,-,~,Self-damage catastrophic for melee Brawler
+Glass Armor,--,++,~,+,Turns Brawler into one-shot / enables hyper-glass Sharpshooter
+Adrenaline Shot,--,+,++,+,Removes Brawler's HP advantage / enables kiting classes
+Shield Generator,++,~,+,~,Strong sustain for Brawler / okay for others
+Greed Ring,+,-,~,~,Brawler can tank longer fights / Sharpshooter can't handle +30% HP enemies solo
+Homing Chip,-,--,+,++,Wastes precision for Sharpshooter / great for Alchemist spray
+Berserker Mask,++,++,~,+,Incredible for low-HP builds / less useful for control
+Lone Wolf Emblem,++,++,++,++,Solo-only power boost works for all classes
+Self-Reliance,++,+,+,+,Sustain helps all but strongest for low-mobility Brawler
+Focused Mind,+,++,~,+,Crit chance best for Sharpshooter precision / okay for others

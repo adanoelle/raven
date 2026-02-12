@@ -4,16 +4,12 @@ include(CPM)
 
 # ── System packages (found via pkg-config / CMake find modules) ───
 find_package(PkgConfig REQUIRED)
-find_package(SDL2 REQUIRED)
-pkg_check_modules(SDL2_image REQUIRED IMPORTED_TARGET SDL2_image)
-pkg_check_modules(SDL2_mixer REQUIRED IMPORTED_TARGET SDL2_mixer)
+find_package(SDL3 REQUIRED)
+pkg_check_modules(sdl3-image REQUIRED IMPORTED_TARGET sdl3-image)
 
 # Create alias targets for consistent naming
-if(NOT TARGET SDL2_image::SDL2_image)
-    add_library(SDL2_image::SDL2_image ALIAS PkgConfig::SDL2_image)
-endif()
-if(NOT TARGET SDL2_mixer::SDL2_mixer)
-    add_library(SDL2_mixer::SDL2_mixer ALIAS PkgConfig::SDL2_mixer)
+if(NOT TARGET SDL3_image::SDL3_image)
+    add_library(SDL3_image::SDL3_image ALIAS PkgConfig::sdl3-image)
 endif()
 
 # ── CPM dependencies (header-only or compiled from source) ────────
@@ -64,7 +60,7 @@ endif()
 if(RAVEN_ENABLE_IMGUI)
     CPMAddPackage(
         NAME imgui
-        VERSION 1.91.0
+        VERSION 1.91.8
         GITHUB_REPOSITORY ocornut/imgui
         DOWNLOAD_ONLY YES
     )
@@ -76,14 +72,14 @@ if(RAVEN_ENABLE_IMGUI)
             ${imgui_SOURCE_DIR}/imgui_tables.cpp
             ${imgui_SOURCE_DIR}/imgui_widgets.cpp
             ${imgui_SOURCE_DIR}/imgui_demo.cpp
-            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
-            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer2.cpp
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+            ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
         )
         target_include_directories(imgui SYSTEM PUBLIC
             ${imgui_SOURCE_DIR}
             ${imgui_SOURCE_DIR}/backends
         )
-        target_link_libraries(imgui PUBLIC SDL2::SDL2)
+        target_link_libraries(imgui PUBLIC SDL3::SDL3)
         add_library(imgui::imgui ALIAS imgui)
     endif()
 endif()

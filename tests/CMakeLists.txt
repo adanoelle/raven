@@ -42,7 +42,7 @@ target_link_libraries(raven_tests PRIVATE
     EnTT::EnTT
     nlohmann_json::nlohmann_json
     spdlog::spdlog
-    SDL2::SDL2
+    SDL3::SDL3
 )
 
 catch_discover_tests(raven_tests)

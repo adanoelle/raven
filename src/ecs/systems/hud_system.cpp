@@ -16,7 +16,8 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
     auto player_view = reg.view<Player, Health>();
     for (auto [entity, player, hp] : player_view.each()) {
         // Background (dark gray)
-        SDL_Rect bg{hp_bar_x, hp_bar_y, hp_bar_w, hp_bar_h};
+        SDL_FRect bg{static_cast<float>(hp_bar_x), static_cast<float>(hp_bar_y),
+                     static_cast<float>(hp_bar_w), static_cast<float>(hp_bar_h)};
         SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
         SDL_RenderFillRect(renderer, &bg);
 
@@ -35,7 +36,8 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
             SDL_SetRenderDrawColor(renderer, 200, 40, 40, 255);
         }
         if (fill_w > 0) {
-            SDL_Rect fill{hp_bar_x, hp_bar_y, fill_w, hp_bar_h};
+            SDL_FRect fill{static_cast<float>(hp_bar_x), static_cast<float>(hp_bar_y),
+                           static_cast<float>(fill_w), static_cast<float>(hp_bar_h)};
             SDL_RenderFillRect(renderer, &fill);
         }
 
@@ -45,7 +47,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
         int pip_x = hp_bar_x + hp_bar_w + margin;
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         for (int i = 0; i < player.lives; ++i) {
-            SDL_Rect pip{pip_x + i * (pip_size + pip_spacing), hp_bar_y, pip_size, pip_size};
+            SDL_FRect pip{static_cast<float>(pip_x + i * (pip_size + pip_spacing)),
+                          static_cast<float>(hp_bar_y), static_cast<float>(pip_size),
+                          static_cast<float>(pip_size)};
             SDL_RenderFillRect(renderer, &pip);
         }
 
@@ -57,7 +61,8 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
             int decay_y = hp_bar_y + hp_bar_h + 2;
 
             // Background
-            SDL_Rect decay_bg{decay_x, decay_y, decay_bar_w, decay_bar_h};
+            SDL_FRect decay_bg{static_cast<float>(decay_x), static_cast<float>(decay_y),
+                               static_cast<float>(decay_bar_w), static_cast<float>(decay_bar_h)};
             SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
             SDL_RenderFillRect(renderer, &decay_bg);
 
@@ -69,7 +74,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
                 decay_ratio = 1.f;
             int decay_fill_w = static_cast<int>(static_cast<float>(decay_bar_w) * decay_ratio);
             if (decay_fill_w > 0) {
-                SDL_Rect decay_fill{decay_x, decay_y, decay_fill_w, decay_bar_h};
+                SDL_FRect decay_fill{static_cast<float>(decay_x), static_cast<float>(decay_y),
+                                     static_cast<float>(decay_fill_w),
+                                     static_cast<float>(decay_bar_h)};
                 SDL_SetRenderDrawColor(renderer, 230, 200, 50, 255);
                 SDL_RenderFillRect(renderer, &decay_fill);
             }
@@ -100,7 +107,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
                 ability_ratio = 1.f;
 
             // Background
-            SDL_Rect ability_bg{ability_bar_x, ability_bar_y, ability_bar_w, ability_bar_h};
+            SDL_FRect ability_bg{
+                static_cast<float>(ability_bar_x), static_cast<float>(ability_bar_y),
+                static_cast<float>(ability_bar_w), static_cast<float>(ability_bar_h)};
             SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
             SDL_RenderFillRect(renderer, &ability_bg);
 
@@ -108,7 +117,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
             int ability_fill_w =
                 static_cast<int>(static_cast<float>(ability_bar_w) * ability_ratio);
             if (ability_fill_w > 0) {
-                SDL_Rect ability_fill{ability_bar_x, ability_bar_y, ability_fill_w, ability_bar_h};
+                SDL_FRect ability_fill{
+                    static_cast<float>(ability_bar_x), static_cast<float>(ability_bar_y),
+                    static_cast<float>(ability_fill_w), static_cast<float>(ability_bar_h)};
                 if (ability_ratio >= 1.f) {
                     SDL_SetRenderDrawColor(renderer, 100, 220, 255, 255);
                 } else {
@@ -125,7 +136,8 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
             int charge_bar_y = ability_bar_y - charge_bar_h - 2;
 
             // Background
-            SDL_Rect charge_bg{margin, charge_bar_y, charge_bar_w, charge_bar_h};
+            SDL_FRect charge_bg{static_cast<float>(margin), static_cast<float>(charge_bar_y),
+                                static_cast<float>(charge_bar_w), static_cast<float>(charge_bar_h)};
             SDL_SetRenderDrawColor(renderer, 40, 40, 40, 255);
             SDL_RenderFillRect(renderer, &charge_bg);
 
@@ -135,7 +147,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
                 charge = 1.f;
             int charge_fill_w = static_cast<int>(static_cast<float>(charge_bar_w) * charge);
             if (charge_fill_w > 0) {
-                SDL_Rect charge_fill{margin, charge_bar_y, charge_fill_w, charge_bar_h};
+                SDL_FRect charge_fill{static_cast<float>(margin), static_cast<float>(charge_bar_y),
+                                      static_cast<float>(charge_fill_w),
+                                      static_cast<float>(charge_bar_h)};
                 if (cs->charge >= cs->full_charge_threshold) {
                     SDL_SetRenderDrawColor(renderer, 255, 200, 50, 255);
                 } else {
@@ -181,7 +195,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         for (int i = 0; i < num_digits; ++i) {
-            SDL_Rect digit_rect{score_x + i * (digit_w + digit_gap), score_y, digit_w, digit_h};
+            SDL_FRect digit_rect{static_cast<float>(score_x + i * (digit_w + digit_gap)),
+                                 static_cast<float>(score_y), static_cast<float>(digit_w),
+                                 static_cast<float>(digit_h)};
             // Vary brightness slightly by digit value
             int brightness = 180 + digits[i] * 7;
             if (brightness > 255)
@@ -202,7 +218,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
             int dots_y = margin;
 
             for (int i = 0; i < total_waves; ++i) {
-                SDL_Rect dot{dots_x + i * (dot_size + dot_gap), dots_y, dot_size, dot_size};
+                SDL_FRect dot{static_cast<float>(dots_x + i * (dot_size + dot_gap)),
+                              static_cast<float>(dots_y), static_cast<float>(dot_size),
+                              static_cast<float>(dot_size)};
                 if (i < state->current_wave) {
                     // Completed wave — filled bright
                     SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
@@ -214,7 +232,7 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
                 } else {
                     // Remaining — hollow
                     SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
-                    SDL_RenderDrawRect(renderer, &dot);
+                    SDL_RenderRect(renderer, &dot);
                 }
             }
         }

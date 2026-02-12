@@ -1,0 +1,4 @@
+Date,Tester,Class,Items Taken,Enemy Wave,Issue / Feedback,Severity,Action Taken
+2/11/26,Ada,Brawler,Glass Armor + Shield Gen,Swarm,One-shot invincibility loop is broken OP,Critical,Cap shield regen rate
+2/11/26,Artist,Alchemist,Heavy Rounds + Rapid Fire,Mixed,Conflicting fire rate mods feel confusing,Medium,Add tooltip warnings
+,,,,,,,"SEVERITY LEVELS: Critical = Breaks game must fix before next playtest, High = Feels unfair or unfun address soon, Medium = Minor imbalance or confusion, Low = Polish / nice-to-have"
