@@ -76,3 +76,4 @@
 - [ADR-0009: Data-Driven Wave Definitions](decisions/0009-data-driven-wave-definitions.md)
 - [ADR-0010: SDL_mixer for Audio](decisions/0010-sdl2-mixer-audio.md)
 - [ADR-0011: Player Classes as Component Recipes](decisions/0011-class-as-component-recipe.md)
+- [ADR-0012: Concussion Shot VFX](decisions/0012-concussion-shot-vfx.md)
