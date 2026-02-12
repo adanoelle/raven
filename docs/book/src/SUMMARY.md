@@ -27,6 +27,7 @@
 - [Sprite Animation](architecture/sprite-animation.md)
 - [Tilemaps and LDtk Integration](architecture/tilemaps.md)
 - [Scene Management](architecture/scenes.md)
+- [Player Classes](architecture/player-classes.md)
 
 ---
 
@@ -58,6 +59,7 @@
 - [From Danmaku to Roguelike](devlog/2026-02-08-danmaku-to-roguelike.md)
 - [Melee and Dash System](devlog/2026-02-10-melee-dash-system.md)
 - [Room Progression and HUD](devlog/2026-02-11-room-progression.md)
+- [Player Class System](devlog/2026-02-12-player-class-system.md)
 
 ---
 
@@ -73,3 +75,4 @@
 - [ADR-0008: Melee Disarm Over Death Drops](decisions/0008-melee-disarm-over-death-drops.md)
 - [ADR-0009: Data-Driven Wave Definitions](decisions/0009-data-driven-wave-definitions.md)
 - [ADR-0010: SDL_mixer for Audio](decisions/0010-sdl2-mixer-audio.md)
+- [ADR-0011: Player Classes as Component Recipes](decisions/0011-class-as-component-recipe.md)
