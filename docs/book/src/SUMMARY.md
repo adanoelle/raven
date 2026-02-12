@@ -44,6 +44,14 @@
 
 ---
 
+# Audio & Sound
+
+- [Audio Specification](audio-spec.md)
+- [Audio Integration Guide](audio-integration.md)
+- [Learning Resources](audio-resources.md)
+
+---
+
 # Development Log
 
 - [Project Setup](devlog/2026-02-08-project-setup.md)
@@ -64,3 +72,4 @@
 - [ADR-0007: Deferred Entity Destruction](decisions/0007-deferred-entity-destruction.md)
 - [ADR-0008: Melee Disarm Over Death Drops](decisions/0008-melee-disarm-over-death-drops.md)
 - [ADR-0009: Data-Driven Wave Definitions](decisions/0009-data-driven-wave-definitions.md)
+- [ADR-0010: SDL_mixer for Audio](decisions/0010-sdl2-mixer-audio.md)
