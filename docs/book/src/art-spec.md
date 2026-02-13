@@ -10,7 +10,9 @@ scaling, and delivery format.
 The game renders at **480x270 pixels**. This is the artist's canvas — every
 sprite, tile, and UI element is authored at this resolution.
 
-- A 16x16 character occupies ~3.3% of screen width (30 tiles across).
+- A 24x24 character body (in a 32x32 frame) occupies ~5% of screen width —
+  between Blazing Beaks and Nuclear Throne in proportion.
+- A 16x16 grunt enemy occupies ~3.3% of screen width (30 tiles across).
 - All art is authored at **1:1** — one pixel in Aseprite equals one game pixel.
   Never pre-scale.
 
@@ -34,26 +36,35 @@ At non-integer scales (1440p, Switch handheld), some pixels are one screen pixel
 wider than their neighbors. This is standard for the genre and barely visible in
 practice.
 
-**Primary target: 1080p at 4x.** A 16x16 sprite becomes 64x64 screen pixels.
+**Primary target: 1080p at 4x.** A 32x32 frame becomes 128x128 screen pixels;
+the 24x24 character body within it renders at 96x96.
 
 ---
 
 ## 3. Sprite Dimensions
 
-| Entity            | Frame Size | Notes                       |
-| ----------------- | ---------- | --------------------------- |
-| Player character  | 16x16      | Matches Blazing Beaks scale |
-| Standard enemies  | 16x16      | Visual parity with player   |
-| Large enemies     | 24x24      | 1.5x player, clearly larger |
-| Bosses            | 32x32+     | 2x+ player, imposing        |
-| Small projectiles | 8x8        | Current config              |
-| Large projectiles | 16x16      | Special attacks             |
-| Pickups / items   | 8x8        | Smaller than characters     |
-| Tiles             | 16x16      | Standard tile grid          |
-| UI icons          | 8x8        | Hearts, ammo pips           |
+The game uses a **frame size / body size** convention. The sprite sheet frame
+is larger than the drawn character, leaving transparent padding for action
+frames (melee swings, weapon holdouts, dash effects). See the
+[Aseprite Setup Guide](art-aseprite-guide.md) for template files and guide
+placement.
+
+| Entity            | Frame Size | Body Size | Notes                                    |
+| ----------------- | ---------- | --------- | ---------------------------------------- |
+| Player character  | 32x32      | 24x24     | 4px padding for weapons and dash effects |
+| Standard enemies  | 16x16      | 14x14     | 1px padding, simple shapes               |
+| Mid-tier enemies  | 32x32      | 24x24     | Same tier as player                      |
+| Bosses            | 48x48      | 36x36     | 6px padding for dramatic attacks         |
+| Mega-bosses       | 64x64      | 48x48     | 8px padding, screen-dominating           |
+| Small projectiles | 8x8        | —         | Body fills frame                         |
+| Large projectiles | 16x16      | —         | Special attacks                          |
+| Pickups / items   | 8x8        | —         | Smaller than characters                  |
+| Tiles             | 16x16      | —         | Standard tile grid                       |
+| UI icons          | 8x8        | —         | Hearts, ammo pips                        |
 
 All frames in a single sheet must be the same size — the engine uses a uniform
-grid to address frames.
+grid to address frames. The body size is a guideline for idle/walk poses;
+action frames may extend into the padding zone.
 
 ---
 
@@ -62,7 +73,7 @@ grid to address frames.
 The game loop runs at 120Hz. Animation playback is independent — driven by
 `frame_duration` (seconds per frame), not tied to the tick rate or refresh rate.
 
-### Player (16x16)
+### Player (32x32 frame, 24x24 body)
 
 | State        | Frames | Anim FPS | Duration/frame | Loop? | Cycle  |
 | ------------ | ------ | -------- | -------------- | ----- | ------ |
@@ -73,6 +84,9 @@ The game loop runs at 120Hz. Animation playback is independent — driven by
 | Dodge / dash | 3      | 15       | 0.067s         | No    | 0.2s   |
 | Hurt         | 2      | 8        | 0.125s         | No    | 0.25s  |
 | Death        | 5      | 8        | 0.125s         | No    | 0.625s |
+
+Attack and dash frames may extend into the 4px padding zone for weapon
+visuals. Idle and walk frames stay within the 24x24 body zone.
 
 Key principle: fewer frames with longer holds looks better in pixel art than
 many frames played fast. Each frame should be a distinct, readable pose.
@@ -93,7 +107,7 @@ Same states as standard enemies. The extra pixel real estate allows 1–2 more
 frames per state. Attack telegraph must be very readable — use a bright wind-up
 frame.
 
-### Bosses (32x32 or 48x48)
+### Bosses (48x48 frame, 36x36 body — or 64x64 frame, 48x48 body)
 
 | State      | Frames | Anim FPS | Loop? | Notes                            |
 | ---------- | ------ | -------- | ----- | -------------------------------- |
@@ -104,6 +118,10 @@ frame.
 | Hurt       | 2–3    | 8        | No    | Brief stagger                    |
 | Transition | 4–6    | 6        | No    | Phase change (dramatic)          |
 | Death      | 6–8    | 6        | No    | Spectacular, slower than enemies |
+
+Boss attack telegraphs should use the 6–8px padding zone for wind-up frames
+(raised claws, charging beams). See the
+[Aseprite Setup Guide](art-aseprite-guide.md) for boss-specific workflow.
 
 ### Projectiles and VFX
 
@@ -124,10 +142,11 @@ frame.
 - **Idle must breathe.** Even 2–3px of vertical bobbing sells "alive."
 - **Anticipation.** One wind-up frame before fast actions (attacks, dashes).
 - **Follow-through.** 1–2 frames overshooting then settling after actions.
-- **Squash and stretch.** ±1px height/width deformation reads clearly at 16x16.
+- **Squash and stretch.** ±1–2px height/width deformation reads clearly at
+  24x24 body size. Use the frame padding for overshoot.
 - **Overlapping action.** Hair, capes, and tails lag 1–2 frames behind the body.
 - **Silhouette test.** Every character must be recognizable as a solid black
-  fill at 16x16.
+  fill at its body size (24x24 for player, 14x14 for grunts).
 
 ---
 
@@ -150,13 +169,13 @@ frame.
 - The engine addresses frames by `(column, row)` index, reading left to right,
   top to bottom.
 
-Example player sheet (16x16 frames, 6 columns wide):
+Example player sheet (32x32 frames, 6 columns wide):
 
 ```
 Row 0: Idle    [4 frames] ████░░
 Row 1: Walk    [6 frames] ██████
-Row 2: Attack  [4 frames] ████░░
-Row 3: Dodge   [3 frames] ███░░░
+Row 2: Attack  [4 frames] ████░░    ← weapon extends into padding
+Row 3: Dodge   [3 frames] ███░░░    ← body leans into padding
 Row 4: Hurt    [2 frames] ██░░░░
 Row 5: Death   [5 frames] █████░
 ```
@@ -201,19 +220,24 @@ Row 5: Death   [5 frames] █████░
 
 ## 11. Quick Reference Card
 
-| Property             | Value                    |
-| -------------------- | ------------------------ |
-| Virtual resolution   | 480x270                  |
-| Primary scale target | 4x (1080p)               |
-| Tile / player size   | 16x16                    |
-| Projectile size      | 8x8                      |
-| Boss size            | 32x32+                   |
-| Scaling filter       | Nearest-neighbor         |
-| Facing directions    | Left / right (flip_x)    |
-| Animation timing     | `frame_duration` seconds |
-| File format          | PNG, 32-bit RGBA         |
-| Palette              | 16–32 colors + .pal file |
-| Asset directory      | `assets/sprites/`        |
+| Property             | Value                             |
+| -------------------- | --------------------------------- |
+| Virtual resolution   | 480x270                           |
+| Primary scale target | 4x (1080p)                        |
+| Player frame / body  | 32x32 frame, 24x24 body           |
+| Grunt enemy size     | 16x16 frame, 14x14 body           |
+| Mid enemy size       | 32x32 frame, 24x24 body           |
+| Boss size            | 48x48 frame, 36x36 body           |
+| Mega-boss size       | 64x64 frame, 48x48 body           |
+| Projectile size      | 8x8                               |
+| Tile size            | 16x16                             |
+| Scaling filter       | Nearest-neighbor                  |
+| Facing directions    | Left / right (flip_x)             |
+| Animation timing     | `frame_duration` seconds           |
+| File format          | PNG, 32-bit RGBA                  |
+| Palette              | 16–32 colors + .pal file          |
+| Asset directory      | `assets/sprites/`                 |
+| Aseprite templates   | See [Aseprite Setup Guide](art-aseprite-guide.md) |
 
 ---
 
@@ -221,11 +245,13 @@ Row 5: Death   [5 frames] █████░
 
 Run through this list before every handoff:
 
-- [ ] Frame size matches the spec table (16x16, 8x8, etc.)
+- [ ] Frame size matches the spec table (32x32, 16x16, 48x48, etc.)
+- [ ] Idle/walk art stays within the body zone (see Aseprite Setup Guide)
+- [ ] Action frames use padding zone appropriately — no art clipped at frame edge
 - [ ] No padding between frames in the exported sheet
 - [ ] All rows are the same width (short animations padded with transparent
       frames)
-- [ ] Anchor point consistent — feet at the same Y across all frames
+- [ ] Anchor point consistent — feet (or center) at the same Y across all frames
 - [ ] Sprite faces right
 - [ ] Hard edges only — no anti-aliasing on outlines
 - [ ] Transparent background (alpha 0), not a colored background

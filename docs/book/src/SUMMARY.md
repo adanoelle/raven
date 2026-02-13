@@ -40,6 +40,7 @@
 # Art & Animation
 
 - [Art Specification](art-spec.md)
+- [Aseprite Setup Guide](art-aseprite-guide.md)
 - [Art Integration Guide](art-integration.md)
 - [Learning Resources](art-resources.md)
 
