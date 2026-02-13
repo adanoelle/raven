@@ -35,6 +35,18 @@ class SpriteSheet {
     void draw(SDL_Renderer* renderer, int frame_x, int frame_y, int dest_x, int dest_y,
               bool flip_x = false) const;
 
+    /// @brief Draw one frame scaled to a custom destination size.
+    /// @param renderer SDL_Renderer to draw with.
+    /// @param frame_x Frame column index (0-based).
+    /// @param frame_y Frame row index (0-based).
+    /// @param dest_x Destination X position in virtual pixels.
+    /// @param dest_y Destination Y position in virtual pixels.
+    /// @param dest_w Destination width in pixels.
+    /// @param dest_h Destination height in pixels.
+    /// @param flip_x If true, flip the sprite horizontally.
+    void draw(SDL_Renderer* renderer, int frame_x, int frame_y, int dest_x, int dest_y, int dest_w,
+              int dest_h, bool flip_x = false) const;
+
     /// @brief Get the width of a single frame.
     /// @return Frame width in pixels.
     [[nodiscard]] int frame_width() const { return frame_w_; }

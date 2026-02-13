@@ -14,6 +14,7 @@ struct RenderEntry {
     int width, height;
     int layer;
     bool flip_x;
+    float offset_x, offset_y;
     const raven::SpriteSheet* sheet;
 };
 
@@ -42,8 +43,8 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
         const auto* sheet = sprites.get(interner.resolve(sprite.sheet_id));
         if (!sheet) {
             // No sprite sheet loaded — draw a placeholder colored rect
-            SDL_FRect rect{render_x - static_cast<float>(sprite.width) / 2.f,
-                           render_y - static_cast<float>(sprite.height) / 2.f,
+            SDL_FRect rect{render_x + sprite.offset_x - static_cast<float>(sprite.width) / 2.f,
+                           render_y + sprite.offset_y - static_cast<float>(sprite.height) / 2.f,
                            static_cast<float>(sprite.width), static_cast<float>(sprite.height)};
 
             // Color by entity type for debugging
@@ -62,7 +63,8 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
         }
 
         entries.push_back({render_x, render_y, sprite.frame_x, sprite.frame_y, sprite.width,
-                           sprite.height, sprite.layer, sprite.flip_x, sheet});
+                           sprite.height, sprite.layer, sprite.flip_x, sprite.offset_x,
+                           sprite.offset_y, sheet});
     }
 
     // Sort by layer (lower layers drawn first)
@@ -72,8 +74,9 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
     // Draw
     for (const auto& e : entries) {
         e.sheet->draw(renderer, e.frame_x, e.frame_y,
-                      static_cast<int>(e.x - static_cast<float>(e.width) / 2.f),
-                      static_cast<int>(e.y - static_cast<float>(e.height) / 2.f), e.flip_x);
+                      static_cast<int>(e.x + e.offset_x - static_cast<float>(e.width) / 2.f),
+                      static_cast<int>(e.y + e.offset_y - static_cast<float>(e.height) / 2.f),
+                      e.width, e.height, e.flip_x);
     }
 }
 

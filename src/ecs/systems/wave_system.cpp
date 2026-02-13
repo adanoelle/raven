@@ -75,11 +75,36 @@ int enemy_frame(Enemy::Type type) {
     case Enemy::Type::Grunt:
         return 0;
     case Enemy::Type::Mid:
-        return 1;
+        return 0;
     case Enemy::Type::Boss:
-        return 2;
+        return 0;
     }
     return 0;
+}
+
+/// @brief Per-tier sprite sizing and hitbox configuration.
+struct EnemyVisuals {
+    const char* sheet;  ///< Sprite sheet id.
+    int sprite_w;       ///< Rendered sprite width.
+    int sprite_h;       ///< Rendered sprite height.
+    float circle_r;     ///< Circle hitbox radius.
+    float rect_w;       ///< Rect hitbox width.
+    float rect_h;       ///< Rect hitbox height.
+    float offset_y;     ///< Sprite render offset Y (shift up for feet alignment).
+};
+
+/// @brief Return visual configuration for an enemy tier.
+EnemyVisuals enemy_visuals(Enemy::Type type) {
+    switch (type) {
+    case Enemy::Type::Grunt:
+        //          sheet       sw  sh  cr    rw    rh   oy
+        return {"enemies",      24, 24, 7.f, 12.f, 14.f, -3.f};
+    case Enemy::Type::Mid:
+        return {"enemies_mid",  32, 32, 9.f, 16.f, 18.f, -5.f};
+    case Enemy::Type::Boss:
+        return {"enemies_boss", 48, 48, 18.f, 32.f, 36.f, -6.f};
+    }
+    return {"enemies", 24, 24, 7.f, 12.f, 14.f, -3.f};
 }
 
 } // namespace
@@ -212,10 +237,12 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
         reg.emplace<Velocity>(enemy);
         reg.emplace<Enemy>(enemy, def.type);
         reg.emplace<Health>(enemy, def.hp, def.hp);
-        reg.emplace<CircleHitbox>(enemy, 7.f);
-        reg.emplace<RectHitbox>(enemy, 12.f, 14.f, 0.f, 0.f);
-        reg.emplace<Sprite>(enemy, interner.intern("enemies"), enemy_frame(def.type), 0, 16, 16,
-                            10);
+
+        const auto vis = enemy_visuals(def.type);
+        reg.emplace<CircleHitbox>(enemy, vis.circle_r);
+        reg.emplace<RectHitbox>(enemy, vis.rect_w, vis.rect_h, 0.f, 0.f);
+        reg.emplace<Sprite>(enemy, interner.intern(vis.sheet), enemy_frame(def.type), 0,
+                            vis.sprite_w, vis.sprite_h, 10, false, 0.f, vis.offset_y);
         reg.emplace<ScoreValue>(enemy, def.score);
 
         // Set up bullet emitter if a pattern exists

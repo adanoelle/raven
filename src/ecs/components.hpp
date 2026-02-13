@@ -37,13 +37,15 @@ struct PreviousTransform {
 
 /// @brief Sprite rendering data referencing a frame within a sprite sheet.
 struct Sprite {
-    StringId sheet_id;   ///< Interned identifier of the SpriteSheet to draw from.
-    int frame_x = 0;     ///< Frame column index in the sheet.
-    int frame_y = 0;     ///< Frame row index in the sheet.
-    int width = 16;      ///< Pixel width of one frame.
-    int height = 16;     ///< Pixel height of one frame.
-    int layer = 0;       ///< Render order (higher values draw on top).
-    bool flip_x = false; ///< Flip the sprite horizontally when drawing.
+    StringId sheet_id;       ///< Interned identifier of the SpriteSheet to draw from.
+    int frame_x = 0;         ///< Frame column index in the sheet.
+    int frame_y = 0;         ///< Frame row index in the sheet.
+    int width = 32;          ///< Rendered width in pixels.
+    int height = 32;         ///< Rendered height in pixels.
+    int layer = 0;           ///< Render order (higher values draw on top).
+    bool flip_x = false;     ///< Flip the sprite horizontally when drawing.
+    float offset_x = 0.f;   ///< Horizontal render offset from entity center in pixels.
+    float offset_y = 0.f;   ///< Vertical render offset from entity center in pixels.
 };
 
 /// @brief Frame-based animation state for cycling through sprite frames.

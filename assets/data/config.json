@@ -16,9 +16,11 @@
         "sfx_volume": 100
     },
     "sprite_sheets": [
-        { "id": "player",      "path": "assets/sprites/player.png",      "frame_w": 16, "frame_h": 16 },
-        { "id": "projectiles", "path": "assets/sprites/bullets.png", "frame_w": 8,  "frame_h": 8  },
-        { "id": "enemies",     "path": "assets/sprites/enemies.png",     "frame_w": 16, "frame_h": 16 }
+        { "id": "player",       "path": "assets/sprites/player.png",       "frame_w": 32, "frame_h": 32 },
+        { "id": "projectiles",  "path": "assets/sprites/bullets.png",      "frame_w": 8,  "frame_h": 8  },
+        { "id": "enemies",      "path": "assets/sprites/enemies.png",      "frame_w": 16, "frame_h": 16 },
+        { "id": "enemies_mid",  "path": "assets/sprites/enemies_mid.png",  "frame_w": 32, "frame_h": 32 },
+        { "id": "enemies_boss", "path": "assets/sprites/enemies_boss.png", "frame_w": 48, "frame_h": 48 }
     ],
     "sprite_defs": {
         "projectile_small_red":   { "sheet": "projectiles", "frame_x": 0, "frame_y": 0 },

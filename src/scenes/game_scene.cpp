@@ -89,9 +89,9 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<Velocity>(player);
     reg.emplace<Player>(player);
     reg.emplace<Health>(player, 1.f, 1.f);
-    reg.emplace<CircleHitbox>(player, 6.f);
+    reg.emplace<CircleHitbox>(player, 6.f, 0.f, 2.f);
     reg.emplace<RectHitbox>(player, 12.f, 14.f, 0.f, 2.f);
-    reg.emplace<Sprite>(player, interner.intern("player"), 0, 0, 16, 16, 10);
+    reg.emplace<Sprite>(player, interner.intern("player"), 0, 0, 32, 32, 10, false, 0.f, -5.f);
     reg.emplace<Animation>(player, 0, 3, 0.25f, 0.f, 0, true);
     reg.emplace<AnimationState>(player);
     reg.emplace<AimDirection>(player, 1.f, 0.f);

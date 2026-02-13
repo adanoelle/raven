@@ -43,6 +43,11 @@ bool SpriteSheet::load(SDL_Renderer* renderer, const std::string& path, int fram
 
 void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int dest_x, int dest_y,
                        bool flip_x) const {
+    draw(renderer, frame_x, frame_y, dest_x, dest_y, frame_w_, frame_h_, flip_x);
+}
+
+void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int dest_x, int dest_y,
+                       int dest_w, int dest_h, bool flip_x) const {
     if (!texture_)
         return;
 
@@ -50,7 +55,7 @@ void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int des
                   static_cast<float>(frame_w_), static_cast<float>(frame_h_)};
 
     SDL_FRect dst{static_cast<float>(dest_x), static_cast<float>(dest_y),
-                  static_cast<float>(frame_w_), static_cast<float>(frame_h_)};
+                  static_cast<float>(dest_w), static_cast<float>(dest_h)};
 
     SDL_FlipMode flip = flip_x ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
     SDL_RenderTextureRotated(renderer, texture_, &src, &dst, 0.0, nullptr, flip);
