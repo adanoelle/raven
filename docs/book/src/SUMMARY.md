@@ -89,3 +89,4 @@
 - [ADR-0011: Player Classes as Component Recipes](decisions/0011-class-as-component-recipe.md)
 - [ADR-0012: Concussion Shot VFX](decisions/0012-concussion-shot-vfx.md)
 - [ADR-0013: SDL3 Migration](decisions/0013-sdl3-migration.md)
+- [ADR-0014: NPC Shop Rooms for In-Run Progression](decisions/0014-npc-shop-progression.md)

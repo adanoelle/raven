@@ -61,6 +61,30 @@ placement.
 | Pickups / items   | 8x8        | —         | Smaller than characters                  |
 | Tiles             | 16x16      | —         | Standard tile grid                       |
 | UI icons          | 8x8        | —         | Hearts, ammo pips                        |
+| UI portraits      | 48x48–64x64 | —       | Stat screen, character select (see below)|
+| NPC sprites       | 32x32      | 24x24     | Shop NPCs, same tier as player           |
+
+### UI portraits (future)
+
+Stat screens, character select, and NPC dialogue benefit from a larger,
+more detailed front-facing character illustration than the gameplay sprite
+can provide. These portraits are **separate assets** from the gameplay
+sprite sheet — not a frame pulled from it.
+
+| Portrait use       | Recommended size | Notes                            |
+| ------------------ | ---------------- | -------------------------------- |
+| Stat / skill sheet | 48x48 or 64x64  | Detailed face, hair, expression  |
+| Character select   | 64x64            | Full body or bust, front-facing  |
+| NPC dialogue box   | 32x32 or 48x48  | Per-NPC personality              |
+
+At 64x64, there are enough pixels for anime-style eyes with real expression,
+distinct hair rendering, and costume detail lost at gameplay scale. These
+portraits are a **stretch goal** — the game is functional without them, but
+they significantly improve the feel of menus and progression screens.
+
+Portraits should share the character's **color palette** with their gameplay
+sprite so the two read as the same character. Draw the portrait after
+finalizing the gameplay sprite's palette and silhouette.
 
 All frames in a single sheet must be the same size — the engine uses a uniform
 grid to address frames. The body size is a guideline for idle/walk poses;
@@ -152,11 +176,35 @@ Boss attack telegraphs should use the 6–8px padding zone for wind-up frames
 
 ## 6. Facing Directions
 
-- **Left and right only** (Blazing Beaks style).
-- Draw all sprites **facing right**.
+- **Left and right only** for gameplay (Blazing Beaks style).
+- Draw all gameplay sprites **facing right**.
 - The engine mirrors sprites via `flip_x` for leftward movement — no extra art
   needed.
-- No up/down/diagonal facing directions.
+- No up/down/diagonal facing directions during gameplay. In a twin-stick
+  shooter the aim direction is constantly sweeping, so additional facing
+  directions create visible snapping at thresholds without adding clarity.
+
+### Optional: front-facing portraits
+
+If art resources allow, a **front-facing idle** (4 frames) per player class
+is useful for non-gameplay contexts:
+
+- Character select screen
+- Pause menu portrait
+- Death / game-over screen
+- NPC dialogue
+
+This is a single short animation, not a full directional set. Add it as an
+extra row at the bottom of the player sprite sheet:
+
+```
+Row 0–5: Side-facing gameplay animations
+Row 6:   Front idle  [4 frames] ████░░   ← UI only
+```
+
+The UI scene reads this row directly by `frame_y` index. No engine changes
+or additional facing-direction logic required. This is a **stretch goal** —
+the game is fully functional with side-facing sprites only.
 
 ---
 

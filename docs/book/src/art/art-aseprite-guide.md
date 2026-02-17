@@ -144,13 +144,293 @@ explosions).
 
 ---
 
-## 3. Anchoring
+## 3. Chibi Proportion Guides
+
+In addition to body zone and center guides, each template should include
+**horizontal proportion guides** that define anatomy zones — like the
+horizontal lines on a character turnaround sheet. These keep the head size,
+eye placement, and body divisions consistent across every frame and every
+character at that tier.
+
+The game uses **2-head chibi proportions** for player characters and most
+enemies: the head height roughly equals the body height. This maximizes
+expressiveness at small pixel scales while leaving enough body for weapons
+and movement.
+
+### 3.1 Medium tier proportions (32x32 frame)
+
+The character is ~22px tall within the 24px body zone, bottom-anchored.
+Add these five horizontal proportion guides to the medium template:
+
+| Guide | Y Position | Zone                | Purpose                             |
+| ----- | ---------- | ------------------- | ----------------------------------- |
+| HT    | y = 6      | Head top            | Where the skull/hair volume begins  |
+| EY    | y = 11     | Eye line            | Center of eye placement             |
+| CH    | y = 17     | Chin / neck         | Where head meets body               |
+| WA    | y = 22     | Waist / belt        | Separates torso from legs           |
+| FT    | y = 27     | Feet / ground       | Anchor point — locked every frame   |
+
+```
+  0                               31
+  ┌────────────────────────────────┐
+  │           padding              │ 0
+  │                                │
+  │                                │
+  │                                │ 4  body zone top
+  │                                │
+  │· · · · · · · · · · · · · · · · │ 6  HT ── head top
+  │            ████████            │     ─┐
+  │          ██████████            │      │ Forehead
+  │          ██████████            │      │ (big for chibi)
+  │· · · · ··██·●●··●●·██· · · · ·│ 11 EY ── eye line
+  │          ██████████            │      │
+  │          ██████████            │      │ Lower face
+  │           ████████             │      │
+  │· · · · · · ██████ · · · · · · │ 17 CH ── chin / neck
+  │            ██████              │      │
+  │            █ ██ █              │      │ Torso
+  │            ██████              │      │
+  │· · · · · · ██████ · · · · · · │ 22 WA ── waist / belt
+  │             █  █               │      │
+  │            ██  ██              │      │ Legs
+  │            ██  ██              │      │
+  │· · · · · ·███··███· · · · · · │ 27 FT ── feet / ground
+  │           padding              │ 28 body zone bottom
+  │                                │
+  │                                │
+  └────────────────────────────────┘
+```
+
+**Zone pixel budgets (2-head chibi, 22px tall):**
+
+| Zone      | Y Range  | Height | What fits                              |
+| --------- | -------- | ------ | -------------------------------------- |
+| Crown     | 4 – 6    | 2px    | Accessories extending above head       |
+| Hair/head | 6 – 11   | 5px    | Hair volume, forehead (large for chibi)|
+| Face      | 11 – 17  | 6px    | Eyes, nose (opt), mouth (opt), cheeks  |
+| Torso     | 17 – 22  | 5px    | Shirt/armor color, 1 costume detail    |
+| Legs/feet | 22 – 27  | 5px    | Legs, boots as color accent            |
+
+The **eye line at y=11** is placed below center of the head (head runs y=6
+to y=17 = 11px, midpoint would be y=11.5). This low eye placement is what
+creates the chibi "big forehead" look — the forehead area above the eyes is
+larger than the face below.
+
+### 3.2 Small tier proportions (16x16 frame)
+
+Grunt enemies at 2-head chibi, ~12px tall, bottom-anchored:
+
+| Guide | Y Position | Zone          |
+| ----- | ---------- | ------------- |
+| HT    | y = 2      | Head top      |
+| EY    | y = 5      | Eye line      |
+| CH    | y = 8      | Chin / neck   |
+| WA    | y = 11     | Waist         |
+| FT    | y = 14     | Feet / ground |
+
+```
+  0               15
+  ┌────────────────┐
+  │                │ 0
+  │· · · · · · · · │ 2  HT
+  │    ████████    │
+  │· · █·●··●·█ · ·│ 5  EY
+  │    ████████    │
+  │· · ·██████ · · │ 8  CH
+  │     █ ██ █     │
+  │· · ·██████· · ·│ 11 WA
+  │      █  █      │
+  │· · ·██··██· · ·│ 14 FT
+  │                │ 15
+  └────────────────┘
+```
+
+At 16x16, there are very few pixels per zone. The eyes may be just 2
+vertical pixels or a 2x2 block. Personality comes from silhouette shape and
+color rather than facial detail.
+
+### 3.3 Large tier proportions (48x48 frame)
+
+Bosses can use chibi proportions or deviate toward more menacing ratios.
+Two options:
+
+**Option A — 2-head chibi boss** (cute but threatening, like Cult of the Lamb):
+
+| Guide | Y Position | Zone          |
+| ----- | ---------- | ------------- |
+| HT    | y = 9      | Head top      |
+| EY    | y = 17     | Eye line      |
+| CH    | y = 25     | Chin / neck   |
+| WA    | y = 33     | Waist         |
+| FT    | y = 40     | Feet / ground |
+
+**Option B — 2.5-head boss** (more imposing, conventional boss proportions):
+
+| Guide | Y Position | Zone          |
+| ----- | ---------- | ------------- |
+| HT    | y = 8      | Head top      |
+| EY    | y = 14     | Eye line      |
+| CH    | y = 21     | Chin / neck   |
+| WA    | y = 31     | Waist         |
+| FT    | y = 40     | Feet / ground |
+
+The 2.5-head ratio gives bosses a smaller head relative to their body,
+making them look more physically imposing and less cute. Choose based on the
+boss's personality — a comedic mini-boss might use Option A while a
+final-stage threat uses Option B.
+
+### 3.4 Using proportion guides in Aseprite
+
+1. **Add guides after body zone guides.** In the medium template, you should
+   have 11 guides total: 4 body zone edges, 2 center lines, and 5 proportion
+   lines.
+
+2. **Color-code if possible.** Aseprite guide colors can be changed by
+   right-clicking a guide. Use one color for body zone boundaries (e.g.,
+   cyan) and another for proportion lines (e.g., red or orange) so they are
+   easy to distinguish at a glance.
+
+3. **Proportion guides are targets, not walls.** The eye line means "eyes
+   go here" — not "eyes must touch this exact pixel." A 3px tall eye centered
+   on the eye line guide is correct usage.
+
+4. **Hair and accessories break above HT.** The head-top guide marks where
+   the skull starts. Hair volume, crowns, horns, and hats extend above it
+   into the crown zone (between body zone top and HT). This is expected and
+   desirable — distinctive headwear is the #1 silhouette differentiator.
+
+5. **Check proportions across frames.** Toggle onion skinning and compare
+   frames. The chin line should not drift between idle and walk. The eye line
+   stays fixed. Only the feet line is an absolute lock — other guides may
+   shift ±1px during squash/stretch, but should average to their guide
+   position.
+
+---
+
+## 4. Silhouette Blocking
+
+Before drawing detail, block out character volumes as filled shapes — like a
+sculptor roughing in clay before refining. Aseprite offers two approaches:
+custom brushes for fast stamping and reference layers for persistent guides.
+
+### 4.1 Custom silhouette brushes
+
+Create reusable brushes that stamp body-part silhouettes in a single click.
+
+**Creating a brush:**
+
+1. On a scratch canvas, draw the silhouette shape in black (e.g., a 12x11px
+   rounded rectangle for a chibi head).
+2. Select the shape with the marquee tool (**M**).
+3. **Edit > New Brush** (or **Ctrl+B**). The selection becomes your active
+   brush.
+4. To save permanently: click the brush dropdown in the toolbar (small arrow
+   next to the brush preview), then click **"Save Brush Here"** at the bottom
+   of an empty slot. **Lock the slot** (click the lock icon) so it persists
+   across sessions.
+
+**Brush drawing modes:**
+
+After selecting a custom brush, a dropdown appears on the context bar:
+
+- **Pattern mode** — stamps the exact pixels and colors from the original
+  selection. Useful for multi-color templates.
+- **Foreground color mode** — stamps only the brush *shape*, filled with
+  your current foreground color. This is the mode to use for silhouette
+  blocking: pick black, stamp the head; pick a different shade, stamp the
+  body.
+
+**Suggested brush set for medium tier (32x32 frame, 24x24 body):**
+
+| Brush         | Size   | Shape                          | Purpose                           |
+| ------------- | ------ | ------------------------------ | --------------------------------- |
+| `head_round`  | 12x11  | Rounded rect / oval            | Standard chibi head mass          |
+| `head_tall`   | 10x12  | Taller oval                    | Alternate for serious characters  |
+| `body_pear`   | 10x10  | Pear / tapered trapezoid       | Standard chibi torso              |
+| `body_wide`   | 12x10  | Wider trapezoid                | Stocky Brawler-type torso         |
+| `legs_pair`   | 8x5    | Two small blocks with 2px gap  | Stubby chibi legs                 |
+
+**The 3-click blocking workflow:**
+
+1. Open the character template (with proportion and body zone guides).
+2. Select `head_round` brush, foreground color black.
+3. Click once in the head zone — centered on x=16, top edge on HT guide.
+4. Switch to `body_pear` brush.
+5. Click once in the torso zone — top edge on CH guide.
+6. Switch to `legs_pair` brush.
+7. Click once in the leg zone — bottom edge on FT guide.
+8. You now have a blocked silhouette. Merge the parts, then sculpt: carve
+   the neck, add hair, refine the profile.
+
+For subsequent animation frames, stamp the same brushes to maintain
+consistent volumes, then adjust the pose. This is faster than redrawing
+the full silhouette each frame and keeps proportions locked.
+
+### 4.2 Reference layer mannequin
+
+For the first character at each tier, a reference layer provides a
+persistent silhouette guide underneath your working layers.
+
+**Creating a mannequin file:**
+
+1. In the medium template, draw a clean front-facing chibi silhouette in
+   solid black on the proportion guides. Include the head, torso, and legs
+   at the correct 2-head ratio. No detail — just the mass.
+2. Save as `templates/chibi_mannequin_32x32.aseprite`.
+
+**Using the mannequin:**
+
+1. Duplicate the tier template to start a new character.
+2. **Layer > New > New Reference Layer from File.** Select the mannequin
+   file.
+3. The mannequin appears as a semi-transparent overlay — visible while you
+   draw but non-editable and **excluded from export**.
+4. Draw on a normal layer above it. The mannequin acts as a volume target:
+   match the head mass, align the shoulders, lock the feet.
+5. Delete the reference layer when you no longer need it, or keep it for
+   the entire animation process.
+
+**Advantages over brushes:**
+
+- The mannequin stays visible *under* your art as you sculpt. A stamped
+  brush disappears into your drawing once you start editing pixels.
+- Useful for checking that an action frame's body doesn't shrink or grow
+  unexpectedly — toggle the reference layer on to compare volumes.
+- Multiple reference layers can coexist. Add a side-view mannequin for
+  walk cycles or an action-pose mannequin for attack frames.
+
+### 4.3 Combining both approaches
+
+Use the reference layer mannequin for your first character at each tier to
+establish proportions. Once you are confident in the shapes, save the
+individual body-part silhouettes as custom brushes. From then on, use the
+brushes for fast blocking on new characters and frames, and bring the
+mannequin back only when you need to double-check proportions.
+
+**Suggested file organization:**
+
+```
+templates/
+├── medium_32x32.aseprite            Blank template with guides
+├── chibi_mannequin_32x32.aseprite   Full silhouette mannequin
+├── small_16x16.aseprite             Blank template with guides
+├── chibi_mannequin_16x16.aseprite   Grunt silhouette mannequin
+├── large_48x48.aseprite             Blank template with guides
+└── boss_mannequin_48x48.aseprite    Boss silhouette mannequin
+```
+
+Custom brushes are saved in Aseprite's user configuration directory
+(`user.aseprite-brushes`) and persist across all files automatically.
+
+---
+
+## 5. Anchoring
 
 Anchoring determines where the character "sits" within the frame across all
 animation poses. If the anchor drifts between frames, the character appears to
 float or jitter during playback.
 
-### 3.1 Bottom-center anchor (characters and ground enemies)
+### 5.1 Bottom-center anchor (characters and ground enemies)
 
 Used for the **player, ground-based enemies, and walking bosses**. The
 character's feet are pinned to a consistent Y position near the bottom of the
@@ -184,7 +464,7 @@ Rules:
   with the entity's collision center. Tune this value once per character size,
   not per frame.
 
-### 3.2 Center anchor (flying enemies and hovering bosses)
+### 5.2 Center anchor (flying enemies and hovering bosses)
 
 Used for enemies and bosses that **float, fly, or have no clear ground
 contact**. The body center stays at the frame center.
@@ -216,7 +496,7 @@ Rules:
 - Set `Sprite::offset_y = 0` and `Sprite::offset_x = 0` for center-anchored
   entities.
 
-### 3.3 Choosing the right anchor
+### 5.3 Choosing the right anchor
 
 | Entity type                    | Anchor        | offset_y       |
 | ------------------------------ | ------------- | -------------- |
@@ -231,12 +511,12 @@ Rules:
 
 ---
 
-## 4. Bosses: Design Considerations
+## 6. Bosses: Design Considerations
 
 Bosses are the most complex sprites in the game. They occupy **48x48 or 64x64
 frames** on a 480x270 canvas, making them visually dominant.
 
-### 4.1 Screen presence
+### 6.1 Screen presence
 
 | Frame Size | % Screen Width | % Screen Height | Feel                   |
 | ---------- | -------------- | --------------- | ---------------------- |
@@ -247,7 +527,7 @@ For reference, the 32x32 player at 24x24 body occupies ~5% width / ~8.9% height.
 A 48x48 boss is roughly **twice the player's visual size** in each dimension —
 large enough to read as a clear threat without overwhelming the play space.
 
-### 4.2 Boss sprite sheet layout
+### 6.2 Boss sprite sheet layout
 
 Boss sheets are wider than character sheets because bosses have more animation
 states and more frames per state.
@@ -264,7 +544,7 @@ Row 5: Transition   [4–6 frames]  ██████░░    Phase change (dr
 Row 6: Death        [6–8 frames]  ████████    Spectacular, slower pace
 ```
 
-### 4.3 Aseprite setup for bosses
+### 6.3 Aseprite setup for bosses
 
 1. **One `.aseprite` file per boss.** Bosses are complex enough to warrant their
    own file rather than sharing a sheet with other enemies.
@@ -290,7 +570,7 @@ Row 6: Death        [6–8 frames]  ████████    Spectacular, slo
    frames before the hit frame. The wind-up can break into the padding zone (a
    raised claw, a charging beam) to signal the attack direction.
 
-### 4.4 Hitbox vs. visual for bosses
+### 6.4 Hitbox vs. visual for bosses
 
 Boss visuals are much larger than their hitbox. A 48x48 boss with a 36x36 body
 might have a `CircleHitbox` radius of 16–20px or a `RectHitbox` of 24x24. The
@@ -300,9 +580,9 @@ playtesting, and tune until it feels fair.
 
 ---
 
-## 5. Animation Workflow in Aseprite
+## 7. Animation Workflow in Aseprite
 
-### 5.1 Starting a new character
+### 7.1 Starting a new character
 
 1. **Duplicate** the tier template (`templates/medium_32x32.aseprite`).
 2. **Rename** to the character name (`player_brawler.aseprite`).
@@ -315,7 +595,7 @@ playtesting, and tune until it feels fair.
 6. **Repeat** for each animation state (walk, attack, dash, hurt, death), adding
    tagged frame ranges.
 
-### 5.2 Using onion skinning for anchoring
+### 7.2 Using onion skinning for anchoring
 
 Enable onion skinning to see previous and next frames as translucent overlays.
 This is the primary tool for maintaining consistent anchoring:
@@ -324,7 +604,7 @@ This is the primary tool for maintaining consistent anchoring:
 - Check that the body center of mass does not jump unexpectedly.
 - Use red/blue tinting (default) to distinguish previous vs. next frames.
 
-### 5.3 Exporting the sprite sheet
+### 7.3 Exporting the sprite sheet
 
 File > Export Sprite Sheet with these settings:
 
@@ -350,7 +630,7 @@ aseprite -b player_brawler.aseprite \
 
 The `-b` flag runs headless. `--split-tags` assigns each tag to its own row.
 
-### 5.4 Verifying the export
+### 7.4 Verifying the export
 
 After exporting, confirm:
 
@@ -364,7 +644,7 @@ After exporting, confirm:
 
 ---
 
-## 6. Registering New Art in the Engine
+## 8. Registering New Art in the Engine
 
 After exporting, register the sprite sheet in `assets/data/config.json`:
 
@@ -382,12 +662,14 @@ the [Art Integration Guide](art-integration.md) for the full walkthrough.
 
 ---
 
-## 7. Checklist: New Character
+## 9. Checklist: New Character
 
 - [ ] Duplicated the correct tier template
-- [ ] Guides visible at body zone boundaries
+- [ ] Body zone and proportion guides visible (HT, EY, CH, WA, FT)
+- [ ] Head-to-body ratio matches target (2-head chibi for player/enemies)
+- [ ] Eyes centered on the EY guide line
 - [ ] Idle silhouette reads clearly at 1x zoom
-- [ ] Feet (or center) anchored consistently across all frames
+- [ ] Feet (or center) anchored consistently on FT guide across all frames
 - [ ] Frame tags added for every animation state
 - [ ] Onion skinning used to verify frame-to-frame stability
 - [ ] Exported as sprite sheet (By Rows, no border padding)
