@@ -39,10 +39,19 @@
 
 # Art & Animation
 
-- [Art Specification](art-spec.md)
-- [Aseprite Setup Guide](art-aseprite-guide.md)
-- [Art Integration Guide](art-integration.md)
-- [Learning Resources](art-resources.md)
+- [Art Specification](art/art-spec.md)
+- [Aseprite Setup Guide](art/art-aseprite-guide.md)
+- [Color Theory and Palette Design](art/color-theory.md)
+- [Tileset Palette Design](art/tileset-palette.md)
+- [Pigment — Palette Tool](art/pigment.md)
+- [Art Integration Guide](art/art-integration.md)
+- [Learning Resources](art/art-resources.md)
+
+---
+
+# Characters
+
+- [Knight](art/characters/knight.md)
 
 ---
 
