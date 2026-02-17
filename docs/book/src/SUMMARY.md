@@ -40,6 +40,7 @@
 - [Art Specification](art/art-spec.md)
 - [Color Theory and Palette Design](art/color-theory.md)
 - [Tileset Palette Design](art/tileset-palette.md)
+- [Pigment — Palette Tool](art/pigment.md)
 - [Art Integration Guide](art/art-integration.md)
 - [Learning Resources](art/art-resources.md)
 
