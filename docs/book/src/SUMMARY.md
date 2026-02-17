@@ -22,10 +22,12 @@
 - [Aiming and Shooting](architecture/shooting.md)
 - [Weapons and Pickups](architecture/weapons.md)
 - [Melee Attack and Dash](architecture/melee-and-dash.md)
+- [Room Progression and Waves](architecture/room-progression.md)
 - [Smooth Character Movement](architecture/smooth-movement.md)
 - [Sprite Animation](architecture/sprite-animation.md)
 - [Tilemaps and LDtk Integration](architecture/tilemaps.md)
 - [Scene Management](architecture/scenes.md)
+- [Player Classes](architecture/player-classes.md)
 
 ---
 
@@ -38,6 +40,7 @@
 # Art & Animation
 
 - [Art Specification](art/art-spec.md)
+- [Aseprite Setup Guide](art/art-aseprite-guide.md)
 - [Color Theory and Palette Design](art/color-theory.md)
 - [Tileset Palette Design](art/tileset-palette.md)
 - [Pigment — Palette Tool](art/pigment.md)
@@ -52,11 +55,22 @@
 
 ---
 
+# Audio & Sound
+
+- [Audio Specification](audio-spec.md)
+- [Audio Integration Guide](audio-integration.md)
+- [Learning Resources](audio-resources.md)
+
+---
+
 # Development Log
 
 - [Project Setup](devlog/2026-02-08-project-setup.md)
 - [From Danmaku to Roguelike](devlog/2026-02-08-danmaku-to-roguelike.md)
 - [Melee and Dash System](devlog/2026-02-10-melee-dash-system.md)
+- [Room Progression and HUD](devlog/2026-02-11-room-progression.md)
+- [Player Class System](devlog/2026-02-12-player-class-system.md)
+- [SDL3 Migration](devlog/2026-02-12-sdl3-migration.md)
 
 ---
 
@@ -70,3 +84,8 @@
 - [ADR-0006: No Third-Party Engine](decisions/0006-no-third-party-engine.md)
 - [ADR-0007: Deferred Entity Destruction](decisions/0007-deferred-entity-destruction.md)
 - [ADR-0008: Melee Disarm Over Death Drops](decisions/0008-melee-disarm-over-death-drops.md)
+- [ADR-0009: Data-Driven Wave Definitions](decisions/0009-data-driven-wave-definitions.md)
+- [ADR-0010: SDL_mixer for Audio](decisions/0010-sdl2-mixer-audio.md)
+- [ADR-0011: Player Classes as Component Recipes](decisions/0011-class-as-component-recipe.md)
+- [ADR-0012: Concussion Shot VFX](decisions/0012-concussion-shot-vfx.md)
+- [ADR-0013: SDL3 Migration](decisions/0013-sdl3-migration.md)

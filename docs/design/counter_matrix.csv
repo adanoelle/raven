@@ -1,0 +1,7 @@
+Enemy Type,Brawler,Sharpshooter,Tactician,Alchemist,Reasoning
+Kiter,⚠️ WEAK,✓ STRONG,~ NEUTRAL,✗ WEAK,Brawler can't catch / Sharpshooter outranges / Tactician can zone / Alchemist DoT wasted on kiting
+Swarm,✓ STRONG,⚠️ WEAK,✓ STRONG,✓ STRONG,Brawler cleaves / Sharpshooter overwhelmed / Tactician AoE CC / Alchemist spreads poison
+Juggernaut,~ NEUTRAL,✓ STRONG,✗ WEAK,~ NEUTRAL,Brawler facetanks fine / Sharpshooter bursts / Tactician CC useless / Alchemist grinds down
+Viper,⚠️ WEAK,✗ WEAK,✓ STRONG,✗ WEAK,Brawler can't catch / Sharpshooter struggles with speed / Tactician zones / Alchemist countered hard
+Bomber,✓ STRONG,~ NEUTRAL,✓ STRONG,⚠️ WEAK,Brawler tanks explosion / Sharpshooter picks off / Tactician controls / Alchemist wastes DoT
+Sniper,~ NEUTRAL,⚠️ WEAK,~ NEUTRAL,~ NEUTRAL,Armor pierce hurts everyone but telegraph allows dodging

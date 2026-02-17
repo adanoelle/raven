@@ -1,8 +1,9 @@
 #pragma once
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace raven {
@@ -21,6 +22,7 @@ struct SpawnPoint {
     std::string name; ///< Entity identifier (e.g. "PlayerStart", "EnemySpawn").
     float x;          ///< World X position in pixels.
     float y;          ///< World Y position in pixels.
+    std::unordered_map<std::string, std::string> fields; ///< Custom LDtk entity fields.
 };
 
 /// @brief Tilemap loaded from an LDtk project. Holds pre-baked render data,
@@ -67,6 +69,11 @@ class Tilemap {
     /// @param name Spawn point identifier.
     /// @return Pointer to the spawn point, or nullptr if not found.
     [[nodiscard]] const SpawnPoint* find_spawn(const std::string& name) const;
+
+    /// @brief Find all spawn points matching a name.
+    /// @param name Spawn point identifier to match.
+    /// @return Vector of pointers to matching spawn points.
+    [[nodiscard]] std::vector<const SpawnPoint*> find_all_spawns(const std::string& name) const;
 
     /// @brief Level width in pixels.
     [[nodiscard]] int width_px() const { return width_px_; }

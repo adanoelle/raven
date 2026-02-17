@@ -7,8 +7,8 @@ Read the [Art Specification](art-spec.md) first for asset format requirements.
 
 ## 1. Pipeline Overview
 
-Data flows from PNG files on disk through the config and rendering systems to the
-screen:
+Data flows from PNG files on disk through the config and rendering systems to
+the screen:
 
 ```
 assets/sprites/*.png
@@ -26,18 +26,18 @@ Sprite component               attached to an entity, references sheet_id + fram
 render_sprites()               queries Transform2D + Sprite, interpolates, draws
         │
         ▼
-SDL_Renderer → screen          480×270 virtual resolution, nearest-neighbor upscale
+SDL_Renderer → screen          480×270 virtual resolution, SDL_SCALEMODE_PIXELART upscale
 ```
 
 **Key files:**
 
-| File | Role |
-|------|------|
-| `assets/data/config.json` | Sprite sheet and sprite definition registry |
-| `src/rendering/sprite_sheet.hpp` | `SpriteSheet` and `SpriteSheetManager` classes |
-| `src/ecs/components.hpp` | `Sprite`, `Animation`, and all other components |
-| `src/ecs/systems/render_system.cpp` | `render_sprites()` system |
-| `src/core/game.cpp` | `Game::load_assets()` — reads config and loads sheets |
+| File                                | Role                                                  |
+| ----------------------------------- | ----------------------------------------------------- |
+| `assets/data/config.json`           | Sprite sheet and sprite definition registry           |
+| `src/rendering/sprite_sheet.hpp`    | `SpriteSheet` and `SpriteSheetManager` classes        |
+| `src/ecs/components.hpp`            | `Sprite`, `Animation`, and all other components       |
+| `src/ecs/systems/render_system.cpp` | `render_sprites()` system                             |
+| `src/core/game.cpp`                 | `Game::load_assets()` — reads config and loads sheets |
 
 ---
 
@@ -55,19 +55,19 @@ Add an entry to the `sprite_sheets` array:
 
 ```json
 {
-    "id": "player",
-    "path": "assets/sprites/player.png",
-    "frame_w": 16,
-    "frame_h": 16
+  "id": "player",
+  "path": "assets/sprites/player.png",
+  "frame_w": 16,
+  "frame_h": 16
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique identifier used by `Sprite::sheet_id` |
-| `path` | string | Path to the PNG relative to the working directory |
-| `frame_w` | int | Width of one frame in pixels |
-| `frame_h` | int | Height of one frame in pixels |
+| Field     | Type   | Description                                       |
+| --------- | ------ | ------------------------------------------------- |
+| `id`      | string | Unique identifier used by `Sprite::sheet_id`      |
+| `path`    | string | Path to the PNG relative to the working directory |
+| `frame_w` | int    | Width of one frame in pixels                      |
+| `frame_h` | int    | Height of one frame in pixels                     |
 
 ### Step 3: Optionally add sprite definitions
 
@@ -86,7 +86,13 @@ index in the `Sprite` component.
 
 `Game::load_assets()` reads `config.json` at startup and calls
 `SpriteSheetManager::load()` for each entry. Loading is non-fatal: if a sheet
-fails to load, the engine logs a warning and continues with placeholder rendering.
+fails to load, the engine logs a warning and continues with placeholder
+rendering.
+
+Each loaded texture automatically gets
+`SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_PIXELART)` applied during
+`SpriteSheet::load()`. This ensures clean pixel-art upscaling without blurring —
+no manual setup is needed per sheet.
 
 ---
 
@@ -116,27 +122,27 @@ reg.emplace<Sprite>(entity, "player", 0, 0, 16, 16, 0, false);
 
 ### Field reference
 
-| Field | Meaning |
-|-------|---------|
-| `sheet_id` | Must match an `id` in config.json's `sprite_sheets` |
-| `frame_x` | Column index — which frame within the current animation row |
-| `frame_y` | Row index — which animation state |
-| `width` | Frame width in pixels (must match `frame_w` in config) |
-| `height` | Frame height in pixels (must match `frame_h` in config) |
-| `layer` | Drawing order. Higher values render on top of lower values |
-| `flip_x` | `true` draws the sprite mirrored horizontally (leftward facing) |
+| Field      | Meaning                                                         |
+| ---------- | --------------------------------------------------------------- |
+| `sheet_id` | Must match an `id` in config.json's `sprite_sheets`             |
+| `frame_x`  | Column index — which frame within the current animation row     |
+| `frame_y`  | Row index — which animation state                               |
+| `width`    | Frame width in pixels (must match `frame_w` in config)          |
+| `height`   | Frame height in pixels (must match `frame_h` in config)         |
+| `layer`    | Drawing order. Higher values render on top of lower values      |
+| `flip_x`   | `true` draws the sprite mirrored horizontally (leftward facing) |
 
 ### Layer conventions
 
-| Layer | Usage |
-|-------|-------|
-| 0 | Background tiles |
-| 10 | Floor decorations |
-| 20 | Items and pickups |
-| 30 | Enemies and player |
-| 40 | Projectiles |
-| 50 | VFX (explosions, hit sparks) |
-| 60 | UI overlays |
+| Layer | Usage                        |
+| ----- | ---------------------------- |
+| 0     | Background tiles             |
+| 10    | Floor decorations            |
+| 20    | Items and pickups            |
+| 30    | Enemies and player           |
+| 40    | Projectiles                  |
+| 50    | VFX (explosions, hit sparks) |
+| 60    | UI overlays                  |
 
 These are conventions, not hard rules. Use intermediate values for fine-grained
 ordering within a category.
@@ -189,7 +195,9 @@ render_y = prev.y + (tf.y - prev.y) * interpolation_alpha;
 ```
 
 This produces smooth movement between the 120 Hz fixed-timestep ticks regardless
-of display refresh rate.
+of display refresh rate. SDL3's `SDL_FRect` float-precision rectangles preserve
+these sub-pixel positions all the way to the GPU, eliminating the 1px jitter
+that occurred with SDL2's integer `SDL_Rect` on slow-moving entities.
 
 ### Draw order
 
@@ -211,21 +219,21 @@ top-left corner.
 
 ### Horizontal flip
 
-When `Sprite::flip_x` is `true`, the sprite is drawn mirrored via
-`SDL_FLIP_HORIZONTAL`. All art faces right; the engine mirrors for leftward
-movement.
+When `Sprite::flip_x` is `true`, the sprite is drawn mirrored via the
+`SDL_FlipMode` enum (`SDL_FLIP_HORIZONTAL`). All art faces right; the engine
+mirrors for leftward movement.
 
 ### Placeholder fallback
 
 If the sprite sheet is not loaded (sheet ID not found), the system draws a
 colored rectangle instead:
 
-| Entity type | Color |
-|-------------|-------|
-| Player | Cyan |
-| Bullet | Red |
-| Enemy | Magenta |
-| Other | Gray |
+| Entity type | Color   |
+| ----------- | ------- |
+| Player      | Cyan    |
+| Bullet      | Red     |
+| Enemy       | Magenta |
+| Other       | Gray    |
 
 This allows development and testing without final art assets.
 
@@ -255,10 +263,10 @@ system.
 
 ### Field mapping
 
-| Animation field | Sprite field | Meaning |
-|-----------------|--------------|---------|
-| `current_frame` | `frame_x` | Column index — which frame within the row |
-| (set externally) | `frame_y` | Row index — which animation state row |
+| Animation field  | Sprite field | Meaning                                   |
+| ---------------- | ------------ | ----------------------------------------- |
+| `current_frame`  | `frame_x`    | Column index — which frame within the row |
+| (set externally) | `frame_y`    | Row index — which animation state row     |
 
 `frame_y` is not driven by the Animation component. It is set when switching
 animation states (e.g., from idle to walk).
@@ -272,12 +280,12 @@ frame_duration = 1.0 / anim_fps
 ```
 
 | Anim FPS | frame_duration |
-|----------|----------------|
-| 4 | 0.250s |
-| 8 | 0.125s |
-| 10 | 0.100s |
-| 12 | 0.083s |
-| 15 | 0.067s |
+| -------- | -------------- |
+| 4        | 0.250s         |
+| 8        | 0.125s         |
+| 10       | 0.100s         |
+| 12       | 0.083s         |
+| 15       | 0.067s         |
 
 ---
 
@@ -356,6 +364,7 @@ Complete walkthrough from receiving art to seeing it animate in-game.
 ### 1. Receive and place the sprite sheet
 
 Save the PNG to `assets/sprites/`. Verify it follows the art-spec:
+
 - Uniform frame grid, no padding
 - Rows = animation states, columns = frames
 - Faces right
@@ -364,7 +373,12 @@ Save the PNG to `assets/sprites/`. Verify it follows the art-spec:
 ### 2. Add a config.json entry
 
 ```json
-{ "id": "goblin", "path": "assets/sprites/goblin.png", "frame_w": 16, "frame_h": 16 }
+{
+  "id": "goblin",
+  "path": "assets/sprites/goblin.png",
+  "frame_w": 16,
+  "frame_h": 16
+}
 ```
 
 ### 3. Create the entity with components

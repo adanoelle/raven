@@ -9,23 +9,22 @@ the previous passive death-drop system with an active risk/reward mechanic.
 
 **Melee attack** — a directional cone hitbox (90 deg arc, 30 px range) that
 damages enemies, applies knockback, and disarms those with bullet emitters.
-Disarmed enemies lose their ranged attack and become aggressive Chasers at
-1.5x speed, creating immediate pressure on the player.
+Disarmed enemies lose their ranged attack and become aggressive Chasers at 1.5x
+speed, creating immediate pressure on the player.
 
 **Dash** — a burst movement ability (400 px/s for 0.12 s) with brief
 invulnerability (0.18 s). Uses movement direction if the player is moving,
-otherwise aim direction. The input system skips normal velocity updates during
-a dash so the two don't fight.
+otherwise aim direction. The input system skips normal velocity updates during a
+dash so the two don't fight.
 
 **Input bindings** — melee on right mouse button / C / gamepad X. Dash on space
 bar / gamepad LB. Both have cooldowns (0.4 s melee, 0.6 s dash).
 
 **Code review fixes** — extracted the duplicated `find_player_position` helper
-from `ai_system.cpp` and `emitter_system.cpp` into a shared
-`player_utils.hpp`. Restructured the contact damage cooldown tick in
-`ai_system.cpp` to run as a separate pass before the overlap check, fixing a
-structural issue where cooldowns were ticked inside the player-vs-enemy nested
-loop.
+from `ai_system.cpp` and `emitter_system.cpp` into a shared `player_utils.hpp`.
+Restructured the contact damage cooldown tick in `ai_system.cpp` to run as a
+separate pass before the overlap check, fixing a structural issue where
+cooldowns were ticked inside the player-vs-enemy nested loop.
 
 ## Design rationale
 
@@ -52,6 +51,6 @@ long enough that it can't be spammed.
 
 ## Test results
 
-60/60 tests pass, including 20 new tests covering arc geometry, melee damage
-and disarm, dash mechanics and cooldowns, input system interaction, and the
-contact damage cooldown fix.
+60/60 tests pass, including 20 new tests covering arc geometry, melee damage and
+disarm, dash mechanics and cooldowns, input system interaction, and the contact
+damage cooldown fix.

@@ -1,0 +1,59 @@
+{
+    "name": "stage_03",
+    "level": "Room_03",
+    "waves": [
+        {
+            "enemies": [
+                {
+                    "spawn_index": 0,
+                    "type": "grunt",
+                    "pattern": "spiral_3way",
+                    "hp": 1.0,
+                    "score": 100,
+                    "ai": "chaser",
+                    "contact_damage": true
+                },
+                {
+                    "spawn_index": 1,
+                    "type": "mid",
+                    "pattern": "aimed_burst",
+                    "hp": 3.0,
+                    "score": 300,
+                    "ai": "stalker"
+                }
+            ]
+        },
+        {
+            "enemies": [
+                {
+                    "spawn_index": 0,
+                    "type": "mid",
+                    "pattern": "aimed_burst",
+                    "hp": 3.0,
+                    "score": 300,
+                    "ai": "stalker"
+                },
+                {
+                    "spawn_index": 1,
+                    "type": "grunt",
+                    "pattern": "spiral_3way",
+                    "hp": 1.0,
+                    "score": 100,
+                    "ai": "drifter"
+                }
+            ]
+        },
+        {
+            "enemies": [
+                {
+                    "spawn_index": 0,
+                    "type": "boss",
+                    "pattern": "nova_legendary",
+                    "hp": 10.0,
+                    "score": 1000,
+                    "ai": "coward"
+                }
+            ]
+        }
+    ]
+}

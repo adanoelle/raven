@@ -143,13 +143,13 @@ Only one pickup is collected per frame (`break` after first hit).
 
 1. Decrement `decay.remaining` by `dt`.
 2. If `remaining <= 0`:
-   - **Damage**: if the entity is a `Player` and not `Invulnerable`, subtract
-     1 HP and grant 2 s invulnerability. If already invulnerable, skip damage
+   - **Damage**: if the entity is a `Player` and not `Invulnerable`, subtract 1
+     HP and grant 2 s invulnerability. If already invulnerable, skip damage
      entirely.
-   - **VFX**: spawn an `ExplosionVfx` entity at the player's position with a
-     0.5 s `Lifetime`.
-   - **Revert**: restore the player's `Weapon` from `DefaultWeapon`, then
-     remove both `WeaponDecay` and `DefaultWeapon`.
+   - **VFX**: spawn an `ExplosionVfx` entity at the player's position with a 0.5
+     s `Lifetime`.
+   - **Revert**: restore the player's `Weapon` from `DefaultWeapon`, then remove
+     both `WeaponDecay` and `DefaultWeapon`.
 
 The weapon **always** reverts regardless of invulnerability state — only the
 damage is conditional.
@@ -223,11 +223,11 @@ The component design enables several gameplay dynamics:
   must find a stabilizer or accept the explosion damage. Holding a Legendary
   weapon is pure risk: it can never be stabilized.
 - **Chained steals** — collecting a second weapon while decaying resets the
-  timer but preserves the original default, so the player can keep gambling
-  for better drops.
-- **Intentional hit** — a player who is already invulnerable (e.g. from a
-  recent damage hit) can let the decay expire with no penalty, effectively
-  getting a free weapon cycle.
+  timer but preserves the original default, so the player can keep gambling for
+  better drops.
+- **Intentional hit** — a player who is already invulnerable (e.g. from a recent
+  damage hit) can let the decay expire with no penalty, effectively getting a
+  free weapon cycle.
 - **Tier gating** — the Common/Rare/Legendary hierarchy lets level designers
   control power curves per enemy type without touching code.
 - **Extensibility** — the factoring supports straightforward additions:
@@ -242,36 +242,36 @@ The component design enables several gameplay dynamics:
 
 `tests/test_pickups.cpp` covers the pickup and decay systems with Catch2:
 
-| Test case | What it verifies |
-| --------- | ---------------- |
-| Player collects weapon pickup | Pickup destroyed, weapon equipped, decay starts, default saved |
-| Separated pickup is not collected | No collection when hitboxes don't overlap |
-| Weapon reverts after decay expires | Default weapon restored, decay + default removed |
-| Decay timer ticks down | `remaining` decreases by `dt` each frame |
-| Second pickup while decaying does not overwrite DefaultWeapon | Original default preserved across chained steals |
-| weapon_from_emitter conversion | All emitter fields map to correct weapon fields |
-| Enemy death does not spawn weapon pickup | Weapons only via melee disarm |
-| Decay expires — damage, invulnerability, revert | 1 HP lost, 2 s invulnerability granted, weapon reverted |
-| Decay expires while invulnerable — no damage | HP unchanged, weapon still reverts |
-| Explosion spawns ExplosionVfx entity | VFX at player position with 0.5 s lifetime |
-| Stabilizer collected removes decay and default | Weapon becomes permanent |
-| Stabilizer ignored for Legendary tier | Stabilizer entity not destroyed |
-| Stabilizer ignored without WeaponDecay | No effect when player has no stolen weapon |
-| Stabilizer works for Common and Rare tiers | Both non-Legendary tiers can stabilize |
-| Boss always drops stabilizer | 100% drop rate verified |
-| Grunt never drops stabilizer | 0% drop rate verified |
-| Mid drops stabilizer probabilistically | Statistical check over 100 enemies |
-| Weapon tier flows from PatternDef to melee pickup | JSON tier string → enum → melee disarm pickup weapon tier |
-| PatternDef tier parsed from JSON | Explicit common/rare/legendary and missing-defaults-to-common |
+| Test case                                                     | What it verifies                                               |
+| ------------------------------------------------------------- | -------------------------------------------------------------- |
+| Player collects weapon pickup                                 | Pickup destroyed, weapon equipped, decay starts, default saved |
+| Separated pickup is not collected                             | No collection when hitboxes don't overlap                      |
+| Weapon reverts after decay expires                            | Default weapon restored, decay + default removed               |
+| Decay timer ticks down                                        | `remaining` decreases by `dt` each frame                       |
+| Second pickup while decaying does not overwrite DefaultWeapon | Original default preserved across chained steals               |
+| weapon_from_emitter conversion                                | All emitter fields map to correct weapon fields                |
+| Enemy death does not spawn weapon pickup                      | Weapons only via melee disarm                                  |
+| Decay expires — damage, invulnerability, revert               | 1 HP lost, 2 s invulnerability granted, weapon reverted        |
+| Decay expires while invulnerable — no damage                  | HP unchanged, weapon still reverts                             |
+| Explosion spawns ExplosionVfx entity                          | VFX at player position with 0.5 s lifetime                     |
+| Stabilizer collected removes decay and default                | Weapon becomes permanent                                       |
+| Stabilizer ignored for Legendary tier                         | Stabilizer entity not destroyed                                |
+| Stabilizer ignored without WeaponDecay                        | No effect when player has no stolen weapon                     |
+| Stabilizer works for Common and Rare tiers                    | Both non-Legendary tiers can stabilize                         |
+| Boss always drops stabilizer                                  | 100% drop rate verified                                        |
+| Grunt never drops stabilizer                                  | 0% drop rate verified                                          |
+| Mid drops stabilizer probabilistically                        | Statistical check over 100 enemies                             |
+| Weapon tier flows from PatternDef to melee pickup             | JSON tier string → enum → melee disarm pickup weapon tier      |
+| PatternDef tier parsed from JSON                              | Explicit common/rare/legendary and missing-defaults-to-common  |
 
 ## Key files
 
-| File | Role |
-| ---- | ---- |
-| `src/ecs/components.hpp` | `Weapon`, `WeaponPickup`, `WeaponDecay`, `DefaultWeapon`, `StabilizerPickup`, `ExplosionVfx` |
-| `src/ecs/systems/pickup_system.hpp` | `update_pickups()`, `update_weapon_decay()`, `weapon_from_emitter()` declarations |
-| `src/ecs/systems/pickup_system.cpp` | Pickup collection, decay timer, emitter-to-weapon conversion |
-| `src/ecs/systems/damage_system.cpp` | Enemy death → weapon pickup + stabilizer drop spawning |
-| `src/patterns/pattern_library.hpp` | `PatternDef` with `tier` field, `EmitterDef` struct |
-| `src/scenes/game_scene.cpp` | System execution order, RNG seeding |
-| `tests/test_pickups.cpp` | Catch2 tests for pickups, decay, stabilizer, tiers |
+| File                                | Role                                                                                         |
+| ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| `src/ecs/components.hpp`            | `Weapon`, `WeaponPickup`, `WeaponDecay`, `DefaultWeapon`, `StabilizerPickup`, `ExplosionVfx` |
+| `src/ecs/systems/pickup_system.hpp` | `update_pickups()`, `update_weapon_decay()`, `weapon_from_emitter()` declarations            |
+| `src/ecs/systems/pickup_system.cpp` | Pickup collection, decay timer, emitter-to-weapon conversion                                 |
+| `src/ecs/systems/damage_system.cpp` | Enemy death → weapon pickup + stabilizer drop spawning                                       |
+| `src/patterns/pattern_library.hpp`  | `PatternDef` with `tier` field, `EmitterDef` struct                                          |
+| `src/scenes/game_scene.cpp`         | System execution order, RNG seeding                                                          |
+| `tests/test_pickups.cpp`            | Catch2 tests for pickups, decay, stabilizer, tiers                                           |

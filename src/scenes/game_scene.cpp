@@ -3,13 +3,18 @@
 #include "core/game.hpp"
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
+#include "ecs/player_class.hpp"
 #include "ecs/systems/ai_system.hpp"
 #include "ecs/systems/animation_system.hpp"
+#include "ecs/systems/charged_shot_system.hpp"
 #include "ecs/systems/cleanup_system.hpp"
 #include "ecs/systems/collision_system.hpp"
+#include "ecs/systems/concussion_shot_system.hpp"
 #include "ecs/systems/damage_system.hpp"
 #include "ecs/systems/dash_system.hpp"
 #include "ecs/systems/emitter_system.hpp"
+#include "ecs/systems/ground_slam_system.hpp"
+#include "ecs/systems/hud_system.hpp"
 #include "ecs/systems/input_system.hpp"
 #include "ecs/systems/melee_system.hpp"
 #include "ecs/systems/movement_system.hpp"
@@ -18,6 +23,9 @@
 #include "ecs/systems/shooting_system.hpp"
 #include "ecs/systems/tile_collision_system.hpp"
 #include "ecs/systems/tilemap_render_system.hpp"
+#include "ecs/systems/wave_system.hpp"
+#include "scenes/game_over_scene.hpp"
+#include "scenes/title_scene.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -25,25 +33,39 @@
 
 namespace raven {
 
+GameScene::GameScene(ClassId::Id player_class) : selected_class_(player_class) {}
+
 void GameScene::on_enter(Game& game) {
     spdlog::info("Entered game scene");
 
     game.input().set_renderer(game.renderer().sdl_renderer());
     game.input().set_window(game.renderer().sdl_window());
-    tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", "Test_Room");
 
     auto& interner = game.registry().ctx().get<StringInterner>();
     pattern_lib_.set_interner(interner);
     pattern_lib_.load_manifest("assets/data/patterns/manifest.json");
 
     game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
+    auto& game_state = game.registry().ctx().emplace<GameState>();
+    game_state.player_class = selected_class_;
+
+    // Load stage manifest
+    stage_loader_.load_manifest("assets/data/stages/stage_manifest.json");
+    current_stage_ = 0;
 
     spawn_player(game);
-    spawn_enemies(game);
+
+    // Enter first room
+    const auto* stage = stage_loader_.get(current_stage_);
+    if (stage) {
+        enter_room(game, stage->level);
+    } else {
+        // Fallback: load the test room if no stages available
+        tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", "Test_Room");
+    }
 }
 
 void GameScene::on_exit(Game& game) {
-    // Clear all entities
     game.registry().clear();
     spdlog::info("Exited game scene");
 }
@@ -79,106 +101,88 @@ void GameScene::spawn_player(Game& game) {
     auto& weapon = reg.emplace<Weapon>(player);
     weapon.bullet_sheet = interner.intern("projectiles");
 
+    // Apply class recipe
+    switch (selected_class_) {
+    case ClassId::Id::Brawler:
+        apply_brawler(reg, player);
+        break;
+    case ClassId::Id::Sharpshooter:
+        apply_sharpshooter(reg, player);
+        break;
+    }
+
     spdlog::debug("Player spawned at ({}, {})", spawn_x, spawn_y);
 }
 
-void GameScene::spawn_enemies(Game& game) {
+void GameScene::enter_room(Game& game, const std::string& level) {
+    clear_room_entities(game);
+
+    // Reload tilemap
+    tilemap_ = Tilemap{};
+    tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", level);
+
+    // Reposition player to PlayerStart
     auto& reg = game.registry();
-    auto& interner = reg.ctx().get<StringInterner>();
-
-    struct EnemyDef {
-        float x;
-        float y;
-        Enemy::Type type;
-        float hp;
-        std::string pattern;
-        int score;
-        int frame;
-        AiBehavior ai;
-        bool contact_damage;
-    };
-
-    const EnemyDef defs[] = {
-        {100.f,
-         60.f,
-         Enemy::Type::Grunt,
-         1.f,
-         "spiral_3way",
-         100,
-         0,
-         {AiBehavior::Archetype::Chaser, AiBehavior::Phase::Idle, 70.f, 160.f, 0.f, 80.f, 0.f, 1.f},
-         true},
-        {240.f,
-         50.f,
-         Enemy::Type::Grunt,
-         1.f,
-         "spiral_3way",
-         100,
-         0,
-         {AiBehavior::Archetype::Chaser, AiBehavior::Phase::Idle, 70.f, 160.f, 0.f, 80.f, 0.f, 1.f},
-         true},
-        {240.f,
-         200.f,
-         Enemy::Type::Grunt,
-         1.f,
-         "spiral_3way",
-         100,
-         0,
-         {AiBehavior::Archetype::Drifter, AiBehavior::Phase::Idle, 40.f, 200.f, 0.f, 100.f, 0.f,
-          1.f},
-         false},
-        {380.f,
-         60.f,
-         Enemy::Type::Mid,
-         3.f,
-         "aimed_burst",
-         300,
-         1,
-         {AiBehavior::Archetype::Stalker, AiBehavior::Phase::Idle, 90.f, 160.f, 90.f, 120.f, 0.f,
-          1.f},
-         false},
-        {140.f,
-         140.f,
-         Enemy::Type::Mid,
-         3.f,
-         "aimed_burst",
-         300,
-         1,
-         {AiBehavior::Archetype::Stalker, AiBehavior::Phase::Idle, 90.f, 160.f, 90.f, 120.f, 0.f,
-          1.f},
-         false},
-        {340.f,
-         140.f,
-         Enemy::Type::Boss,
-         10.f,
-         "nova_legendary",
-         1000,
-         2,
-         {AiBehavior::Archetype::Coward, AiBehavior::Phase::Idle, 110.f, 200.f, 0.f, 999.f, 0.f,
-          1.f},
-         false},
-    };
-
-    for (const auto& def : defs) {
-        auto enemy = reg.create();
-        reg.emplace<Transform2D>(enemy, def.x, def.y);
-        reg.emplace<PreviousTransform>(enemy, def.x, def.y);
-        reg.emplace<Velocity>(enemy);
-        reg.emplace<Enemy>(enemy, def.type);
-        reg.emplace<Health>(enemy, def.hp, def.hp);
-        reg.emplace<CircleHitbox>(enemy, 7.f);
-        reg.emplace<RectHitbox>(enemy, 12.f, 14.f, 0.f, 0.f);
-        reg.emplace<Sprite>(enemy, interner.intern("enemies"), def.frame, 0, 16, 16, 10);
-        reg.emplace<ScoreValue>(enemy, def.score);
-        reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def.pattern), {}, {}});
-        reg.emplace<AiBehavior>(enemy, def.ai);
-
-        if (def.contact_damage) {
-            reg.emplace<ContactDamage>(enemy);
+    auto player_view = reg.view<Player, Transform2D, PreviousTransform>();
+    for (auto [entity, player, tf, prev] : player_view.each()) {
+        float spawn_x = static_cast<float>(Renderer::VIRTUAL_WIDTH) / 2.f;
+        float spawn_y = static_cast<float>(Renderer::VIRTUAL_HEIGHT) / 2.f;
+        if (const auto* start = tilemap_.find_spawn("PlayerStart")) {
+            spawn_x = start->x;
+            spawn_y = start->y;
         }
+        tf.x = spawn_x;
+        tf.y = spawn_y;
+        prev.x = spawn_x;
+        prev.y = spawn_y;
     }
 
-    spdlog::debug("Spawned {} playtest enemies", std::size(defs));
+    // Spawn Exit entities from tilemap
+    auto exit_spawns = tilemap_.find_all_spawns("Exit");
+    for (const auto* sp : exit_spawns) {
+        std::string target;
+        auto it = sp->fields.find("target_level");
+        if (it != sp->fields.end()) {
+            target = it->second;
+        }
+
+        auto exit_entity = reg.create();
+        reg.emplace<Transform2D>(exit_entity, sp->x, sp->y);
+        reg.emplace<CircleHitbox>(exit_entity, 12.f);
+        reg.emplace<Exit>(exit_entity, Exit{std::move(target), false});
+    }
+
+    // Reset wave state
+    const auto* stage = stage_loader_.get(current_stage_);
+    auto& state = reg.ctx().get<GameState>();
+    state.current_wave = 0;
+    state.total_waves = stage ? static_cast<int>(stage->waves.size()) : 0;
+    state.room_cleared = false;
+
+    // Spawn wave 0
+    if (stage && !stage->waves.empty()) {
+        systems::spawn_wave(reg, tilemap_, *stage, 0, pattern_lib_);
+    }
+
+    spdlog::info("Entered room '{}'", level);
+}
+
+void GameScene::clear_room_entities(Game& game) {
+    auto& reg = game.registry();
+
+    // Destroy all entities except the player
+    std::vector<entt::entity> to_destroy;
+    auto& entities = reg.storage<entt::entity>();
+    for (auto entity : entities) {
+        if (reg.valid(entity) && !reg.any_of<Player>(entity)) {
+            to_destroy.push_back(entity);
+        }
+    }
+    for (auto entity : to_destroy) {
+        if (reg.valid(entity)) {
+            reg.destroy(entity);
+        }
+    }
 }
 
 void GameScene::update(Game& game, float dt) {
@@ -186,9 +190,12 @@ void GameScene::update(Game& game, float dt) {
     auto& input = game.input().state();
 
     // Run ECS systems in order
+    systems::update_charged_shot(reg, input, dt);
     systems::update_input(reg, input, dt);
     systems::update_melee(reg, input, pattern_lib_, dt);
     systems::update_dash(reg, input, dt);
+    systems::update_ground_slam(reg, input, dt);
+    systems::update_concussion_shot(reg, input, dt);
     systems::update_shooting(reg, input, dt);
     systems::update_emitters(reg, pattern_lib_, dt);
     systems::update_ai(reg, tilemap_, dt);
@@ -197,7 +204,7 @@ void GameScene::update(Game& game, float dt) {
     auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();
     for (auto [entity, player, vel, anim, sprite, state] : anim_view.each()) {
         AnimationState::State desired;
-        if (reg.any_of<MeleeAttack>(entity)) {
+        if (reg.any_of<MeleeAttack>(entity) || reg.any_of<GroundSlam>(entity)) {
             desired = AnimationState::State::Melee;
         } else if (reg.any_of<Dash>(entity)) {
             desired = AnimationState::State::Dash;
@@ -211,7 +218,6 @@ void GameScene::update(Game& game, float dt) {
             state.current = desired;
             switch (desired) {
             case AnimationState::State::Melee:
-                // TODO: melee animation frames (placeholder: use walk row)
                 sprite.frame_y = 1;
                 anim.start_frame = 0;
                 anim.end_frame = 2;
@@ -219,7 +225,6 @@ void GameScene::update(Game& game, float dt) {
                 anim.looping = false;
                 break;
             case AnimationState::State::Dash:
-                // TODO: dash animation frames (placeholder: use walk row)
                 sprite.frame_y = 1;
                 anim.start_frame = 0;
                 anim.end_frame = 2;
@@ -263,6 +268,33 @@ void GameScene::update(Game& game, float dt) {
     systems::update_damage(reg, pattern_lib_, dt);
     systems::update_cleanup(reg, dt, Renderer::VIRTUAL_WIDTH, Renderer::VIRTUAL_HEIGHT);
 
+    // Wave clear check + next wave spawn
+    const auto* stage = stage_loader_.get(current_stage_);
+    if (stage) {
+        systems::update_waves(reg, tilemap_, *stage, pattern_lib_);
+    }
+
+    // Exit overlap check — room transition
+    auto target = systems::check_exit_overlap(reg);
+    if (!target.empty()) {
+        current_stage_++;
+        const auto* next = stage_loader_.get(current_stage_);
+        if (next) {
+            enter_room(game, next->level);
+        } else {
+            // Victory — return to title
+            game.scenes().swap(std::make_unique<TitleScene>(), game);
+        }
+        return;
+    }
+
+    // Game over check
+    auto* game_state = reg.ctx().find<GameState>();
+    if (game_state && game_state->game_over) {
+        game.scenes().swap(std::make_unique<GameOverScene>(), game);
+        return;
+    }
+
     // Check for pause
     if (input.pause_pressed) {
         // TODO: push pause scene
@@ -283,23 +315,12 @@ void GameScene::render(Game& game) {
     float alpha = game.clock().interpolation_alpha;
     systems::render_sprites(game.registry(), r, game.sprites(), alpha);
 
-    // // Debug: draw player hitbox (interpolated to match sprite)
-    // auto view = game.registry().view<Transform2D, CircleHitbox, Player>();
-    // for (auto [entity, tf, hb, _] : view.each()) {
-    //     float hb_x = tf.x;
-    //     float hb_y = tf.y;
-    //     if (auto* prev = game.registry().try_get<PreviousTransform>(entity)) {
-    //         hb_x = prev->x + (tf.x - prev->x) * alpha;
-    //         hb_y = prev->y + (tf.y - prev->y) * alpha;
-    //     }
-    //     SDL_SetRenderDrawColor(r, 255, 255, 255, 100);
-    //     // Approximate circle with small rect for debug
-    //     SDL_Rect debug_rect{static_cast<int>(hb_x - hb.radius), static_cast<int>(hb_y -
-    //     hb.radius),
-    //                         static_cast<int>(hb.radius * 2.f), static_cast<int>(hb.radius
-    //                         * 2.f)};
-    //     SDL_RenderDrawRect(r, &debug_rect);
-    // }
+    // HUD overlay
+    render_hud(game);
+}
+
+void GameScene::render_hud(Game& game) {
+    systems::render_hud(game.registry(), game.renderer().sdl_renderer());
 }
 
 } // namespace raven

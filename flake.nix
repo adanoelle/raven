@@ -63,10 +63,8 @@
 
           buildInputs = with pkgs; [
             # Core game dependencies (system-level)
-            SDL2
-            SDL2_image
-            SDL2_mixer
-            SDL2_ttf
+            sdl3
+            sdl3-image
 
             # System libs SDL needs
             libGL
@@ -87,7 +85,7 @@
             echo "🐦 raven dev environment loaded"
             echo "   gcc:   $(gcc --version | head -1)"
             echo "   cmake: $(cmake --version | head -1)"
-            echo "   SDL2:  $(pkg-config --modversion sdl2)"
+            echo "   SDL3:  $(pkg-config --modversion sdl3)"
             echo ""
             echo "Commands:"
             echo "   just build     — configure + build"
@@ -112,7 +110,7 @@
 
           nativeBuildInputs = with pkgs; [ cmake ninja pkg-config ];
           buildInputs = with pkgs; [
-            SDL2 SDL2_image SDL2_mixer SDL2_ttf
+            sdl3 sdl3-image
           ];
 
           cmakeFlags = [

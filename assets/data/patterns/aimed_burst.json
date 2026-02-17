@@ -16,7 +16,7 @@
             "bullet_width": 8,
             "bullet_height": 8,
             "lifetime": 5.0,
-            "damage": 1.0,
+            "damage": 15.0,
             "hitbox_radius": 4.0
         }
     ]

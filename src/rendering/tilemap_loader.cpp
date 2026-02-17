@@ -1,6 +1,6 @@
 #include "rendering/tilemap.hpp"
 
-#include <SDL_image.h>
+#include <SDL3_image/SDL_image.h>
 #include <spdlog/spdlog.h>
 
 #include <LDtkLoader/Project.hpp>
@@ -62,15 +62,16 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
 
                 SDL_Surface* surface = IMG_Load(tex_path.c_str());
                 if (!surface) {
-                    spdlog::error("Failed to load tileset '{}': {}", tex_path, IMG_GetError());
+                    spdlog::error("Failed to load tileset '{}': {}", tex_path, SDL_GetError());
                     continue;
                 }
                 texture_ = SDL_CreateTextureFromSurface(renderer, surface);
-                SDL_FreeSurface(surface);
+                SDL_DestroySurface(surface);
                 if (!texture_) {
                     spdlog::error("Failed to create tileset texture: {}", SDL_GetError());
                     continue;
                 }
+                SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_PIXELART);
             }
 
             int cell = layer.getCellSize();
@@ -115,10 +116,13 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
 
                     SDL_Surface* surface = IMG_Load(tex_path.c_str());
                     if (!surface) {
-                        spdlog::error("Failed to load tileset '{}': {}", tex_path, IMG_GetError());
+                        spdlog::error("Failed to load tileset '{}': {}", tex_path, SDL_GetError());
                     } else {
                         texture_ = SDL_CreateTextureFromSurface(renderer, surface);
-                        SDL_FreeSurface(surface);
+                        SDL_DestroySurface(surface);
+                        if (texture_) {
+                            SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_PIXELART);
+                        }
                     }
                 }
 
@@ -138,8 +142,24 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
         } else if (layer_type == ldtk::LayerType::Entities) {
             for (const auto& entity : layer.allEntities()) {
                 auto pos = entity.getPosition();
-                spawns_.push_back(
-                    {entity.getName(), static_cast<float>(pos.x), static_cast<float>(pos.y)});
+                SpawnPoint sp{
+                    entity.getName(), static_cast<float>(pos.x), static_cast<float>(pos.y), {}};
+
+                // Extract string fields from LDtk entity
+                for (const auto& field_def : entity.allFields()) {
+                    if (field_def.type == ldtk::FieldType::String) {
+                        try {
+                            const auto& field = entity.getField<std::string>(field_def.name);
+                            if (!field.is_null()) {
+                                sp.fields[field_def.name] = field.value();
+                            }
+                        } catch (...) {
+                            // Field access can throw on type mismatch; skip silently
+                        }
+                    }
+                }
+
+                spawns_.push_back(std::move(sp));
             }
         }
     }

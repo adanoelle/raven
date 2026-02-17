@@ -42,9 +42,9 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
         const auto* sheet = sprites.get(interner.resolve(sprite.sheet_id));
         if (!sheet) {
             // No sprite sheet loaded — draw a placeholder colored rect
-            SDL_Rect rect{static_cast<int>(render_x - static_cast<float>(sprite.width) / 2.f),
-                          static_cast<int>(render_y - static_cast<float>(sprite.height) / 2.f),
-                          sprite.width, sprite.height};
+            SDL_FRect rect{render_x - static_cast<float>(sprite.width) / 2.f,
+                           render_y - static_cast<float>(sprite.height) / 2.f,
+                           static_cast<float>(sprite.width), static_cast<float>(sprite.height)};
 
             // Color by entity type for debugging
             if (reg.any_of<Player>(entity)) {

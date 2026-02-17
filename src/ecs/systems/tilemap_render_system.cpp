@@ -9,19 +9,20 @@ void render_tilemap(const Tilemap& tilemap, SDL_Renderer* renderer) {
 
     SDL_Texture* tex = tilemap.texture();
     for (const auto& tile : tilemap.tiles()) {
-        SDL_Rect dest{tile.dest_x, tile.dest_y, tile.src.w, tile.src.h};
+        SDL_FRect dest{static_cast<float>(tile.dest_x), static_cast<float>(tile.dest_y),
+                       static_cast<float>(tile.src.w), static_cast<float>(tile.src.h)};
 
-        int flip = SDL_FLIP_NONE;
+        SDL_FlipMode flip = SDL_FLIP_NONE;
         if (tile.flip_x) {
-            flip |= SDL_FLIP_HORIZONTAL;
+            flip = static_cast<SDL_FlipMode>(flip | SDL_FLIP_HORIZONTAL);
         }
         if (tile.flip_y) {
-            flip |= SDL_FLIP_VERTICAL;
+            flip = static_cast<SDL_FlipMode>(flip | SDL_FLIP_VERTICAL);
         }
 
-        SDL_Rect src = tile.src;
-        SDL_RenderCopyEx(renderer, tex, &src, &dest, 0.0, nullptr,
-                         static_cast<SDL_RendererFlip>(flip));
+        SDL_FRect src{static_cast<float>(tile.src.x), static_cast<float>(tile.src.y),
+                      static_cast<float>(tile.src.w), static_cast<float>(tile.src.h)};
+        SDL_RenderTextureRotated(renderer, tex, &src, &dest, 0.0, nullptr, flip);
     }
 }
 

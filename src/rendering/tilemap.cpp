@@ -96,4 +96,14 @@ const SpawnPoint* Tilemap::find_spawn(const std::string& name) const {
     return nullptr;
 }
 
+std::vector<const SpawnPoint*> Tilemap::find_all_spawns(const std::string& name) const {
+    std::vector<const SpawnPoint*> result;
+    for (const auto& sp : spawns_) {
+        if (sp.name == name) {
+            result.push_back(&sp);
+        }
+    }
+    return result;
+}
+
 } // namespace raven

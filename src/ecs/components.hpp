@@ -5,6 +5,7 @@
 #include <entt/entt.hpp>
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace raven {
@@ -232,7 +233,7 @@ struct AiBehavior {
 
 /// @brief Deals damage on spatial overlap (e.g. Chaser body damage).
 struct ContactDamage {
-    float damage = 1.f;    ///< Damage dealt per hit.
+    float damage = 15.f;   ///< Damage dealt per hit.
     float cooldown = 0.5f; ///< Minimum interval between hits (seconds).
     float timer = 0.f;     ///< Time until next hit allowed.
 };
@@ -242,6 +243,71 @@ struct Knockback {
     float dx = 0.f;        ///< Knockback velocity X in pixels/s.
     float dy = 0.f;        ///< Knockback velocity Y in pixels/s.
     float remaining = 0.f; ///< Duration remaining in seconds.
+};
+
+// ── Player Class ────────────────────────────────────────────────
+
+/// @brief Identifies the player's chosen class (UI/death messages only).
+struct ClassId {
+    /// @brief Available player classes.
+    enum class Id : uint8_t {
+        Brawler,     ///< Melee-focused tank class.
+        Sharpshooter ///< Ranged glass-cannon class.
+    };
+    Id id = Id::Brawler; ///< This player's class.
+};
+
+/// @brief Persistent stat overrides applied when creating MeleeAttack.
+struct MeleeStats {
+    float damage = 2.f;        ///< Per-enemy melee damage.
+    float range = 30.f;        ///< Arc reach in pixels.
+    float half_angle = 0.785f; ///< Half-angle of the melee cone in radians.
+    float knockback = 250.f;   ///< Knockback speed on hit.
+    float duration = 0.1f;     ///< Active hitbox duration.
+};
+
+/// @brief Active ground slam attack (Brawler active ability).
+struct GroundSlam {
+    float damage = 4.f;       ///< Damage dealt to enemies in radius.
+    float radius = 50.f;      ///< Area of effect radius in pixels.
+    float knockback = 350.f;  ///< Knockback speed on hit.
+    float remaining = 0.15f;  ///< Duration remaining in seconds.
+    bool hit_checked = false; ///< Ensures hit check runs exactly once.
+};
+
+/// @brief Cooldown timer for ground slam ability.
+struct GroundSlamCooldown {
+    float remaining = 0.f; ///< Time until next slam allowed (seconds).
+    float rate = 2.0f;     ///< Minimum interval between slams (seconds).
+};
+
+/// @brief Charged shot state (Sharpshooter passive — modifies shooting).
+struct ChargedShot {
+    float charge = 0.f;                  ///< Current charge level [0, 1].
+    float charge_rate = 0.8f;            ///< Seconds to reach full charge.
+    float min_damage_mult = 0.5f;        ///< Damage multiplier at zero charge.
+    float max_damage_mult = 3.0f;        ///< Damage multiplier at full charge.
+    float min_speed_mult = 1.0f;         ///< Bullet speed multiplier at zero charge.
+    float max_speed_mult = 1.8f;         ///< Bullet speed multiplier at full charge.
+    float move_penalty = 0.5f;           ///< Movement speed multiplier while charging.
+    float full_charge_threshold = 0.95f; ///< Charge level for piercing shots.
+    bool charging = false;               ///< Whether currently charging a shot.
+    bool was_shooting = false;           ///< Previous frame's shoot state.
+};
+
+/// @brief Active concussion shot blast (Sharpshooter active ability).
+struct ConcussionShot {
+    float radius = 45.f;      ///< Area of effect radius in pixels.
+    float knockback = 400.f;  ///< Knockback speed on hit.
+    float damage = 1.f;       ///< Damage dealt to enemies in radius.
+    float remaining = 0.1f;   ///< Duration remaining in seconds.
+    bool hit_checked = false; ///< Ensures hit check runs exactly once.
+};
+
+/// @brief Cooldown timer for concussion shot ability.
+struct ConcussionShotCooldown {
+    float remaining = 0.f; ///< Time until next shot allowed (seconds).
+    float rate = 3.0f;     ///< Minimum interval between shots (seconds).
 };
 
 // ── Melee / Dash ────────────────────────────────────────────────
@@ -295,5 +361,25 @@ struct StabilizerPickup {};
 
 /// @brief Tag: marks a visual-only explosion effect entity.
 struct ExplosionVfx {};
+
+// ── Room / Wave ────────────────────────────────────────────────
+
+/// @brief Exit entity that transports the player to another room.
+struct Exit {
+    std::string target_level; ///< LDtk level name to load.
+    bool open = false;        ///< Active only after room is cleared.
+};
+
+// ── Game Context (registry singleton) ──────────────────────────
+
+/// @brief Persistent session state stored in registry context.
+struct GameState {
+    int score = 0;             ///< Accumulated score for the session.
+    int current_wave = 0;      ///< Index of the currently active wave.
+    int total_waves = 0;       ///< Total number of waves in the current stage.
+    bool room_cleared = false; ///< True when all waves are exhausted.
+    bool game_over = false;    ///< True when the player has lost all lives.
+    ClassId::Id player_class = ClassId::Id::Brawler; ///< Class used this session.
+};
 
 } // namespace raven

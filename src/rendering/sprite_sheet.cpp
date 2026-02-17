@@ -1,6 +1,6 @@
 #include "rendering/sprite_sheet.hpp"
 
-#include <SDL_image.h>
+#include <SDL3_image/SDL_image.h>
 #include <spdlog/spdlog.h>
 
 namespace raven {
@@ -15,14 +15,14 @@ bool SpriteSheet::load(SDL_Renderer* renderer, const std::string& path, int fram
                        int frame_height) {
     SDL_Surface* surface = IMG_Load(path.c_str());
     if (!surface) {
-        spdlog::error("Failed to load sprite sheet '{}': {}", path, IMG_GetError());
+        spdlog::error("Failed to load sprite sheet '{}': {}", path, SDL_GetError());
         return false;
     }
 
     texture_ = SDL_CreateTextureFromSurface(renderer, surface);
     sheet_w_ = surface->w;
     sheet_h_ = surface->h;
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
 
     if (!texture_) {
         spdlog::error("Failed to create texture from '{}': {}", path, SDL_GetError());
@@ -30,8 +30,8 @@ bool SpriteSheet::load(SDL_Renderer* renderer, const std::string& path, int fram
     }
 
     SDL_SetTextureBlendMode(texture_, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_PIXELART);
 
-    // already checked texture_ above, skip duplicate check below
     frame_w_ = frame_width;
     frame_h_ = frame_height;
 
@@ -46,12 +46,14 @@ void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int des
     if (!texture_)
         return;
 
-    SDL_Rect src{frame_x * frame_w_, frame_y * frame_h_, frame_w_, frame_h_};
+    SDL_FRect src{static_cast<float>(frame_x * frame_w_), static_cast<float>(frame_y * frame_h_),
+                  static_cast<float>(frame_w_), static_cast<float>(frame_h_)};
 
-    SDL_Rect dst{dest_x, dest_y, frame_w_, frame_h_};
+    SDL_FRect dst{static_cast<float>(dest_x), static_cast<float>(dest_y),
+                  static_cast<float>(frame_w_), static_cast<float>(frame_h_)};
 
-    SDL_RendererFlip flip = flip_x ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
-    SDL_RenderCopyEx(renderer, texture_, &src, &dst, 0.0, nullptr, flip);
+    SDL_FlipMode flip = flip_x ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+    SDL_RenderTextureRotated(renderer, texture_, &src, &dst, 0.0, nullptr, flip);
 }
 
 // ── SpriteSheetManager ───────────────────────────────────────────

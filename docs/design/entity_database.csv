@@ -1,0 +1,24 @@
+Name,Type,Category,Tags,HP,Damage,Speed,Range,Special Mechanic,Notes
+Brawler,Class,Tank,"melee, sustained, tank, mobile, aoe, health_scaling",150,10,100,Melee,Damage reduction increases with missing HP,Close-range powerhouse
+Sharpshooter,Class,Glass Cannon,"long, burst, fragile, static, single, precision",60,25,80,Long,Critical hits deal 3x damage,High risk high reward
+Tactician,Class,Control,"medium, sustained, dodge, mobile, aoe, cc_focused",100,8,110,Medium,Slows and stuns enemies in area,Zone control specialist
+Alchemist,Class,DoT,"medium, ramp, fragile, mobile, aoe, dot_focused",80,5,95,Medium,Poison stacks deal damage over time,Multi-target pressure
+Kiter,Enemy,Ranged,"long, burst, dodge, mobile, single",30,15,120,Long,Flees when player approaches,Counters: Brawler
+Swarm,Enemy,Melee Rush,"melee, burst, fragile, mobile, single",15,8,140,Melee,Spawns in groups of 5-8,Counters: Sharpshooter
+Juggernaut,Enemy,Heavy,"melee, sustained, tank, static, aoe, cc_immune",200,20,60,Melee,Immune to CC effects,Counters: Tactician
+Viper,Enemy,Fast,"short, burst, dodge, mobile, single, cleanse",25,12,160,Short,Cleanses debuffs from nearby allies,Counters: Alchemist
+Bomber,Enemy,Explosive,"medium, burst, fragile, static, aoe",40,30,70,Medium,Explodes on death,Punishes grouped players
+Sniper,Enemy,Precision,"long, burst, fragile, static, single, armor_pierce",35,40,50,Long,"Ignores 50% armor, long windup",Punishes static positioning
+Heavy Rounds,Item,Weapon Mod,"damage_up, firerate_down",N/A,+50%,N/A,N/A,Fire rate -30%,Strong for burst bad for sustained
+Rapid Fire,Item,Weapon Mod,"firerate_up, damage_down",N/A,-25%,N/A,N/A,Fire rate +60%,Enables spray builds
+Piercing Shot,Item,Weapon Mod,"pierce, damage_down",N/A,-20%,N/A,N/A,Shots pierce 2 enemies,Multi-target focus
+Explosive Ammo,Item,Weapon Mod,"aoe, self_damage",N/A,+30%,N/A,N/A,15% splash damage to self,Risk/reward
+Glass Armor,Item,Defense,"armor_up, hp_down",-99%,N/A,N/A,N/A,"Sets max HP to 1, gain 5 armor",High-stakes build enabler
+Adrenaline Shot,Item,Mobility,"speed_up, hp_down",-20%,N/A,+40%,N/A,Movement speed boost,Anti-tank
+Shield Generator,Item,Defense,"shield, speed_down",N/A,N/A,-20%,N/A,"Gain 50 shield, regens out of combat",Sustain option
+Greed Ring,Item,Economy,"gold_up, enemy_hp_up",N/A,N/A,N/A,N/A,"+100% coins, enemies +30% HP",Early game gamble
+Homing Chip,Item,Utility,"homing, projectile_speed_down",N/A,N/A,N/A,N/A,"Shots track, -60% projectile speed",Auto-aim
+Berserker Mask,Item,Power,"scaling_power, no_healing",N/A,Special,N/A,N/A,"Dmg scales with missing HP, disables healing",Commit to glass cannon
+Lone Wolf Emblem,Item,Solo Power,solo_bonus,N/A,+30%,+20%,N/A,Solo only: disabled in co-op,Solo specialization
+Self-Reliance,Item,Solo Sustain,solo_bonus,+10/10s (solo),N/A,N/A,N/A,Divided among party in co-op,Solo sustain advantage
+Focused Mind,Item,Solo Precision,solo_bonus,N/A,+50% crit (solo),N/A,N/A,Divided among party in co-op,Solo precision boost

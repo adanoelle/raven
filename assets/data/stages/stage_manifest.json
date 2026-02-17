@@ -1,0 +1,7 @@
+{
+    "stages": [
+        "assets/data/stages/stage_01.json",
+        "assets/data/stages/stage_02.json",
+        "assets/data/stages/stage_03.json"
+    ]
+}

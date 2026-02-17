@@ -42,6 +42,9 @@ add_executable(raven
     src/rendering/tilemap.cpp
     src/rendering/tilemap_loader.cpp
 
+    # ECS
+    src/ecs/player_class.cpp
+
     # ECS Systems
     src/ecs/systems/movement_system.cpp
     src/ecs/systems/render_system.cpp
@@ -59,6 +62,11 @@ add_executable(raven
     src/ecs/systems/ai_system.cpp
     src/ecs/systems/melee_system.cpp
     src/ecs/systems/dash_system.cpp
+    src/ecs/systems/wave_system.cpp
+    src/ecs/systems/hud_system.cpp
+    src/ecs/systems/ground_slam_system.cpp
+    src/ecs/systems/charged_shot_system.cpp
+    src/ecs/systems/concussion_shot_system.cpp
 
     # Patterns
     src/patterns/pattern_library.cpp
@@ -67,13 +75,14 @@ add_executable(raven
     src/scenes/scene_manager.cpp
     src/scenes/game_scene.cpp
     src/scenes/title_scene.cpp
+    src/scenes/game_over_scene.cpp
+    src/scenes/char_select_scene.cpp
 )
 
 target_include_directories(raven PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(raven PRIVATE
-    SDL2::SDL2
-    SDL2_image::SDL2_image
-    SDL2_mixer::SDL2_mixer
+    SDL3::SDL3
+    SDL3_image::SDL3_image
     EnTT::EnTT
     nlohmann_json::nlohmann_json
     spdlog::spdlog

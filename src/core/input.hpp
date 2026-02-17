@@ -1,8 +1,6 @@
 #pragma once
 
-#include <SDL2/SDL.h>
-
-#include <cstdint>
+#include <SDL3/SDL.h>
 
 namespace raven {
 
@@ -81,9 +79,9 @@ class Input {
     InputState previous_;
     bool quit_ = false;
 
-    const Uint8* keyboard_ = nullptr;
+    const bool* keyboard_ = nullptr;
 
-    SDL_GameController* gamepad_ = nullptr;
+    SDL_Gamepad* gamepad_ = nullptr;
 
     SDL_Renderer* renderer_ = nullptr;
     SDL_Window* window_ = nullptr;
