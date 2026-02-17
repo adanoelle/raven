@@ -37,9 +37,17 @@
 
 # Art & Animation
 
-- [Art Specification](art-spec.md)
-- [Art Integration Guide](art-integration.md)
-- [Learning Resources](art-resources.md)
+- [Art Specification](art/art-spec.md)
+- [Color Theory and Palette Design](art/color-theory.md)
+- [Tileset Palette Design](art/tileset-palette.md)
+- [Art Integration Guide](art/art-integration.md)
+- [Learning Resources](art/art-resources.md)
+
+---
+
+# Characters
+
+- [Knight](art/characters/knight.md)
 
 ---
 
