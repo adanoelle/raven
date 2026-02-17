@@ -235,31 +235,48 @@ Aseprite is the primary sprite editor and has built-in palette tools:
   - **Color Ramp Sort** — sorts existing palettes into ramp order
     (github.com/matsagad/color-ramp-sort).
 
-### Dedicated Palette Generators
+### Dedicated Palette Tools
 
 For rapid experimentation before bringing colors into Aseprite:
 
-- **Lospec Palette List** (lospec.com/palette-list) — database of 2500+ pixel art
-  palettes, filterable by color count and tag. Good for studying how other artists
-  structure ramps. Also has a palette analyzer that shows color distribution.
-- **HSV Palette Generator** (njine.itch.io/hsv-palette-generator) — generates 5-color
-  palettes with direct HSV slider control and automatic hue-shifted lighter/darker
-  variants. Good for quickly testing ramp ideas.
-- **KPal** (github.com/krush62/KPal) — advanced palette generator where ramps are
-  highly customizable and can be linked. Best for building complete multi-ramp
-  palettes with controlled hue shift curves.
-- **CoMiGo's Palette Generator** (comigo.itch.io/palettes) — creates complete color
-  grids and exports directly to Aseprite (.pal) format. Available as both an online
-  tool and a desktop app.
+- **Lightcube** (lightcube.art, Steam) — pixel art editor with graph-based
+  hue/saturation/brightness curve editors for per-step ramp control. The most
+  fine-grained GUI tool available for building hue-shifted ramps. Exports to .gpl
+  (Aseprite-compatible). Actively maintained (last update Aug 2025). Paid app,
+  Windows only.
+- **Lospec Palette List** (lospec.com/palette-list) — database of 4100+ pixel art
+  palettes, filterable by color count and tag. Essential for studying how other
+  artists structure ramps. Also has a palette analyzer and gradient generator.
+  Downloads in .gpl and .pal formats.
+- **FettePalette** (github.com/meodai/fettepalette) — JavaScript library with the
+  most powerful parametric HSV curve engine available. First-class hue shift control,
+  configurable saturation/lightness bounds, multiple curve methods. Requires writing
+  code — not a GUI tool — but offers the deepest control for scripted palette
+  pipelines.
+- **CoMiGo's Palette Generator** (comigo.itch.io/palettes) — uses LCH perceptual
+  color model for lightness/chroma/hue control. Cross-platform (browser + desktop).
+  Good for perceptually uniform palettes. No .gpl/.pal export (hex codes only).
+  Dormant since 2021 but stable.
+
+### Tools We Evaluated and Moved Away From
+
+- **KPal** (github.com/krush62/KPal) — had the best feature set on paper (HSV ramp
+  curves, ramp linking, .gpl/.pal export), but development stopped in December 2023.
+  A crash bug when adding ramps (the core action) was reported in April 2025 with no
+  maintainer response. Windows only. Not recommended.
+- **HSV Palette Generator** (njine.itch.io/hsv-palette-generator) — too limited.
+  Only generates a single 5-color ramp with basic HSV sliders. PNG export only.
 
 ### Workflow
 
-1. **Explore** in a palette generator (KPal or HSV Palette Generator) to find ramp
-   directions — experiment with hue shift angles and saturation curves.
-2. **Export** promising palettes as .pal or .gpl files.
-3. **Import** into Aseprite and test against actual sprites and tile mockups.
-4. **Iterate** in Aseprite using Shift+scroll and the gradient tools to refine.
-5. **Verify** using the palette checklist above.
+1. **Explore** in Lightcube or FettePalette to find ramp directions — experiment with
+   hue shift angles and saturation curves.
+2. **Study** existing palettes on Lospec for reference and inspiration.
+3. **Export** promising palettes as .gpl files.
+4. **Import** into Aseprite and test against actual sprites and tile mockups.
+5. **Iterate** in Aseprite using Shift+scroll, Rampart, and the gradient tools to
+   refine.
+6. **Verify** using the palette checklist above.
 
 ---
 
