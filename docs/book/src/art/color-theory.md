@@ -125,6 +125,14 @@ Recommended swatch counts for Raven's sprite sizes:
 **Default in Pigment: 4 swatches.** This is the most versatile count — it covers
 the majority of materials. Generate at 5 for stone, at 3 for hair/skin/accents.
 
+**Exception — master ramps:** Some ramps are not applied directly to a single
+sprite. Instead, they serve as a shared resource where multiple characters each
+pick a sliding window of 2-3 adjacent swatches. Skin tone is the primary example
+(see [Skin Tone Master Ramp](#skin-tone-master-ramp) below). For these shared
+ramps, **8 swatches** is the right size — enough range to span distinct tones
+while maintaining hue-shift cohesion across the full continuum. No individual
+sprite uses all 8; each character selects a 2-3 swatch window.
+
 Fewer is usually better — the constraint forces cohesion. As saint11 (Pedro
 Medeiros, Celeste) puts it: "Do as much as I can with as little as possible."
 Every new color introduced to a game creates pressure to use it everywhere.
@@ -171,20 +179,62 @@ At 24x24, each character has roughly 6-10 colors:
 | Element          | Colors | Purpose                                   |
 | ---------------- | ------ | ----------------------------------------- |
 | Hair (signature) | 2-3    | Base, highlight, shadow. Identity anchor. |
-| Skin             | 2      | Base, shadow. Face is only a few pixels.  |
+| Skin             | 2-3    | From master skin ramp. See below.         |
 | Armor / clothing | 2-3    | Base, highlight, shadow. Class identity.  |
 | Undersuit / fill | 1      | Dark neutral in armor gaps and joints.    |
 | Exterior outline | 1      | Black. Non-negotiable.                    |
 
+### Skin Tone Master Ramp
+
+Each human character has a different skin tone, drawn from a single **8-swatch
+master skin ramp** built in Pigment. The master ramp spans from deep to fair,
+with proper hue shifting across the full range (deep end shifts cooler/redder,
+fair end shifts warmer/peachy). Each character picks a **sliding window of 2-3
+adjacent swatches** from this ramp.
+
+```
+[1]──[2]──[3]──[4]──[5]──[6]──[7]──[8]
+ deep        medium        light     fair
+ shadow      base          base      highlight
+ ├─Brawler───┤  ├──Rogue───┤  ├──Knight────┤
+              ├──TBD class─┤
+```
+
+This approach gives us:
+
+- **Cohesion.** All skin tones come from one hue-shifted curve, so they feel like
+  they belong in the same world under the same lighting.
+- **Natural color sharing.** The Brawler's highlight is near the Rogue's shadow.
+  Overlapping windows reduce total unique colors in the master palette.
+- **Consistent lighting.** Hue shift across the ramp mimics real skin under warm
+  directional light — deeper tones pick up cooler ambient, lighter tones pick up
+  warmer direct light.
+- **Character select readability.** When all four characters are shown side by
+  side, each has a visibly distinct skin value.
+
+Design notes:
+
+- **At 2-4 pixels of face, value contrast matters more than hue.** The difference
+  between "fair" and "deep" reads primarily as brightness at game scale.
+- **Dark skin tones need warm undertones.** Shovel Knight added 5 "cheater"
+  colors to the NES palette specifically because it lacked sufficient dark warm
+  tones for diverse skin. Budget darker swatches deliberately — they must not
+  read as muddy grey.
+- **The Runic Golem is exempt.** As a non-human character, it uses the stone/glow
+  ramp instead of skin, reducing the problem to 4 skin tone sets.
+- **Pigment setup:** Generate one ramp, center hue ~25-30 (warm orange-red),
+  8 swatches, moderate hue cycle. The hue shift will naturally push the deep end
+  toward red-brown and the fair end toward peach-yellow.
+
 ### Roster (WIP)
 
-| Character   | Class   | Silhouette        | Signature Color | Status  |
-| ----------- | ------- | ----------------- | --------------- | ------- |
-| Knight      | Knight  | Medium, pauldrons | Gold / blonde   | WIP     |
-| (TBD)       | Rogue   | Small, compact    | TBD             | Planned |
-| (TBD)       | Brawler | Large, heavy      | TBD             | Planned |
-| (TBD)       | TBD     | TBD               | TBD             | Planned |
-| Runic Golem | Golem   | Blocky, angular   | Runic glow      | Planned |
+| Character   | Class   | Silhouette        | Signature Color | Skin Tone   | Status  |
+| ----------- | ------- | ----------------- | --------------- | ----------- | ------- |
+| Knight      | Knight  | Medium, pauldrons | Gold / blonde   | Fair/warm   | WIP     |
+| (TBD)       | Rogue   | Small, compact    | TBD             | Medium/olive| Planned |
+| (TBD)       | Brawler | Large, heavy      | TBD             | Deep/warm   | Planned |
+| (TBD)       | TBD     | TBD               | TBD             | Cool/medium | Planned |
+| Runic Golem | Golem   | Blocky, angular   | Runic glow      | N/A (stone) | Planned |
 
 ---
 
@@ -318,13 +368,20 @@ Adding up all material and entity ramps:
 | Category              | Ramps | Avg Swatches | Subtotal |
 | --------------------- | ----- | ------------ | -------- |
 | Tileset materials     | 4-5   | 4            | ~18      |
-| Character (per class) | 4     | 3            | ~11      |
+| Skin tone master ramp | 1     | 8            | 8        |
+| Character (per class) | 3     | 3            | ~9       |
 | Enemy accents         | 6     | 2            | ~12      |
 | Projectiles           | 3-4   | 2            | ~7       |
 
+Note: the skin ramp is counted once (8 swatches shared across 4 human
+characters, 2-3 per character). Character ramps drop to 3 (hair, armor,
+undersuit) since skin is now covered by the master ramp.
+
 After ramp linking and color sharing, the master palette should land in the
-**32-48 color range** — consistent with the art spec's 16-32 target (which was
-conservative) and well within the norms for games at this resolution.
+**36-54 color range** — well within the norms for games at this resolution.
+The original art spec target of 16-32 was conservative; the actual budget is
+closer to games like AdamCYounis's Apollo (46 colors) or a trimmed Slynyrd
+master palette.
 
 ---
 
