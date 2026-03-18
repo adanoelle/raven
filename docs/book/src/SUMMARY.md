@@ -46,6 +46,7 @@
 - [Pigment — Palette Tool](art/pigment.md)
 - [Art Integration Guide](art/art-integration.md)
 - [Learning Resources](art/art-resources.md)
+- [Art Asset Timeline](art/art-timeline.md)
 
 ---
 
