@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "WebFetch(domain:book.leveldesignbook.com)",
+      "WebFetch(domain:www.gamedeveloper.com)",
+      "WebSearch",
+      "Bash(xargs:*)",
+      "Bash(just fmt:*)",
+      "Bash(wc:*)",
+      "Bash(git -C /home/ada/src/cpp/raven log --oneline -5)",
+      "WebFetch(domain:wiki.libsdl.org)",
+      "WebFetch(domain:www.spriters-resource.com)",
+      "WebFetch(domain:steamcommunity.com)",
+      "WebFetch(domain:blazingbeaks.fandom.com)",
+      "WebFetch(domain:meodai.github.io)"
+    ]
+  }
+}
