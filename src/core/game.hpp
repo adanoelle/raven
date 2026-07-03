@@ -3,6 +3,7 @@
 #include "core/clock.hpp"
 #include "core/input.hpp"
 #include "core/settings.hpp"
+#include "rendering/bitmap_font.hpp"
 #include "rendering/renderer.hpp"
 #include "rendering/sprite_sheet.hpp"
 #include "scenes/scene.hpp"
@@ -60,6 +61,10 @@ class Game {
     /// @return Const reference to the Settings loaded at startup.
     [[nodiscard]] const Settings& settings() const { return settings_; }
 
+    /// @brief Access the UI bitmap font.
+    /// @return Const reference to the BitmapFont (may be unloaded; draws no-op).
+    [[nodiscard]] const BitmapFont& font() const { return font_; }
+
     /// @brief Signal the game loop to stop after the current frame.
     void request_quit() { running_ = false; }
 
@@ -73,6 +78,7 @@ class Game {
     SceneManager scenes_;
     SpriteSheetManager sprites_;
     Settings settings_;
+    BitmapFont font_;
 
 #ifdef RAVEN_ENABLE_IMGUI
     DebugOverlay debug_overlay_;

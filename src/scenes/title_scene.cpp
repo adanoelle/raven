@@ -25,22 +25,16 @@ void TitleScene::update(Game& game, float dt) {
 
 void TitleScene::render(Game& game) {
     auto* r = game.renderer().sdl_renderer();
+    const auto& font = game.font();
+    constexpr float center_x = static_cast<float>(Renderer::VIRTUAL_WIDTH) / 2.f;
 
-    // Draw title text (placeholder — replace with sprite-based text)
-    // For now, just draw a colored rectangle as a placeholder
     SDL_SetRenderDrawColor(r, 20, 10, 40, 255);
     SDL_RenderClear(r);
 
-    // Title area
-    SDL_FRect title_rect{92.f, 100.f, 200.f, 40.f};
-    SDL_SetRenderDrawColor(r, 180, 60, 120, 255);
-    SDL_RenderFillRect(r, &title_rect);
+    font.draw_centered(r, "RAVEN", center_x, 88.f, {230, 90, 140, 255}, 5);
 
-    // Blinking "press start" indicator
     if (show_prompt_) {
-        SDL_FRect prompt_rect{132.f, 200.f, 120.f, 16.f};
-        SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
-        SDL_RenderFillRect(r, &prompt_rect);
+        font.draw_centered(r, "PRESS START", center_x, 200.f, {255, 255, 255, 255}, 1);
     }
 }
 

@@ -65,6 +65,16 @@ bool Game::load_assets() {
     try {
         auto config = nlohmann::json::parse(f);
 
+        if (config.contains("font")) {
+            const auto& fj = config["font"];
+            auto path = fj.value("path", "assets/fonts/font.png");
+            int gw = fj.value("glyph_w", 6);
+            int gh = fj.value("glyph_h", 8);
+            if (!font_.load(renderer_.sdl_renderer(), paths::asset(path), gw, gh)) {
+                spdlog::warn("Failed to load font atlas '{}' — text will not render", path);
+            }
+        }
+
         if (config.contains("sprite_sheets")) {
             for (const auto& sheet : config["sprite_sheets"]) {
                 auto id = sheet.at("id").get<std::string>();
@@ -181,6 +191,7 @@ void Game::shutdown() {
     debug_overlay_.shutdown();
 #endif
     sprites_ = SpriteSheetManager{}; // release all textures before renderer
+    font_ = BitmapFont{};
     renderer_.shutdown();
     input_.shutdown(); // close gamepad before SDL_Quit
 

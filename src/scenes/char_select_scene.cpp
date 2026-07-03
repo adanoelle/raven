@@ -41,6 +41,7 @@ void CharacterSelectScene::update(Game& game, float dt) {
 
 void CharacterSelectScene::render(Game& game) {
     auto* r = game.renderer().sdl_renderer();
+    const auto& font = game.font();
 
     // Dark background
     SDL_SetRenderDrawColor(r, 15, 10, 30, 255);
@@ -53,6 +54,8 @@ void CharacterSelectScene::render(Game& game) {
     constexpr int total_w = box_w * 2 + gap;
     constexpr int start_x = (480 - total_w) / 2;
     constexpr int box_y = 80;
+
+    font.draw_centered(r, "SELECT CHARACTER", 240.f, 40.f, {255, 255, 255, 255}, 2);
 
     // Brawler box
     SDL_FRect brawler_rect{static_cast<float>(start_x), static_cast<float>(box_y),
@@ -74,6 +77,18 @@ void CharacterSelectScene::render(Game& game) {
     }
     SDL_RenderFillRect(r, &sharp_rect);
 
+    // Class names under each box
+    constexpr float box1_center = static_cast<float>(start_x) + static_cast<float>(box_w) / 2.f;
+    constexpr float box2_center =
+        static_cast<float>(start_x + box_w + gap) + static_cast<float>(box_w) / 2.f;
+    constexpr float name_y = static_cast<float>(box_y + box_h) + 12.f;
+    font.draw_centered(
+        r, "BRAWLER", box1_center, name_y,
+        selected_index_ == 0 ? SDL_Color{255, 200, 180, 255} : SDL_Color{140, 110, 100, 255}, 1);
+    font.draw_centered(
+        r, "SHARPSHOOTER", box2_center, name_y,
+        selected_index_ == 1 ? SDL_Color{180, 210, 255, 255} : SDL_Color{100, 120, 150, 255}, 1);
+
     // Selection indicator (blinking underline)
     if (show_indicator_) {
         int indicator_x = (selected_index_ == 0) ? start_x : start_x + box_w + gap;
@@ -85,9 +100,7 @@ void CharacterSelectScene::render(Game& game) {
 
     // Blinking "press confirm" prompt
     if (show_indicator_) {
-        SDL_FRect prompt_rect{180.f, 220.f, 120.f, 12.f};
-        SDL_SetRenderDrawColor(r, 200, 200, 200, 255);
-        SDL_RenderFillRect(r, &prompt_rect);
+        font.draw_centered(r, "PRESS CONFIRM", 240.f, 224.f, {200, 200, 200, 255}, 1);
     }
 }
 

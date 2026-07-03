@@ -327,7 +327,7 @@ void GameScene::render(Game& game) {
 }
 
 void GameScene::render_hud(Game& game) {
-    systems::render_hud(game.registry(), game.renderer().sdl_renderer());
+    systems::render_hud(game.registry(), game.renderer().sdl_renderer(), game.font());
 }
 
 } // namespace raven

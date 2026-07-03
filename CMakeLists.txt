@@ -40,6 +40,7 @@ add_executable(raven
 
     # Rendering
     src/rendering/renderer.cpp
+    src/rendering/bitmap_font.cpp
     src/rendering/sprite_sheet.cpp
     src/rendering/tilemap.cpp
     src/rendering/tilemap_loader.cpp
