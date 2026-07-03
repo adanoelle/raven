@@ -228,6 +228,26 @@ TEST_CASE("Player bullet vs enemy collision", "[collision]") {
         REQUIRE(hp.current == Catch::Approx(2.f));
     }
 
+    SECTION("Piercing bullet damages each enemy only once while overlapping") {
+        auto bullet = reg.create();
+        reg.emplace<Transform2D>(bullet, 103.f, 100.f); // overlaps enemy
+        reg.emplace<CircleHitbox>(bullet, 3.f, 0.f, 0.f);
+        reg.emplace<Bullet>(bullet, Bullet::Owner::Player);
+        reg.emplace<DamageOnContact>(bullet, 1.f);
+        reg.emplace<Piercing>(bullet);
+
+        // Simulate several ticks with the bullet still inside the enemy
+        systems::update_collision(reg);
+        systems::update_collision(reg);
+        systems::update_collision(reg);
+
+        REQUIRE(reg.valid(bullet));
+
+        // Damage applied exactly once, not once per tick
+        auto& hp = reg.get<Health>(enemy);
+        REQUIRE(hp.current == Catch::Approx(2.f));
+    }
+
     SECTION("Piercing bullet hits multiple enemies") {
         auto enemy2 = reg.create();
         reg.emplace<Transform2D>(enemy2, 103.f, 100.f); // same spot

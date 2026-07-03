@@ -3,6 +3,7 @@
 #include "ecs/components.hpp"
 #include "ecs/systems/hitbox_math.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -56,16 +57,23 @@ void update_collision(entt::registry& reg) {
         if (bullet.owner != Bullet::Owner::Player)
             continue;
 
+        auto* piercing = reg.try_get<Piercing>(b_ent);
+
         for (auto [e_ent, e_tf, e_hb, enemy, e_hp] : enemies.each()) {
+            // Piercing bullets damage each target once, then pass through
+            if (piercing && std::find(piercing->hit.begin(), piercing->hit.end(), e_ent) !=
+                                piercing->hit.end()) {
+                continue;
+            }
+
             if (circles_overlap(b_tf.x + b_hb.offset_x, b_tf.y + b_hb.offset_y, b_hb.radius,
                                 e_tf.x + e_hb.offset_x, e_tf.y + e_hb.offset_y, e_hb.radius)) {
                 e_hp.current -= dmg.damage;
 
                 // Apply knockback from bullet impact
-                if (reg.any_of<Velocity>(e_ent)) {
-                    auto& b_vel_comp = reg.get<Velocity>(b_ent);
-                    float bvx = b_vel_comp.dx;
-                    float bvy = b_vel_comp.dy;
+                if (const auto* b_vel = reg.try_get<Velocity>(b_ent)) {
+                    float bvx = b_vel->dx;
+                    float bvy = b_vel->dy;
                     float len = std::sqrt(bvx * bvx + bvy * bvy);
                     if (len > 0.f) {
                         reg.emplace_or_replace<Knockback>(e_ent, bvx / len * 150.f,
@@ -73,7 +81,9 @@ void update_collision(entt::registry& reg) {
                     }
                 }
 
-                if (!reg.any_of<Piercing>(b_ent)) {
+                if (piercing) {
+                    piercing->hit.push_back(e_ent);
+                } else {
                     bullets_to_destroy.push_back(b_ent);
                     break; // non-piercing: one hit then destroy
                 }

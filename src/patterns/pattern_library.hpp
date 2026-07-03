@@ -82,7 +82,7 @@ class PatternLibrary {
     StringInterner* interner_ = nullptr;
 
     PatternDef parse_pattern(const nlohmann::json& j) const;
-    EmitterDef parse_emitter(const nlohmann::json& j) const;
+    EmitterDef parse_emitter(const nlohmann::json& j, const std::string& pattern_name) const;
 };
 
 } // namespace raven

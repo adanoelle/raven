@@ -23,6 +23,14 @@ int count_bullets(entt::registry& reg) {
     return count;
 }
 
+/// @brief Run the emitter system for a number of fixed ticks.
+void run_ticks(entt::registry& reg, const PatternLibrary& patterns, int ticks) {
+    constexpr float dt = 1.f / 120.f;
+    for (int i = 0; i < ticks; ++i) {
+        raven::systems::update_emitters(reg, patterns, dt);
+    }
+}
+
 /// @brief Load a simple radial pattern into the library.
 void load_radial_pattern(PatternLibrary& lib, const std::string& name, int count, float speed,
                          float fire_rate, float spread_angle) {
@@ -45,7 +53,7 @@ TEST_CASE("Emitter system", "[emitters]") {
     patterns.set_interner(interner);
     constexpr float dt = 1.f / 120.f;
 
-    SECTION("Radial emitter fires on first tick") {
+    SECTION("Radial emitter fires after one full fire interval") {
         load_radial_pattern(patterns, "test_radial", 3, 100.f, 0.1f, 360.f);
 
         auto enemy = reg.create();
@@ -54,7 +62,12 @@ TEST_CASE("Emitter system", "[emitters]") {
         emitter.pattern_name = interner.intern("test_radial");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
+        // Cooldowns start charged: no burst the instant an enemy spawns
         systems::update_emitters(reg, patterns, dt);
+        REQUIRE(count_bullets(reg) == 0);
+
+        // After the fire interval elapses (0.1s = 12 ticks), the burst fires
+        run_ticks(reg, patterns, 12);
 
         // Should fire 3 bullets (radial, 360 degrees)
         REQUIRE(count_bullets(reg) == 3);
@@ -75,11 +88,11 @@ TEST_CASE("Emitter system", "[emitters]") {
         emitter.pattern_name = interner.intern("cooldown_test");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-        // First tick fires
-        systems::update_emitters(reg, patterns, dt);
+        // Fires once the initial 1.0s cooldown elapses (120 ticks)
+        run_ticks(reg, patterns, 121);
         REQUIRE(count_bullets(reg) == 1);
 
-        // Second tick should not fire (cooldown = 1.0s, dt ~= 0.008s)
+        // Next tick should not fire again (cooldown = 1.0s, dt ~= 0.008s)
         systems::update_emitters(reg, patterns, dt);
         REQUIRE(count_bullets(reg) == 1);
     }
@@ -94,7 +107,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         emitter.active = false;
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-        systems::update_emitters(reg, patterns, dt);
+        run_ticks(reg, patterns, 30);
 
         REQUIRE(count_bullets(reg) == 0);
     }
@@ -106,7 +119,7 @@ TEST_CASE("Emitter system", "[emitters]") {
         emitter.pattern_name = interner.intern("nonexistent");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-        systems::update_emitters(reg, patterns, dt);
+        run_ticks(reg, patterns, 30);
 
         REQUIRE(count_bullets(reg) == 0);
     }
@@ -133,7 +146,8 @@ TEST_CASE("Emitter system", "[emitters]") {
         emitter.pattern_name = interner.intern("aimed_test");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-        systems::update_emitters(reg, patterns, dt);
+        // fire_rate 0.1s = 12 ticks of initial cooldown
+        run_ticks(reg, patterns, 13);
 
         REQUIRE(count_bullets(reg) == 1);
 
@@ -154,8 +168,10 @@ TEST_CASE("Emitter system", "[emitters]") {
         emitter.pattern_name = interner.intern("pos_test");
         reg.emplace<BulletEmitter>(enemy, std::move(emitter));
 
-        systems::update_emitters(reg, patterns, dt);
+        // fire_rate 0.1s = 12 ticks of initial cooldown
+        run_ticks(reg, patterns, 13);
 
+        REQUIRE(count_bullets(reg) == 1);
         auto bullet_view = reg.view<Bullet, Transform2D>();
         for (auto [entity, bullet, tf] : bullet_view.each()) {
             REQUIRE(tf.x == Catch::Approx(123.f));

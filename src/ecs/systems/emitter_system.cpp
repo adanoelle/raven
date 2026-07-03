@@ -83,12 +83,15 @@ void update_emitters(entt::registry& reg, const PatternLibrary& patterns, float 
             continue;
         }
 
-        // Initialize parallel vectors on first use
+        // Initialize parallel vectors on first use. Cooldowns start charged
+        // so a freshly spawned enemy waits one full fire interval before its
+        // first burst instead of firing the instant it appears.
         auto num_emitters = pattern->emitters.size();
         if (emitter.cooldowns.size() != num_emitters) {
-            emitter.cooldowns.resize(num_emitters, 0.f);
+            emitter.cooldowns.resize(num_emitters);
             emitter.current_angles.resize(num_emitters);
             for (size_t i = 0; i < num_emitters; ++i) {
+                emitter.cooldowns[i] = pattern->emitters[i].fire_rate;
                 emitter.current_angles[i] = pattern->emitters[i].start_angle;
             }
         }
@@ -104,13 +107,13 @@ void update_emitters(entt::registry& reg, const PatternLibrary& patterns, float 
             if (emitter.cooldowns[i] > 0.f) {
                 continue;
             }
-            emitter.cooldowns[i] = edef.fire_rate;
 
             // Determine center angle for this burst
             float center_angle = emitter.current_angles[i];
 
             if (edef.type == EmitterDef::Type::Aimed) {
                 if (!has_player) {
+                    // Retry next tick without charging the cooldown
                     continue;
                 }
                 float dx = player_x - tf.x;
@@ -118,6 +121,7 @@ void update_emitters(entt::registry& reg, const PatternLibrary& patterns, float 
                 center_angle = std::atan2(dy, dx) / DEG_TO_RAD;
             }
 
+            emitter.cooldowns[i] = edef.fire_rate;
             fire_burst(reg, edef, center_angle, tf.x, tf.y);
         }
     }
