@@ -10,11 +10,15 @@ Renderer::~Renderer() {
     shutdown();
 }
 
-bool Renderer::init(const std::string& title, int window_scale) {
+bool Renderer::init(const std::string& title, int window_scale, bool fullscreen, bool vsync) {
     int win_w = VIRTUAL_WIDTH * window_scale;
     int win_h = VIRTUAL_HEIGHT * window_scale;
 
-    window_ = SDL_CreateWindow(title.c_str(), win_w, win_h, SDL_WINDOW_RESIZABLE);
+    SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE;
+    if (fullscreen) {
+        flags |= SDL_WINDOW_FULLSCREEN;
+    }
+    window_ = SDL_CreateWindow(title.c_str(), win_w, win_h, flags);
 
     if (!window_) {
         spdlog::error("Failed to create window: {}", SDL_GetError());
@@ -28,7 +32,15 @@ bool Renderer::init(const std::string& title, int window_scale) {
         return false;
     }
 
-    SDL_SetRenderVSync(renderer_, 1);
+    vsync_enabled_ = false;
+    if (vsync) {
+        if (SDL_SetRenderVSync(renderer_, 1)) {
+            vsync_enabled_ = true;
+        } else {
+            spdlog::warn("VSync unavailable ({}) — the game loop will use a frame limiter",
+                         SDL_GetError());
+        }
+    }
 
     // Set up virtual resolution render target
     render_target_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,

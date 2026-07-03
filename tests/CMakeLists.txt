@@ -13,8 +13,11 @@ add_executable(raven_tests
     test_melee_dash.cpp
     test_waves.cpp
     test_player_class.cpp
+    test_settings.cpp
 
     # Source files needed by integration tests
+    ${CMAKE_SOURCE_DIR}/src/core/paths.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/settings.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/player_class.cpp
     ${CMAKE_SOURCE_DIR}/src/patterns/pattern_library.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/collision_system.cpp

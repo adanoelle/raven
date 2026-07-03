@@ -4,7 +4,8 @@ include(CPM)
 
 # ── System packages (found via pkg-config / CMake find modules) ───
 find_package(PkgConfig REQUIRED)
-find_package(SDL3 REQUIRED)
+# 3.4 is the floor: SDL_SCALEMODE_PIXELART (renderer, tilemap) needs it
+find_package(SDL3 3.4 REQUIRED)
 pkg_check_modules(sdl3-image REQUIRED IMPORTED_TARGET sdl3-image)
 
 # Create alias targets for consistent naming

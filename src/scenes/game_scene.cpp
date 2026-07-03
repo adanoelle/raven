@@ -1,6 +1,7 @@
 #include "scenes/game_scene.hpp"
 
 #include "core/game.hpp"
+#include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/player_class.hpp"
@@ -43,7 +44,7 @@ void GameScene::on_enter(Game& game) {
 
     auto& interner = game.registry().ctx().get<StringInterner>();
     pattern_lib_.set_interner(interner);
-    pattern_lib_.load_manifest("assets/data/patterns/manifest.json");
+    pattern_lib_.load_manifest(paths::asset("assets/data/patterns/manifest.json"));
 
     game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
 
@@ -55,7 +56,7 @@ void GameScene::on_enter(Game& game) {
     game_state.player_class = selected_class_;
 
     // Load stage manifest
-    stage_loader_.load_manifest("assets/data/stages/stage_manifest.json");
+    stage_loader_.load_manifest(paths::asset("assets/data/stages/stage_manifest.json"));
     current_stage_ = 0;
 
     spawn_player(game);
@@ -66,7 +67,8 @@ void GameScene::on_enter(Game& game) {
         enter_room(game, stage->level);
     } else {
         // Fallback: load the test room if no stages available
-        tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", "Test_Room");
+        tilemap_.load(game.renderer().sdl_renderer(), paths::asset("assets/maps/raven.ldtk"),
+                      "Test_Room");
     }
 }
 
@@ -124,7 +126,7 @@ void GameScene::enter_room(Game& game, const std::string& level) {
 
     // Reload tilemap
     tilemap_ = Tilemap{};
-    tilemap_.load(game.renderer().sdl_renderer(), "assets/maps/raven.ldtk", level);
+    tilemap_.load(game.renderer().sdl_renderer(), paths::asset("assets/maps/raven.ldtk"), level);
 
     // Reposition player to PlayerStart
     auto& reg = game.registry();

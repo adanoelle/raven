@@ -1,5 +1,6 @@
 #include "ecs/systems/wave_system.hpp"
 
+#include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "ecs/systems/hitbox_math.hpp"
 #include "ecs/systems/player_utils.hpp"
@@ -84,13 +85,13 @@ int enemy_frame(Enemy::Type type) {
 
 /// @brief Per-tier sprite sizing and hitbox configuration.
 struct EnemyVisuals {
-    const char* sheet;  ///< Sprite sheet id.
-    int sprite_w;       ///< Rendered sprite width.
-    int sprite_h;       ///< Rendered sprite height.
-    float circle_r;     ///< Circle hitbox radius.
-    float rect_w;       ///< Rect hitbox width.
-    float rect_h;       ///< Rect hitbox height.
-    float offset_y;     ///< Sprite render offset Y (shift up for feet alignment).
+    const char* sheet; ///< Sprite sheet id.
+    int sprite_w;      ///< Rendered sprite width.
+    int sprite_h;      ///< Rendered sprite height.
+    float circle_r;    ///< Circle hitbox radius.
+    float rect_w;      ///< Rect hitbox width.
+    float rect_h;      ///< Rect hitbox height.
+    float offset_y;    ///< Sprite render offset Y (shift up for feet alignment).
 };
 
 /// @brief Return visual configuration for an enemy tier.
@@ -98,9 +99,9 @@ EnemyVisuals enemy_visuals(Enemy::Type type) {
     switch (type) {
     case Enemy::Type::Grunt:
         //          sheet       sw  sh  cr    rw    rh   oy
-        return {"enemies",      24, 24, 7.f, 12.f, 14.f, -3.f};
+        return {"enemies", 24, 24, 7.f, 12.f, 14.f, -3.f};
     case Enemy::Type::Mid:
-        return {"enemies_mid",  32, 32, 9.f, 16.f, 18.f, -5.f};
+        return {"enemies_mid", 32, 32, 9.f, 16.f, 18.f, -5.f};
     case Enemy::Type::Boss:
         return {"enemies_boss", 48, 48, 18.f, 32.f, 36.f, -6.f};
     }
@@ -122,7 +123,8 @@ bool StageLoader::load_manifest(const std::string& manifest_path) {
         auto j = nlohmann::json::parse(file);
         int loaded = 0;
         for (const auto& path : j.at("stages")) {
-            if (load_file(path.get<std::string>())) {
+            // Manifest entries are relative to the install dir, not the CWD
+            if (load_file(paths::asset(path.get<std::string>()))) {
                 ++loaded;
             }
         }

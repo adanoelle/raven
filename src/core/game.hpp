@@ -2,6 +2,7 @@
 
 #include "core/clock.hpp"
 #include "core/input.hpp"
+#include "core/settings.hpp"
 #include "rendering/renderer.hpp"
 #include "rendering/sprite_sheet.hpp"
 #include "scenes/scene.hpp"
@@ -55,6 +56,10 @@ class Game {
     /// @return Const reference to the Clock.
     [[nodiscard]] const Clock& clock() const { return clock_; }
 
+    /// @brief Access the persisted user settings.
+    /// @return Const reference to the Settings loaded at startup.
+    [[nodiscard]] const Settings& settings() const { return settings_; }
+
     /// @brief Signal the game loop to stop after the current frame.
     void request_quit() { running_ = false; }
 
@@ -67,6 +72,7 @@ class Game {
     Clock clock_;
     SceneManager scenes_;
     SpriteSheetManager sprites_;
+    Settings settings_;
 
 #ifdef RAVEN_ENABLE_IMGUI
     DebugOverlay debug_overlay_;
