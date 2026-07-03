@@ -2,11 +2,32 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <fstream>
 
 namespace raven {
 
+namespace {
+
+/// @brief Clamp a parsed value to a safe range, warning when out of bounds.
+float clamp_field(const std::string& pattern, const char* field, float value, float min_v,
+                  float max_v) {
+    if (value < min_v || value > max_v) {
+        float clamped = std::clamp(value, min_v, max_v);
+        spdlog::warn("Pattern '{}': {} = {} out of range [{}, {}], clamped to {}", pattern, field,
+                     value, min_v, max_v, clamped);
+        return clamped;
+    }
+    return value;
+}
+
+} // anonymous namespace
+
 bool PatternLibrary::load_manifest(const std::string& manifest_path) {
+    if (!interner_) {
+        spdlog::error("PatternLibrary: set_interner() must be called before loading");
+        return false;
+    }
     std::ifstream f(manifest_path);
     if (!f.is_open()) {
         spdlog::warn("Pattern manifest '{}' not found", manifest_path);
@@ -30,6 +51,10 @@ bool PatternLibrary::load_manifest(const std::string& manifest_path) {
 }
 
 bool PatternLibrary::load_file(const std::string& file_path) {
+    if (!interner_) {
+        spdlog::error("PatternLibrary: set_interner() must be called before loading");
+        return false;
+    }
     std::ifstream f(file_path);
     if (!f.is_open()) {
         spdlog::error("Failed to open pattern file '{}'", file_path);
@@ -50,6 +75,10 @@ bool PatternLibrary::load_file(const std::string& file_path) {
 }
 
 bool PatternLibrary::load_from_json(const nlohmann::json& j) {
+    if (!interner_) {
+        spdlog::error("PatternLibrary: set_interner() must be called before loading");
+        return false;
+    }
     try {
         auto pattern = parse_pattern(j);
         auto name = pattern.name;
@@ -89,13 +118,14 @@ PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) const {
         def.tier = Weapon::Tier::Common;
 
     for (const auto& ej : j.at("emitters")) {
-        def.emitters.push_back(parse_emitter(ej));
+        def.emitters.push_back(parse_emitter(ej, def.name));
     }
 
     return def;
 }
 
-EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j) const {
+EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
+                                         const std::string& pattern_name) const {
     EmitterDef def;
 
     auto type_str = j.value("type", "radial");
@@ -106,10 +136,14 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j) const {
     else
         def.type = EmitterDef::Type::Radial;
 
-    def.count = j.value("count", 1);
+    // Clamp values that could destabilize the game if mistyped in data:
+    // fire_rate <= 0 fires a burst every tick (runaway entity growth), and
+    // huge counts spawn thousands of bullets per burst.
+    def.count = static_cast<int>(
+        clamp_field(pattern_name, "count", static_cast<float>(j.value("count", 1)), 1.f, 256.f));
     def.speed = j.value("speed", 100.f);
     def.angular_velocity = j.value("angular_velocity", 0.f);
-    def.fire_rate = j.value("fire_rate", 0.1f);
+    def.fire_rate = clamp_field(pattern_name, "fire_rate", j.value("fire_rate", 0.1f), 0.05f, 60.f);
     def.spread_angle = j.value("spread_angle", 360.f);
     def.start_angle = j.value("start_angle", 0.f);
     def.bullet_sheet = interner_->intern(j.value("bullet_sheet", "projectiles"));
@@ -117,9 +151,10 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j) const {
     def.bullet_frame_y = j.value("bullet_frame_y", 0);
     def.bullet_width = j.value("bullet_width", 8);
     def.bullet_height = j.value("bullet_height", 8);
-    def.lifetime = j.value("lifetime", 5.f);
+    def.lifetime = clamp_field(pattern_name, "lifetime", j.value("lifetime", 5.f), 0.05f, 60.f);
     def.damage = j.value("damage", 1.f);
-    def.hitbox_radius = j.value("hitbox_radius", 3.f);
+    def.hitbox_radius =
+        clamp_field(pattern_name, "hitbox_radius", j.value("hitbox_radius", 3.f), 0.f, 64.f);
 
     return def;
 }

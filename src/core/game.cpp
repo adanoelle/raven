@@ -120,6 +120,10 @@ void Game::run() {
         int steps = clock_.advance(frame_delta);
         for (int i = 0; i < steps; ++i) {
             fixed_update(Clock::TICK_RATE);
+            // Consume press edges after the first tick so one press fires
+            // exactly one tick. Unconsumed edges (frames that run zero
+            // ticks, e.g. on >120 Hz displays) stay latched in Input.
+            input_.consume_pressed();
         }
 
         // Render
@@ -150,11 +154,16 @@ void Game::render() {
 }
 
 void Game::shutdown() {
+    // Pop scenes first: scene destructors free SDL textures (tilemaps),
+    // which must happen while the renderer still exists.
+    scenes_.clear(*this);
+
 #ifdef RAVEN_ENABLE_IMGUI
     debug_overlay_.shutdown();
 #endif
     sprites_ = SpriteSheetManager{}; // release all textures before renderer
     renderer_.shutdown();
+    input_.shutdown(); // close gamepad before SDL_Quit
 
     SDL_Quit();
 

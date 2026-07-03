@@ -26,9 +26,25 @@ Input::Input() {
 }
 
 Input::~Input() {
+    shutdown();
+}
+
+void Input::shutdown() {
     if (gamepad_) {
         SDL_CloseGamepad(gamepad_);
+        gamepad_ = nullptr;
     }
+}
+
+void Input::consume_pressed() {
+    latched_ = EdgeLatch{};
+    current_.shoot_pressed = false;
+    current_.bomb_pressed = false;
+    current_.melee_pressed = false;
+    current_.dash_pressed = false;
+    current_.pause_pressed = false;
+    current_.confirm_pressed = false;
+    current_.cancel_pressed = false;
 }
 
 void Input::set_renderer(SDL_Renderer* renderer) {
@@ -196,13 +212,24 @@ void Input::update_from_gamepad() {
 }
 
 void Input::compute_edges() {
-    current_.shoot_pressed = current_.shoot && !previous_.shoot;
-    current_.bomb_pressed = current_.bomb && !previous_.bomb;
-    current_.melee_pressed = current_.melee && !previous_.melee;
-    current_.dash_pressed = current_.dash && !previous_.dash;
-    current_.pause_pressed = current_.pause && !previous_.pause;
-    current_.confirm_pressed = current_.confirm && !previous_.confirm;
-    current_.cancel_pressed = current_.cancel && !previous_.cancel;
+    // Latch new edges; latches persist across frames until a fixed tick
+    // consumes them (see consume_pressed), so a press on a frame that runs
+    // zero fixed ticks is not lost.
+    latched_.shoot = latched_.shoot || (current_.shoot && !previous_.shoot);
+    latched_.bomb = latched_.bomb || (current_.bomb && !previous_.bomb);
+    latched_.melee = latched_.melee || (current_.melee && !previous_.melee);
+    latched_.dash = latched_.dash || (current_.dash && !previous_.dash);
+    latched_.pause = latched_.pause || (current_.pause && !previous_.pause);
+    latched_.confirm = latched_.confirm || (current_.confirm && !previous_.confirm);
+    latched_.cancel = latched_.cancel || (current_.cancel && !previous_.cancel);
+
+    current_.shoot_pressed = latched_.shoot;
+    current_.bomb_pressed = latched_.bomb;
+    current_.melee_pressed = latched_.melee;
+    current_.dash_pressed = latched_.dash;
+    current_.pause_pressed = latched_.pause;
+    current_.confirm_pressed = latched_.confirm;
+    current_.cancel_pressed = latched_.cancel;
 
     // Clamp movement
     current_.move_x = std::clamp(current_.move_x, -1.f, 1.f);

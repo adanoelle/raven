@@ -34,6 +34,10 @@ class Scene {
 /// @brief Stack-based scene manager. The top scene receives updates and renders.
 ///
 /// Supports push (for overlays like pause menus) and swap (for transitions).
+///
+/// Transitions requested from inside a scene's update() are deferred and
+/// applied after the update returns — popping a scene destroys it, so
+/// applying immediately would free the scene that is still executing.
 class SceneManager {
   public:
     /// @brief Push a scene onto the stack, becoming the active scene.
@@ -50,6 +54,13 @@ class SceneManager {
     /// @param game The Game instance passed to on_exit() and on_enter().
     void swap(std::unique_ptr<Scene> scene, Game& game);
 
+    /// @brief Pop all scenes, calling on_exit() on each from top to bottom.
+    ///
+    /// Must not be called from inside a scene's update(). Use during game
+    /// shutdown so scene destructors run while SDL resources still exist.
+    /// @param game The Game instance passed to on_exit().
+    void clear(Game& game);
+
     /// @brief Update the top scene.
     /// @param game The Game instance.
     /// @param dt Fixed timestep delta in seconds.
@@ -64,7 +75,16 @@ class SceneManager {
     [[nodiscard]] bool empty() const { return stack_.empty(); }
 
   private:
+    /// @brief A push/pop/swap requested during update(), applied afterwards.
+    struct PendingOp {
+        enum class Kind : uint8_t { Push, Pop, Swap };
+        Kind kind;
+        std::unique_ptr<Scene> scene; ///< Null for Pop.
+    };
+
     std::vector<std::unique_ptr<Scene>> stack_;
+    std::vector<PendingOp> pending_;
+    bool updating_ = false; ///< True while the top scene's update() runs.
 };
 
 } // namespace raven

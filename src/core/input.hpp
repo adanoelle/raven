@@ -26,13 +26,17 @@ struct InputState {
     bool confirm = false; ///< Confirm/accept button held this frame.
     bool cancel = false;  ///< Cancel/back button held this frame.
 
-    bool shoot_pressed = false;   ///< Shoot button pressed this frame (edge).
-    bool bomb_pressed = false;    ///< Bomb button pressed this frame (edge).
-    bool melee_pressed = false;   ///< Melee button pressed this frame (edge).
-    bool dash_pressed = false;    ///< Dash button pressed this frame (edge).
-    bool pause_pressed = false;   ///< Pause button pressed this frame (edge).
-    bool confirm_pressed = false; ///< Confirm button pressed this frame (edge).
-    bool cancel_pressed = false;  ///< Cancel button pressed this frame (edge).
+    // Press edges. Latched from the frame the press happens until a fixed
+    // tick consumes them (Input::consume_pressed), so presses are never
+    // dropped on frames that run zero fixed ticks (>120 Hz displays) and
+    // never replayed into multiple ticks of the same frame.
+    bool shoot_pressed = false;   ///< Shoot button press edge.
+    bool bomb_pressed = false;    ///< Bomb button press edge.
+    bool melee_pressed = false;   ///< Melee button press edge.
+    bool dash_pressed = false;    ///< Dash button press edge.
+    bool pause_pressed = false;   ///< Pause button press edge.
+    bool confirm_pressed = false; ///< Confirm button press edge.
+    bool cancel_pressed = false;  ///< Cancel button press edge.
 };
 
 /// @brief Manages keyboard and gamepad input with per-frame edge detection.
@@ -58,6 +62,14 @@ class Input {
     /// no pending SDL events.
     void update();
 
+    /// @brief Clear latched press edges after a fixed tick has seen them.
+    ///
+    /// Call after each fixed-timestep update. Edges latch on the frame the
+    /// press happens and survive frames that run zero fixed ticks, so a
+    /// press always drives exactly one tick regardless of display refresh
+    /// rate relative to the tick rate.
+    void consume_pressed();
+
     /// @brief Get the current input state snapshot.
     /// @return Const reference to the current InputState.
     [[nodiscard]] const InputState& state() const { return current_; }
@@ -74,9 +86,24 @@ class Input {
     /// @return True if the user requested quit (window close or quit key).
     [[nodiscard]] bool quit_requested() const { return quit_; }
 
+    /// @brief Release input devices. Call before SDL_Quit().
+    void shutdown();
+
   private:
+    /// @brief Press edges awaiting consumption by a fixed tick.
+    struct EdgeLatch {
+        bool shoot = false;
+        bool bomb = false;
+        bool melee = false;
+        bool dash = false;
+        bool pause = false;
+        bool confirm = false;
+        bool cancel = false;
+    };
+
     InputState current_;
     InputState previous_;
+    EdgeLatch latched_;
     bool quit_ = false;
 
     const bool* keyboard_ = nullptr;

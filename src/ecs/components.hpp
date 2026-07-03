@@ -37,15 +37,15 @@ struct PreviousTransform {
 
 /// @brief Sprite rendering data referencing a frame within a sprite sheet.
 struct Sprite {
-    StringId sheet_id;       ///< Interned identifier of the SpriteSheet to draw from.
-    int frame_x = 0;         ///< Frame column index in the sheet.
-    int frame_y = 0;         ///< Frame row index in the sheet.
-    int width = 32;          ///< Rendered width in pixels.
-    int height = 32;         ///< Rendered height in pixels.
-    int layer = 0;           ///< Render order (higher values draw on top).
-    bool flip_x = false;     ///< Flip the sprite horizontally when drawing.
-    float offset_x = 0.f;   ///< Horizontal render offset from entity center in pixels.
-    float offset_y = 0.f;   ///< Vertical render offset from entity center in pixels.
+    StringId sheet_id;    ///< Interned identifier of the SpriteSheet to draw from.
+    int frame_x = 0;      ///< Frame column index in the sheet.
+    int frame_y = 0;      ///< Frame row index in the sheet.
+    int width = 32;       ///< Rendered width in pixels.
+    int height = 32;      ///< Rendered height in pixels.
+    int layer = 0;        ///< Render order (higher values draw on top).
+    bool flip_x = false;  ///< Flip the sprite horizontally when drawing.
+    float offset_x = 0.f; ///< Horizontal render offset from entity center in pixels.
+    float offset_y = 0.f; ///< Vertical render offset from entity center in pixels.
 };
 
 /// @brief Frame-based animation state for cycling through sprite frames.
@@ -355,8 +355,13 @@ struct Disarmed {};
 /// @brief Tag: entity is removed when it leaves the play area.
 struct OffScreenDespawn {};
 
-/// @brief Tag: bullet passes through targets instead of being destroyed.
-struct Piercing {};
+/// @brief Bullet passes through targets instead of being destroyed.
+///
+/// Tracks targets already damaged so each is hit only once — without this
+/// a piercing bullet would re-apply damage every tick while overlapping.
+struct Piercing {
+    std::vector<entt::entity> hit; ///< Entities this bullet has already damaged.
+};
 
 /// @brief Tag: marks a decay stabilizer pickup entity.
 struct StabilizerPickup {};

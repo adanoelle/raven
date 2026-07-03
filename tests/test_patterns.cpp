@@ -120,6 +120,34 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
         REQUIRE_FALSE(lib.load_from_json(j));
     }
 
+    SECTION("Loading without an interner fails instead of crashing") {
+        PatternLibrary no_interner;
+        nlohmann::json j = {{"name", "orphan"}, {"emitters", {{{"type", "radial"}}}}};
+
+        REQUIRE_FALSE(no_interner.load_from_json(j));
+    }
+
+    SECTION("Unsafe numeric values are clamped") {
+        // fire_rate <= 0 would fire a burst every tick; count is capped to
+        // prevent thousands of bullets per burst from a data typo.
+        nlohmann::json j = {{"name", "hostile"},
+                            {"emitters",
+                             {{{"type", "radial"},
+                               {"count", 100000},
+                               {"fire_rate", 0.f},
+                               {"lifetime", -1.f},
+                               {"hitbox_radius", -3.f}}}}};
+
+        REQUIRE(lib.load_from_json(j));
+
+        const auto* pat = lib.get("hostile");
+        REQUIRE(pat != nullptr);
+        REQUIRE(pat->emitters[0].count <= 256);
+        REQUIRE(pat->emitters[0].fire_rate > 0.f);
+        REQUIRE(pat->emitters[0].lifetime > 0.f);
+        REQUIRE(pat->emitters[0].hitbox_radius >= 0.f);
+    }
+
     SECTION("names() returns loaded pattern names") {
         nlohmann::json j1 = {{"name", "alpha"}, {"emitters", {{{"type", "radial"}}}}};
         nlohmann::json j2 = {{"name", "beta"}, {"emitters", {{{"type", "aimed"}}}}};

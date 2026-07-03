@@ -46,6 +46,11 @@ void GameScene::on_enter(Game& game) {
     pattern_lib_.load_manifest("assets/data/patterns/manifest.json");
 
     game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
+
+    // Erase any stale GameState first: ctx().emplace is a no-op when the
+    // value already exists, and the victory path (swap to TitleScene) does
+    // not go through GameOverScene::on_exit, which normally erases it.
+    game.registry().ctx().erase<GameState>();
     auto& game_state = game.registry().ctx().emplace<GameState>();
     game_state.player_class = selected_class_;
 

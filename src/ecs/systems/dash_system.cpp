@@ -2,6 +2,7 @@
 
 #include "ecs/components.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 namespace raven::systems {
@@ -47,8 +48,10 @@ void update_dash(entt::registry& reg, const InputState& input, float dt) {
         reg.emplace<Dash>(entity, dash);
         cooldown.remaining = cooldown.rate;
 
-        // Grant invulnerability (slightly longer than dash for grace period)
-        reg.emplace_or_replace<Invulnerable>(entity, 0.18f);
+        // Grant invulnerability (slightly longer than dash for grace period).
+        // Never shorten i-frames already granted, e.g. by a recent hit.
+        auto& inv = reg.get_or_emplace<Invulnerable>(entity, 0.f);
+        inv.remaining = std::max(inv.remaining, 0.18f);
     }
 
     // Process active dashes: override velocity

@@ -35,6 +35,14 @@ void update_charged_shot(entt::registry& reg, const InputState& input, float dt)
 
         // Fire on release
         if (!input.shoot && cs.was_shooting && cs.charging) {
+            // Respect the fire-rate cooldown: without this check, rapid
+            // tap-release fires an uncapped stream of min-charge bullets.
+            if (cd.remaining > 0.f) {
+                cs.charge = 0.f;
+                cs.charging = false;
+                cs.was_shooting = input.shoot;
+                continue;
+            }
             float t = cs.charge;
             float damage_mult = cs.min_damage_mult + (cs.max_damage_mult - cs.min_damage_mult) * t;
             float speed_mult = cs.min_speed_mult + (cs.max_speed_mult - cs.min_speed_mult) * t;
