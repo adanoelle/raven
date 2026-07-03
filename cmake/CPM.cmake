@@ -15,9 +15,12 @@ endif()
 
 get_filename_component(CPM_DOWNLOAD_LOCATION ${CPM_DOWNLOAD_LOCATION} ABSOLUTE)
 
+# EXPECTED_HASH verifies integrity and also skips the download entirely when
+# the file is already present and matches (offline reconfigures keep working).
 file(DOWNLOAD
     https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake
     ${CPM_DOWNLOAD_LOCATION}
+    EXPECTED_HASH SHA256=${CPM_HASH_SUM}
 )
 
 include(${CPM_DOWNLOAD_LOCATION})
