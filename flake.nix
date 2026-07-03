@@ -14,7 +14,7 @@
           inherit system;
           overlays = [ claude-code-overlay.overlays.default ];
           config.allowUnfree = true;
-          config.allowUnfreePredicate = pkg: (pkg.pname or "") == "cluade-code";
+          config.allowUnfreePredicate = pkg: (pkg.pname or "") == "claude-code";
         };
       in
       {
