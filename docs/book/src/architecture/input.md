@@ -131,18 +131,36 @@ The `mouse_active` flag is resolved in `compute_edges()`:
 This lets the shooting system choose between mouse aim and stick aim without
 explicit mode switching.
 
-## Edge detection
+## Edge detection and latching
 
-Edge flags detect the _rising edge_ of a button press — `true` only on the first
-frame the button is held:
+Edge flags detect the _rising edge_ of a button press. The raw edge is computed
+per render frame (`begin_frame()` copies `current_` into `previous_` before
+polling), but the flag is **latched** rather than exposed directly:
 
 ```cpp
-current_.shoot_pressed = current_.shoot && !previous_.shoot;
+latched_.shoot = latched_.shoot || (current_.shoot && !previous_.shoot);
+current_.shoot_pressed = latched_.shoot;
 ```
 
-`begin_frame()` copies `current_` into `previous_` before any polling, so the
-comparison always spans exactly one frame. This is used for discrete actions
-like pause and bomb that should fire once per press.
+Latching exists because render frames and fixed ticks are decoupled. The game
+renders at display rate but simulates at 120 Hz, so a frame can run **zero**
+fixed ticks (on a 240 Hz display, about half of them do) or **several** (at
+30 fps, four). Without latching, both directions break:
+
+- A press whose edge lands on a zero-tick frame is cleared by the next
+  `begin_frame()` before any system sees it — dropped inputs on high-refresh
+  displays.
+- A press seen by a multi-tick frame fires once *per tick* — dashes double-fire
+  and menu confirms skip through two screens at low frame rates.
+
+The game loop calls `Input::consume_pressed()` after each fixed tick, which
+clears the latches. The result: every press drives **exactly one** tick,
+regardless of the display's refresh rate relative to the tick rate. Edges that
+arrive on zero-tick frames stay latched until the next tick consumes them.
+
+Held-state fields (`shoot`, `move_x`, ...) are unaffected — they are re-polled
+every frame and read directly by continuous systems like movement and
+auto-fire.
 
 ## Key files
 

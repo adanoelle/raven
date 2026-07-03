@@ -71,6 +71,7 @@
 - [Room Progression and HUD](devlog/2026-02-11-room-progression.md)
 - [Player Class System](devlog/2026-02-12-player-class-system.md)
 - [SDL3 Migration](devlog/2026-02-12-sdl3-migration.md)
+- [Steam Readiness Sprint](devlog/2026-07-03-steam-readiness-sprint.md)
 
 ---
 
@@ -90,3 +91,7 @@
 - [ADR-0012: Concussion Shot VFX](decisions/0012-concussion-shot-vfx.md)
 - [ADR-0013: SDL3 Migration](decisions/0013-sdl3-migration.md)
 - [ADR-0014: NPC Shop Rooms for In-Run Progression](decisions/0014-npc-shop-progression.md)
+- [ADR-0015: Deferred Scene Transitions](decisions/0015-deferred-scene-transitions.md)
+- [ADR-0016: Executable-Relative Asset Paths](decisions/0016-executable-relative-asset-paths.md)
+- [ADR-0017: User Settings in the Platform Pref Path](decisions/0017-settings-pref-path.md)
+- [ADR-0018: Bitmap Font Atlas for Text Rendering](decisions/0018-bitmap-font-text.md)
