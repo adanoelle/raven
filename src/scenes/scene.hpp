@@ -74,6 +74,16 @@ class SceneManager {
     /// @return True if no scenes are on the stack.
     [[nodiscard]] bool empty() const { return stack_.empty(); }
 
+    /// @brief Check whether a scene is the active (top) scene.
+    ///
+    /// Scenes below an overlay (e.g. GameScene under PauseScene) still
+    /// render; they can use this to adapt, such as freezing interpolation.
+    /// @param scene The scene to test.
+    /// @return True if scene is currently on top of the stack.
+    [[nodiscard]] bool is_top(const Scene* scene) const {
+        return !stack_.empty() && stack_.back().get() == scene;
+    }
+
   private:
     /// @brief A push/pop/swap requested during update(), applied afterwards.
     struct PendingOp {

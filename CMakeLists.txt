@@ -80,6 +80,7 @@ add_executable(raven
     src/scenes/title_scene.cpp
     src/scenes/game_over_scene.cpp
     src/scenes/char_select_scene.cpp
+    src/scenes/pause_scene.cpp
 )
 
 target_include_directories(raven PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

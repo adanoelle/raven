@@ -26,6 +26,7 @@
 #include "ecs/systems/tilemap_render_system.hpp"
 #include "ecs/systems/wave_system.hpp"
 #include "scenes/game_over_scene.hpp"
+#include "scenes/pause_scene.hpp"
 #include "scenes/title_scene.hpp"
 
 #include <spdlog/spdlog.h>
@@ -302,9 +303,10 @@ void GameScene::update(Game& game, float dt) {
         return;
     }
 
-    // Check for pause
+    // Pause: push the overlay; this scene stops updating but keeps rendering
     if (input.pause_pressed) {
-        // TODO: push pause scene
+        game.scenes().push(std::make_unique<PauseScene>(), game);
+        return;
     }
 }
 
@@ -318,8 +320,10 @@ void GameScene::render(Game& game) {
     // Render tilemap as background layer
     systems::render_tilemap(tilemap_, r);
 
-    // Render all sprites via ECS (interpolated)
-    float alpha = game.clock().interpolation_alpha;
+    // Render all sprites via ECS (interpolated). While an overlay (pause)
+    // is on top, this scene no longer ticks, so snap to current positions —
+    // a varying alpha would make sprites shimmer between prev and current.
+    float alpha = game.scenes().is_top(this) ? game.clock().interpolation_alpha : 1.f;
     systems::render_sprites(game.registry(), r, game.sprites(), alpha);
 
     // HUD overlay
