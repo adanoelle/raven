@@ -1,5 +1,6 @@
 #include "core/game.hpp"
 
+#include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "scenes/title_scene.hpp"
 
@@ -21,7 +22,13 @@ bool Game::init() {
         return false;
     }
 
-    if (!renderer_.init("Raven", 2)) {
+    // Load persisted user settings, then write them back: the first run
+    // creates the file, and later runs pick up any fields added since.
+    const std::string settings_path = paths::pref_dir() + "settings.json";
+    settings_ = Settings::load(settings_path);
+    settings_.save(settings_path);
+
+    if (!renderer_.init("Raven", settings_.window_scale, settings_.fullscreen, settings_.vsync)) {
         return false;
     }
 
@@ -48,14 +55,25 @@ bool Game::init() {
 }
 
 bool Game::load_assets() {
-    std::ifstream f("assets/data/config.json");
+    const std::string config_path = paths::asset("assets/data/config.json");
+    std::ifstream f(config_path);
     if (!f.is_open()) {
-        spdlog::warn("Could not open assets/data/config.json — running without assets");
+        spdlog::warn("Could not open '{}' — running without assets", config_path);
         return true;
     }
 
     try {
         auto config = nlohmann::json::parse(f);
+
+        if (config.contains("font")) {
+            const auto& fj = config["font"];
+            auto path = fj.value("path", "assets/fonts/font.png");
+            int gw = fj.value("glyph_w", 6);
+            int gh = fj.value("glyph_h", 8);
+            if (!font_.load(renderer_.sdl_renderer(), paths::asset(path), gw, gh)) {
+                spdlog::warn("Failed to load font atlas '{}' — text will not render", path);
+            }
+        }
 
         if (config.contains("sprite_sheets")) {
             for (const auto& sheet : config["sprite_sheets"]) {
@@ -63,7 +81,7 @@ bool Game::load_assets() {
                 auto path = sheet.at("path").get<std::string>();
                 int fw = sheet.at("frame_w").get<int>();
                 int fh = sheet.at("frame_h").get<int>();
-                if (!sprites_.load(renderer_.sdl_renderer(), id, path, fw, fh)) {
+                if (!sprites_.load(renderer_.sdl_renderer(), id, paths::asset(path), fw, fh)) {
                     spdlog::warn("Failed to load sprite sheet '{}'", id);
                 }
             }
@@ -129,6 +147,17 @@ void Game::run() {
         // Render
         render();
 
+        // Without vsync the loop would busy-spin at uncapped speed (100%
+        // CPU/GPU). Cap the frame rate instead; 240 fps keeps input latency
+        // low while still bounding the spin.
+        if (!renderer_.vsync_enabled()) {
+            constexpr Uint64 MIN_FRAME_NS = 1'000'000'000ull / 240;
+            Uint64 elapsed_ns = (SDL_GetPerformanceCounter() - now) * 1'000'000'000ull / freq;
+            if (elapsed_ns < MIN_FRAME_NS) {
+                SDL_DelayNS(MIN_FRAME_NS - elapsed_ns);
+            }
+        }
+
         // Exit if no scenes remain
         if (scenes_.empty()) {
             running_ = false;
@@ -162,6 +191,7 @@ void Game::shutdown() {
     debug_overlay_.shutdown();
 #endif
     sprites_ = SpriteSheetManager{}; // release all textures before renderer
+    font_ = BitmapFont{};
     renderer_.shutdown();
     input_.shutdown(); // close gamepad before SDL_Quit
 

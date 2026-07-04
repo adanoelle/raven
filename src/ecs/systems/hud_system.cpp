@@ -2,9 +2,11 @@
 
 #include "ecs/components.hpp"
 
+#include <string>
+
 namespace raven::systems {
 
-void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
+void render_hud(entt::registry& reg, SDL_Renderer* renderer, const BitmapFont& font) {
     constexpr int margin = 4;
 
     // ── Health bar (top-left) ──────────────────────────────────────
@@ -163,50 +165,9 @@ void render_hud(entt::registry& reg, SDL_Renderer* renderer) {
     // ── Score (top-right) ──────────────────────────────────────────
     auto* state = reg.ctx().find<GameState>();
     if (state) {
-        int score = state->score;
-
-        // Extract digits
-        int digits[10] = {};
-        int num_digits = 0;
-        if (score == 0) {
-            digits[0] = 0;
-            num_digits = 1;
-        } else {
-            int temp = score;
-            while (temp > 0 && num_digits < 10) {
-                digits[num_digits++] = temp % 10;
-                temp /= 10;
-            }
-            // Reverse
-            for (int i = 0; i < num_digits / 2; ++i) {
-                int swap = digits[i];
-                digits[i] = digits[num_digits - 1 - i];
-                digits[num_digits - 1 - i] = swap;
-            }
-        }
-
-        // Draw digits as small rectangles (5x7 each, 1px gap)
-        constexpr int digit_w = 5;
-        constexpr int digit_h = 7;
-        constexpr int digit_gap = 1;
-        int total_w = num_digits * digit_w + (num_digits - 1) * digit_gap;
-        int score_x = 480 - margin - total_w; // Right-aligned (480 = virtual width)
-        int score_y = margin;
-
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        for (int i = 0; i < num_digits; ++i) {
-            SDL_FRect digit_rect{static_cast<float>(score_x + i * (digit_w + digit_gap)),
-                                 static_cast<float>(score_y), static_cast<float>(digit_w),
-                                 static_cast<float>(digit_h)};
-            // Vary brightness slightly by digit value
-            int brightness = 180 + digits[i] * 7;
-            if (brightness > 255)
-                brightness = 255;
-            SDL_SetRenderDrawColor(renderer, static_cast<Uint8>(brightness),
-                                   static_cast<Uint8>(brightness), static_cast<Uint8>(brightness),
-                                   255);
-            SDL_RenderFillRect(renderer, &digit_rect);
-        }
+        std::string score_text = std::to_string(state->score);
+        float score_x = static_cast<float>(480 - margin - font.measure(score_text));
+        font.draw(renderer, score_text, score_x, static_cast<float>(margin));
 
         // ── Wave indicator (top-center) ────────────────────────────
         int total_waves = state->total_waves;

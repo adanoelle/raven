@@ -35,9 +35,12 @@ add_executable(raven
     # Core
     src/core/game.cpp
     src/core/input.cpp
+    src/core/paths.cpp
+    src/core/settings.cpp
 
     # Rendering
     src/rendering/renderer.cpp
+    src/rendering/bitmap_font.cpp
     src/rendering/sprite_sheet.cpp
     src/rendering/tilemap.cpp
     src/rendering/tilemap_loader.cpp
@@ -77,6 +80,7 @@ add_executable(raven
     src/scenes/title_scene.cpp
     src/scenes/game_over_scene.cpp
     src/scenes/char_select_scene.cpp
+    src/scenes/pause_scene.cpp
 )
 
 target_include_directories(raven PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -112,8 +116,10 @@ if(RAVEN_ENABLE_TESTS)
 endif()
 
 # ── Install / Package ─────────────────────────────────────────────
-install(TARGETS raven RUNTIME DESTINATION bin)
-install(DIRECTORY assets/ DESTINATION share/raven/assets)
+# The game resolves assets relative to the executable (SDL_GetBasePath),
+# so the assets directory must sit next to the binary in packages.
+install(TARGETS raven RUNTIME DESTINATION .)
+install(DIRECTORY assets/ DESTINATION assets)
 
 set(CPACK_PACKAGE_NAME "raven")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})

@@ -1,5 +1,7 @@
 #include "patterns/pattern_library.hpp"
 
+#include "core/paths.hpp"
+
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -38,7 +40,8 @@ bool PatternLibrary::load_manifest(const std::string& manifest_path) {
         auto j = nlohmann::json::parse(f);
         int count = 0;
         for (const auto& path : j.at("patterns")) {
-            if (load_file(path.get<std::string>())) {
+            // Manifest entries are relative to the install dir, not the CWD
+            if (load_file(paths::asset(path.get<std::string>()))) {
                 ++count;
             }
         }

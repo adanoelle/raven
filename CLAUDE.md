@@ -1,6 +1,6 @@
 # Raven
 
-Pixel art roguelike. C++20, EnTT ECS, SDL2. Inspired by Blazing Beaks.
+Pixel art roguelike. C++20, EnTT ECS, SDL3 (>= 3.4 required). Inspired by Blazing Beaks.
 
 ## Build (requires nix develop / direnv)
 
@@ -27,7 +27,7 @@ docs/            mdBook, devlog, ADRs
 - Naming: PascalCase types, snake_case functions/variables, trailing _ for members
 - Headers: .hpp with #pragma once. Sources: .cpp
 - Doxygen comments (///) on all public APIs: @brief, @param, @return
-- Include order: project, library (<SDL2/..>, <entt/..>), std
+- Include order: project, library (<SDL3/..>, <entt/..>), std
 - [[nodiscard]] on const getters
 - No std::filesystem (portability). No exceptions in hot paths.
 - New .cpp files must be added to CMakeLists.txt add_executable()
@@ -38,6 +38,9 @@ docs/            mdBook, devlog, ADRs
 - Components are small POD structs in components.hpp.
 - Scenes own system execution order. Game class owns subsystems + registry.
 - Fixed timestep: accumulate delta, step at 1/120s, interpolate for render.
+- Asset loads go through paths::asset() (relative to the executable, never CWD).
+- User settings live in settings.json under SDL_GetPrefPath (core/settings.hpp);
+  assets/data/config.json is read-only game data.
 
 ## Commits
 

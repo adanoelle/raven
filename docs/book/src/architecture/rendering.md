@@ -159,6 +159,43 @@ All art faces right by convention; the engine mirrors for leftward movement.
 
 ---
 
+## Bitmap Font Text
+
+UI text (menus, prompts, the HUD score) renders through `BitmapFont`
+(`src/rendering/bitmap_font.hpp/.cpp`) — a monospace glyph atlas rather than a
+TTF rasteriser (see
+[ADR-0018](../decisions/0018-bitmap-font-text.md) for the rationale).
+
+The atlas (`assets/fonts/font.png`) holds printable ASCII 32–126 in a
+16-column, row-major grid of identical cells — currently 6x8 pixels: a 5x7
+glyph plus 1px spacing. `tools/gen_font.py` generates it from hand-defined
+ASCII-art glyph shapes; regenerate after editing shapes, or replace the PNG
+with hand-drawn art. The grid layout is the only contract between the asset
+and the code.
+
+Glyph lookup is pure arithmetic — no per-glyph metrics:
+
+```cpp
+int idx = font_glyph_index(c);              // c - 32, or -1 if unprintable
+SDL_FRect src{(idx % COLUMNS) * glyph_w_,   // atlas column
+              (idx / COLUMNS) * glyph_h_,   // atlas row
+              glyph_w_, glyph_h_};
+```
+
+Glyphs are stored white; `draw()` tints per call with
+`SDL_SetTextureColorMod` / `SDL_SetTextureAlphaMod`, so one texture serves
+every text colour. Scaling is integer-only (`scale` parameter) to preserve
+pixel crispness, and the atlas texture uses `SDL_SCALEMODE_PIXELART` like
+every other sprite. Characters outside the atlas draw `?`; an unloaded font
+draws nothing — the same graceful degradation as missing sprite sheets.
+
+`Game` owns the font (loaded from the `font` section of
+`assets/data/config.json`) and exposes it via `game.font()`. Scenes use
+`draw_centered()` for menu text; the HUD right-aligns the score with
+`measure()`.
+
+---
+
 ## Future: SDL_GPU Shader Path
 
 SDL3's `SDL_GPU` API exposes a cross-platform GPU abstraction with fragment

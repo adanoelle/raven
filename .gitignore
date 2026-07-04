@@ -12,6 +12,10 @@ cmake-build-*/
 .cache/
 compile_commands.json
 
+# Local tool state
+imgui.ini
+.claude/settings.local.json
+
 # Nix
 result
 result-*

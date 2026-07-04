@@ -25,8 +25,18 @@ class Renderer {
     /// @brief Create the SDL window and renderer.
     /// @param title Window title string.
     /// @param window_scale Integer multiplier for the window size (default 2).
+    /// @param fullscreen Start in borderless fullscreen.
+    /// @param vsync Request vsync; check vsync_enabled() for the result.
     /// @return True on success, false if SDL initialisation failed.
-    bool init(const std::string& title, int window_scale = 2);
+    bool init(const std::string& title, int window_scale = 2, bool fullscreen = false,
+              bool vsync = true);
+
+    /// @brief Whether vsync is actually active (the driver may refuse it).
+    ///
+    /// When false, the caller must limit the frame rate itself or the main
+    /// loop busy-spins at uncapped speed.
+    /// @return True if presentation is synced to the display.
+    [[nodiscard]] bool vsync_enabled() const { return vsync_enabled_; }
 
     /// @brief Destroy the SDL window, renderer, and render target.
     void shutdown();
@@ -64,6 +74,7 @@ class Renderer {
     SDL_Window* window_ = nullptr;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* render_target_ = nullptr; ///< Virtual resolution render target.
+    bool vsync_enabled_ = false;           ///< True if the driver accepted vsync.
 
     /// @brief Destroy and recreate the virtual resolution render target.
     void recreate_target();
