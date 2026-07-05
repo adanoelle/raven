@@ -1,6 +1,7 @@
 #include "scenes/pause_scene.hpp"
 
 #include "core/game.hpp"
+#include "scenes/options_scene.hpp"
 #include "scenes/title_scene.hpp"
 
 #include <spdlog/spdlog.h>
@@ -30,14 +31,19 @@ void PauseScene::update(Game& game, float /*dt*/) {
     prev_move_y_ = input.move_y;
 
     if (input.confirm_pressed) {
-        if (selected_ == 0) {
-            // Resume
+        switch (selected_) {
+        case 0: // Resume
             game.scenes().pop(game);
-        } else {
+            break;
+        case 1: // Options overlay on top of the pause menu
+            game.scenes().push(std::make_unique<OptionsScene>(), game);
+            break;
+        default:
             // Quit to title: pop this overlay, then replace the GameScene
             // beneath. Both are queued and applied in order after update().
             game.scenes().pop(game);
             game.scenes().swap(std::make_unique<TitleScene>(), game);
+            break;
         }
     }
 }
@@ -61,8 +67,10 @@ void PauseScene::render(Game& game) {
     const SDL_Color inactive{130, 130, 150, 255};
     font.draw_centered(r, selected_ == 0 ? "> RESUME <" : "RESUME", center_x, 140.f,
                        selected_ == 0 ? active : inactive, 1);
-    font.draw_centered(r, selected_ == 1 ? "> QUIT TO TITLE <" : "QUIT TO TITLE", center_x, 156.f,
+    font.draw_centered(r, selected_ == 1 ? "> OPTIONS <" : "OPTIONS", center_x, 156.f,
                        selected_ == 1 ? active : inactive, 1);
+    font.draw_centered(r, selected_ == 2 ? "> QUIT TO TITLE <" : "QUIT TO TITLE", center_x, 172.f,
+                       selected_ == 2 ? active : inactive, 1);
 }
 
 } // namespace raven

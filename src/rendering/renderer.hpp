@@ -38,6 +38,21 @@ class Renderer {
     /// @return True if presentation is synced to the display.
     [[nodiscard]] bool vsync_enabled() const { return vsync_enabled_; }
 
+    /// @brief Switch between borderless fullscreen and windowed mode.
+    /// @param fullscreen True for fullscreen.
+    void set_fullscreen(bool fullscreen);
+
+    /// @brief Resize the window to scale x virtual resolution (windowed only).
+    /// @param window_scale Integer multiplier, >= 1.
+    void set_window_scale(int window_scale);
+
+    /// @brief Enable or disable vsync at runtime.
+    ///
+    /// Updates vsync_enabled() with the actual result — the driver may
+    /// refuse, in which case the game loop's frame limiter takes over.
+    /// @param vsync True to request vsync.
+    void set_vsync(bool vsync);
+
     /// @brief Destroy the SDL window, renderer, and render target.
     void shutdown();
 

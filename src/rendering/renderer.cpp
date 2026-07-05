@@ -63,6 +63,33 @@ bool Renderer::init(const std::string& title, int window_scale, bool fullscreen,
     return true;
 }
 
+void Renderer::set_fullscreen(bool fullscreen) {
+    if (window_ && !SDL_SetWindowFullscreen(window_, fullscreen)) {
+        spdlog::warn("Failed to set fullscreen={}: {}", fullscreen, SDL_GetError());
+    }
+}
+
+void Renderer::set_window_scale(int window_scale) {
+    if (!window_ || window_scale < 1) {
+        return;
+    }
+    if (!SDL_SetWindowSize(window_, VIRTUAL_WIDTH * window_scale, VIRTUAL_HEIGHT * window_scale)) {
+        spdlog::warn("Failed to resize window: {}", SDL_GetError());
+    }
+}
+
+void Renderer::set_vsync(bool vsync) {
+    if (!renderer_) {
+        return;
+    }
+    if (SDL_SetRenderVSync(renderer_, vsync ? 1 : SDL_RENDERER_VSYNC_DISABLED)) {
+        vsync_enabled_ = vsync;
+    } else {
+        spdlog::warn("Failed to set vsync={}: {}", vsync, SDL_GetError());
+        vsync_enabled_ = false;
+    }
+}
+
 void Renderer::shutdown() {
     if (render_target_) {
         SDL_DestroyTexture(render_target_);
