@@ -12,6 +12,7 @@ just lint     # clang-tidy
 
 ## Layout
 
+src/audio/       SDL3-native sound effects (AudioEngine + AudioQueue events)
 src/core/        Game loop (120Hz fixed timestep), input
 src/ecs/         components.hpp + systems/ (one file per system)
 src/rendering/   SDL_Renderer wrapper, 480x270 virtual res, sprite sheets
