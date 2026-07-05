@@ -88,3 +88,4 @@ jobs:
         env:
           LD_LIBRARY_PATH: ${{ env.SDL_PREFIX }}/lib
           SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy

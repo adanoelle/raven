@@ -6,6 +6,15 @@
         "starting_lives": 3
     },
     "font": { "path": "assets/fonts/font.png", "glyph_w": 6, "glyph_h": 8 },
+    "sounds": {
+        "shoot":      "assets/audio/sfx/shoot.wav",
+        "player_hit": "assets/audio/sfx/player_hit.wav",
+        "enemy_hit":  "assets/audio/sfx/enemy_hit.wav",
+        "enemy_down": "assets/audio/sfx/enemy_down.wav",
+        "pickup":     "assets/audio/sfx/pickup.wav",
+        "dash":       "assets/audio/sfx/dash.wav",
+        "melee":      "assets/audio/sfx/melee.wav"
+    },
     "sprite_sheets": [
         { "id": "player",       "path": "assets/sprites/player.png",       "frame_w": 32, "frame_h": 32 },
         { "id": "projectiles",  "path": "assets/sprites/bullets.png",      "frame_w": 8,  "frame_h": 8  },

@@ -377,6 +377,60 @@ struct Exit {
     bool open = false;        ///< Active only after room is cleared.
 };
 
+// ── Audio ───────────────────────────────────────────────────────
+
+/// @brief Sound effect identifiers, mapped to loaded sounds by GameScene.
+enum class Sfx : uint8_t {
+    Shoot,     ///< Player fired a bullet.
+    PlayerHit, ///< Player took damage.
+    EnemyHit,  ///< Enemy took bullet damage.
+    EnemyDown, ///< Enemy destroyed.
+    Pickup,    ///< Weapon or stabilizer collected.
+    Dash,      ///< Player dashed.
+    Melee,     ///< Player swung melee.
+};
+
+/// @brief Registry-context queue of sound requests for the current tick.
+///
+/// Systems push effects as gameplay events happen; GameScene drains the
+/// queue after the system pipeline and forwards to the AudioEngine. Systems
+/// must tolerate the queue being absent (unit tests don't create it).
+struct AudioQueue {
+    std::vector<Sfx> events; ///< Effects requested this tick, in order.
+};
+
+/// @brief Push a sound request if an AudioQueue exists in the registry ctx.
+/// @param reg The ECS registry.
+/// @param sfx The effect to request.
+inline void push_sfx(entt::registry& reg, Sfx sfx) {
+    if (auto* queue = reg.ctx().find<AudioQueue>()) {
+        queue->events.push_back(sfx);
+    }
+}
+
+/// @brief Sound id for an Sfx value, matching the config.json "sounds" keys.
+/// @param sfx The effect to name.
+/// @return Stable identifier string used by AudioEngine::load_sound/play.
+[[nodiscard]] constexpr const char* sfx_sound_name(Sfx sfx) {
+    switch (sfx) {
+    case Sfx::Shoot:
+        return "shoot";
+    case Sfx::PlayerHit:
+        return "player_hit";
+    case Sfx::EnemyHit:
+        return "enemy_hit";
+    case Sfx::EnemyDown:
+        return "enemy_down";
+    case Sfx::Pickup:
+        return "pickup";
+    case Sfx::Dash:
+        return "dash";
+    case Sfx::Melee:
+        return "melee";
+    }
+    return "shoot";
+}
+
 // ── Game Context (registry singleton) ──────────────────────────
 
 /// @brief Persistent session state stored in registry context.

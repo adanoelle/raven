@@ -48,6 +48,7 @@ void GameScene::on_enter(Game& game) {
     pattern_lib_.load_manifest(paths::asset("assets/data/patterns/manifest.json"));
 
     game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
+    game.registry().ctx().emplace<AudioQueue>();
 
     // Erase any stale GameState first: ctx().emplace is a no-op when the
     // value already exists, and the victory path (swap to TitleScene) does
@@ -280,6 +281,14 @@ void GameScene::update(Game& game, float dt) {
     const auto* stage = stage_loader_.get(current_stage_);
     if (stage) {
         systems::update_waves(reg, tilemap_, *stage, pattern_lib_);
+    }
+
+    // Forward sound requests pushed by the systems above to the engine
+    if (auto* audio_queue = reg.ctx().find<AudioQueue>()) {
+        for (Sfx sfx : audio_queue->events) {
+            game.audio().play(sfx_sound_name(sfx));
+        }
+        audio_queue->events.clear();
     }
 
     // Exit overlap check — room transition

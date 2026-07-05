@@ -24,13 +24,17 @@ bool Game::init() {
 
     // Load persisted user settings, then write them back: the first run
     // creates the file, and later runs pick up any fields added since.
-    const std::string settings_path = paths::pref_dir() + "settings.json";
-    settings_ = Settings::load(settings_path);
-    settings_.save(settings_path);
+    settings_path_ = paths::pref_dir() + "settings.json";
+    settings_ = Settings::load(settings_path_);
+    settings_.save(settings_path_);
 
     if (!renderer_.init("Raven", settings_.window_scale, settings_.fullscreen, settings_.vsync)) {
         return false;
     }
+
+    // Audio is optional: a failed init leaves the engine in silent no-op mode
+    audio_.init();
+    audio_.set_master_gain(static_cast<float>(settings_.sfx_volume) / 100.f);
 
 #ifdef RAVEN_ENABLE_IMGUI
     debug_overlay_.init(renderer_.sdl_window(), renderer_.sdl_renderer());
@@ -72,6 +76,12 @@ bool Game::load_assets() {
             int gh = fj.value("glyph_h", 8);
             if (!font_.load(renderer_.sdl_renderer(), paths::asset(path), gw, gh)) {
                 spdlog::warn("Failed to load font atlas '{}' — text will not render", path);
+            }
+        }
+
+        if (config.contains("sounds")) {
+            for (const auto& [id, path] : config["sounds"].items()) {
+                audio_.load_sound(id, paths::asset(path.get<std::string>()));
             }
         }
 
@@ -144,6 +154,9 @@ void Game::run() {
             input_.consume_pressed();
         }
 
+        // Reap finished sound effect streams
+        audio_.update();
+
         // Render
         render();
 
@@ -167,6 +180,16 @@ void Game::run() {
 
 void Game::fixed_update(float dt) {
     scenes_.update(*this, dt);
+}
+
+void Game::apply_settings() {
+    renderer_.set_fullscreen(settings_.fullscreen);
+    if (!settings_.fullscreen) {
+        renderer_.set_window_scale(settings_.window_scale);
+    }
+    renderer_.set_vsync(settings_.vsync);
+    audio_.set_master_gain(static_cast<float>(settings_.sfx_volume) / 100.f);
+    settings_.save(settings_path_);
 }
 
 void Game::render() {
@@ -193,6 +216,7 @@ void Game::shutdown() {
     sprites_ = SpriteSheetManager{}; // release all textures before renderer
     font_ = BitmapFont{};
     renderer_.shutdown();
+    audio_.shutdown();
     input_.shutdown(); // close gamepad before SDL_Quit
 
     SDL_Quit();

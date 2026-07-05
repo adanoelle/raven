@@ -49,6 +49,7 @@ void update_shooting(entt::registry& reg, const InputState& input, float dt) {
         }
         if (input.shoot && cd.remaining <= 0.f) {
             cd.remaining = weapon.fire_rate;
+            push_sfx(reg, Sfx::Shoot);
 
             float base_angle = std::atan2(aim.y, aim.x);
 

@@ -37,6 +37,8 @@ void handle_player_death(entt::registry& reg, entt::entity entity, raven::Health
 }
 
 void handle_enemy_death(entt::registry& reg, entt::entity entity, raven::StringInterner& interner) {
+    raven::push_sfx(reg, raven::Sfx::EnemyDown);
+
     if (auto* score = reg.try_get<raven::ScoreValue>(entity)) {
         auto* state = reg.ctx().find<raven::GameState>();
         if (state) {
