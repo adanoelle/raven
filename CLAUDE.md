@@ -14,6 +14,7 @@ just lint     # clang-tidy
 
 src/audio/       SDL3-native sound effects (AudioEngine + AudioQueue events)
 src/core/        Game loop (120Hz fixed timestep), input
+src/platform/    Optional Steamworks wrapper (no-op without RAVEN_ENABLE_STEAM)
 src/ecs/         components.hpp + systems/ (one file per system)
 src/rendering/   SDL_Renderer wrapper, 480x270 virtual res, sprite sheets
 src/scenes/      Stack-based scene manager

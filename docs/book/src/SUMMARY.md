@@ -73,6 +73,7 @@
 - [SDL3 Migration](devlog/2026-02-12-sdl3-migration.md)
 - [Steam Readiness Sprint](devlog/2026-07-03-steam-readiness-sprint.md)
 - [Options Menu and Sound Effects](devlog/2026-07-05-options-and-audio.md)
+- [Windows Builds and Steamworks Scaffolding](devlog/2026-07-06-windows-and-steamworks.md)
 
 ---
 
@@ -97,3 +98,5 @@
 - [ADR-0017: User Settings in the Platform Pref Path](decisions/0017-settings-pref-path.md)
 - [ADR-0018: Bitmap Font Atlas for Text Rendering](decisions/0018-bitmap-font-text.md)
 - [ADR-0019: Sound Effects on Native SDL3 Audio](decisions/0019-sdl3-native-audio.md)
+- [ADR-0020: Bundled Dependency Fallback for Windows Builds](decisions/0020-bundled-dependency-fallback.md)
+- [ADR-0021: Optional Steamworks Integration](decisions/0021-optional-steamworks.md)
