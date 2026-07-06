@@ -32,6 +32,7 @@ void update_collision(entt::registry& reg) {
                                 b_tf.x + b_hb.offset_x, b_tf.y + b_hb.offset_y, b_hb.radius)) {
                 p_hp.current -= dmg.damage;
                 enemy_bullets_to_destroy.push_back(b_ent);
+                push_sfx(reg, Sfx::PlayerHit);
 
                 // Grant invulnerability frames
                 reg.emplace_or_replace<Invulnerable>(p_ent, 2.f);
@@ -69,6 +70,7 @@ void update_collision(entt::registry& reg) {
             if (circles_overlap(b_tf.x + b_hb.offset_x, b_tf.y + b_hb.offset_y, b_hb.radius,
                                 e_tf.x + e_hb.offset_x, e_tf.y + e_hb.offset_y, e_hb.radius)) {
                 e_hp.current -= dmg.damage;
+                push_sfx(reg, Sfx::EnemyHit);
 
                 // Apply knockback from bullet impact
                 if (const auto* b_vel = reg.try_get<Velocity>(b_ent)) {

@@ -47,6 +47,7 @@ void update_dash(entt::registry& reg, const InputState& input, float dt) {
         dash.dir_y = dir_y;
         reg.emplace<Dash>(entity, dash);
         cooldown.remaining = cooldown.rate;
+        push_sfx(reg, Sfx::Dash);
 
         // Grant invulnerability (slightly longer than dash for grace period).
         // Never shorten i-frames already granted, e.g. by a recent hit.

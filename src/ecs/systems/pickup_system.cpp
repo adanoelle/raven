@@ -23,6 +23,7 @@ void update_pickups(entt::registry& reg) {
                 // Equip the pickup's weapon
                 weapon = pickup.weapon;
                 reg.emplace_or_replace<WeaponDecay>(p_ent, 10.f);
+                push_sfx(reg, Sfx::Pickup);
 
                 pickups_to_destroy.push_back(pk_ent);
                 break; // one pickup per frame
@@ -53,6 +54,7 @@ void update_pickups(entt::registry& reg) {
                 if (reg.any_of<DefaultWeapon>(p_ent)) {
                     reg.remove<DefaultWeapon>(p_ent);
                 }
+                push_sfx(reg, Sfx::Pickup);
                 stabilizers_to_destroy.push_back(s_ent);
                 break; // one stabilizer per frame
             }

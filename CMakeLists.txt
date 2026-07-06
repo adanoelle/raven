@@ -38,6 +38,9 @@ add_executable(raven
     src/core/paths.cpp
     src/core/settings.cpp
 
+    # Audio
+    src/audio/audio_engine.cpp
+
     # Rendering
     src/rendering/renderer.cpp
     src/rendering/bitmap_font.cpp
@@ -81,6 +84,7 @@ add_executable(raven
     src/scenes/game_over_scene.cpp
     src/scenes/char_select_scene.cpp
     src/scenes/pause_scene.cpp
+    src/scenes/options_scene.cpp
 )
 
 target_include_directories(raven PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

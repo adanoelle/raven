@@ -1,5 +1,6 @@
 #pragma once
 
+#include "audio/audio_engine.hpp"
 #include "core/clock.hpp"
 #include "core/input.hpp"
 #include "core/settings.hpp"
@@ -61,6 +62,23 @@ class Game {
     /// @return Const reference to the Settings loaded at startup.
     [[nodiscard]] const Settings& settings() const { return settings_; }
 
+    /// @brief Mutable settings access for the options menu.
+    ///
+    /// Call apply_settings() after changing values to make them take
+    /// effect and persist to disk.
+    /// @return Mutable reference to the Settings.
+    [[nodiscard]] Settings& settings_mut() { return settings_; }
+
+    /// @brief Apply the current settings to subsystems and save them.
+    ///
+    /// Pushes fullscreen/scale/vsync to the renderer, volume to the audio
+    /// engine, and writes settings.json to the pref dir.
+    void apply_settings();
+
+    /// @brief Access the sound effect engine.
+    /// @return Mutable reference to the AudioEngine (no-op when silent).
+    AudioEngine& audio() { return audio_; }
+
     /// @brief Access the UI bitmap font.
     /// @return Const reference to the BitmapFont (may be unloaded; draws no-op).
     [[nodiscard]] const BitmapFont& font() const { return font_; }
@@ -79,6 +97,8 @@ class Game {
     SpriteSheetManager sprites_;
     Settings settings_;
     BitmapFont font_;
+    AudioEngine audio_;
+    std::string settings_path_; ///< Full path to the user settings file.
 
 #ifdef RAVEN_ENABLE_IMGUI
     DebugOverlay debug_overlay_;

@@ -4,27 +4,30 @@
 
 namespace raven {
 
-/// @brief Title screen scene with a blinking "Press Start" prompt.
+/// @brief Title screen with a Start / Options menu.
 ///
-/// Transitions to GameScene when the confirm button is pressed.
+/// Confirm on START swaps to CharacterSelectScene; OPTIONS pushes
+/// OptionsScene as an overlay.
 class TitleScene : public Scene {
   public:
     /// @brief Set up title screen assets and state.
     /// @param game The Game instance providing access to subsystems.
     void on_enter(Game& game) override;
 
-    /// @brief Advance the blink timer and check for confirm input.
+    /// @brief Handle menu navigation and confirm input.
     /// @param game The Game instance.
     /// @param dt Fixed timestep delta in seconds.
     void update(Game& game, float dt) override;
 
-    /// @brief Draw the title logo and blinking prompt.
+    /// @brief Draw the title logo and menu.
     /// @param game The Game instance.
     void render(Game& game) override;
 
   private:
-    float blink_timer_ = 0.f; ///< Timer controlling prompt visibility toggle.
-    bool show_prompt_ = true; ///< Whether the prompt text is currently visible.
+    static constexpr int ITEM_COUNT = 2; ///< Start, Options.
+
+    int selected_ = 0;        ///< Highlighted menu item index.
+    float prev_move_y_ = 0.f; ///< Previous vertical input, for menu edge detection.
 };
 
 } // namespace raven

@@ -67,6 +67,7 @@ void update_charged_shot(entt::registry& reg, const InputState& input, float dt)
 
             spawn_bullet(reg, params);
             cd.remaining = weapon.fire_rate;
+            push_sfx(reg, Sfx::Shoot);
 
             cs.charge = 0.f;
             cs.charging = false;

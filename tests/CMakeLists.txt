@@ -15,11 +15,13 @@ add_executable(raven_tests
     test_player_class.cpp
     test_settings.cpp
     test_bitmap_font.cpp
+    test_audio.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/core/paths.cpp
     ${CMAKE_SOURCE_DIR}/src/core/settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/bitmap_font.cpp
+    ${CMAKE_SOURCE_DIR}/src/audio/audio_engine.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/player_class.cpp
     ${CMAKE_SOURCE_DIR}/src/patterns/pattern_library.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/collision_system.cpp

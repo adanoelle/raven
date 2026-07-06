@@ -46,6 +46,7 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
         attack.hit_checked = false;
         reg.emplace<MeleeAttack>(entity, attack);
         cooldown.remaining = cooldown.rate;
+        push_sfx(reg, Sfx::Melee);
     }
 
     // Process active melee attacks

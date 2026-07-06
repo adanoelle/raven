@@ -1,6 +1,7 @@
 # 10. SDL_mixer for Audio
 
-Date: 2026-02-11 Status: Superseded by [ADR-0013](0013-sdl3-migration.md)
+Date: 2026-02-11 Status: Superseded by [ADR-0013](0013-sdl3-migration.md) and
+[ADR-0019](0019-sdl3-native-audio.md)
 
 > **Note:** SDL_mixer was removed during the SDL3 migration. No audio loading or
 > playback code had been implemented — only init/shutdown calls existed. See
