@@ -89,3 +89,31 @@ jobs:
           LD_LIBRARY_PATH: ${{ env.SDL_PREFIX }}/lib
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: dummy
+
+  build-test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache CPM packages
+        uses: actions/cache@v4
+        with:
+          path: C:\cpm-cache
+          key: cpm-windows-${{ hashFiles('cmake/Dependencies.cmake', 'cmake/CPM.cmake') }}
+
+      # No SDL3 packages or pkg-config on Windows: RAVEN_BUNDLED_DEPS builds
+      # SDL3/SDL3_image from source via CPM alongside the other dependencies.
+      - name: Configure
+        run: >
+          cmake -B build
+          -DRAVEN_BUNDLED_DEPS=ON
+          -DCPM_SOURCE_CACHE=C:\cpm-cache
+
+      - name: Build
+        run: cmake --build build --config Debug --parallel
+
+      - name: Test
+        run: ctest --test-dir build -C Debug --output-on-failure
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy

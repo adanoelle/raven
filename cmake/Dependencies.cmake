@@ -2,15 +2,53 @@
 
 include(CPM)
 
-# ── System packages (found via pkg-config / CMake find modules) ───
-find_package(PkgConfig REQUIRED)
-# 3.4 is the floor: SDL_SCALEMODE_PIXELART (renderer, tilemap) needs it
-find_package(SDL3 3.4 REQUIRED)
-pkg_check_modules(sdl3-image REQUIRED IMPORTED_TARGET sdl3-image)
+# ── SDL3 / SDL3_image ──────────────────────────────────────────────
+# Prefer system packages (Nix dev shell, cached CI prefix); fall back to
+# building from source via CPM when they are absent — the normal case on
+# Windows/MSVC, where no SDL3 distro packages or pkg-config exist.
+option(RAVEN_BUNDLED_DEPS "Build SDL3/SDL3_image from source even if system packages exist" OFF)
 
-# Create alias targets for consistent naming
+if(NOT RAVEN_BUNDLED_DEPS)
+    # 3.4 is the floor: SDL_SCALEMODE_PIXELART (renderer, tilemap) needs it
+    find_package(SDL3 3.4 QUIET)
+    find_package(PkgConfig QUIET)
+    if(PKG_CONFIG_FOUND)
+        pkg_check_modules(sdl3-image QUIET IMPORTED_TARGET sdl3-image)
+    endif()
+endif()
+
+if(NOT TARGET SDL3::SDL3)
+    message(STATUS "System SDL3 not found — building from source (release-3.4.12)")
+    CPMAddPackage(
+        NAME SDL3
+        GITHUB_REPOSITORY libsdl-org/SDL
+        GIT_TAG release-3.4.12
+        SYSTEM YES
+        OPTIONS
+            "SDL_TEST_LIBRARY OFF"
+            "SDL_EXAMPLES OFF"
+    )
+endif()
+
 if(NOT TARGET SDL3_image::SDL3_image)
-    add_library(SDL3_image::SDL3_image ALIAS PkgConfig::sdl3-image)
+    if(TARGET PkgConfig::sdl3-image)
+        add_library(SDL3_image::SDL3_image ALIAS PkgConfig::sdl3-image)
+    else()
+        message(STATUS "System SDL3_image not found — building from source (release-3.2.4)")
+        CPMAddPackage(
+            NAME SDL3_image
+            GITHUB_REPOSITORY libsdl-org/SDL_image
+            GIT_TAG release-3.2.4
+            SYSTEM YES
+            OPTIONS
+                "SDLIMAGE_SAMPLES OFF"
+                "SDLIMAGE_TESTS OFF"
+                "SDLIMAGE_AVIF OFF"
+                "SDLIMAGE_WEBP OFF"
+                "SDLIMAGE_TIF OFF"
+                "SDLIMAGE_JXL OFF"
+        )
+    endif()
 endif()
 
 # ── CPM dependencies (header-only or compiled from source) ────────
