@@ -36,6 +36,10 @@ bool Game::init() {
     audio_.init();
     audio_.set_master_gain(static_cast<float>(settings_.sfx_volume) / 100.f);
 
+    // Steam is optional: no-op unless built with RAVEN_ENABLE_STEAM and
+    // running under Steam (or with a dev steam_appid.txt)
+    steam_.init();
+
 #ifdef RAVEN_ENABLE_IMGUI
     debug_overlay_.init(renderer_.sdl_window(), renderer_.sdl_renderer());
 #endif
@@ -157,6 +161,9 @@ void Game::run() {
         // Reap finished sound effect streams
         audio_.update();
 
+        // Pump Steam callbacks (no-op when inactive)
+        steam_.run_callbacks();
+
         // Render
         render();
 
@@ -217,6 +224,7 @@ void Game::shutdown() {
     font_ = BitmapFont{};
     renderer_.shutdown();
     audio_.shutdown();
+    steam_.shutdown();
     input_.shutdown(); // close gamepad before SDL_Quit
 
     SDL_Quit();

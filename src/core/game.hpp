@@ -4,6 +4,7 @@
 #include "core/clock.hpp"
 #include "core/input.hpp"
 #include "core/settings.hpp"
+#include "platform/steam.hpp"
 #include "rendering/bitmap_font.hpp"
 #include "rendering/renderer.hpp"
 #include "rendering/sprite_sheet.hpp"
@@ -79,6 +80,10 @@ class Game {
     /// @return Mutable reference to the AudioEngine (no-op when silent).
     AudioEngine& audio() { return audio_; }
 
+    /// @brief Access the Steamworks integration (no-op without the SDK).
+    /// @return Mutable reference to the Steam wrapper.
+    Steam& steam() { return steam_; }
+
     /// @brief Access the UI bitmap font.
     /// @return Const reference to the BitmapFont (may be unloaded; draws no-op).
     [[nodiscard]] const BitmapFont& font() const { return font_; }
@@ -98,6 +103,7 @@ class Game {
     Settings settings_;
     BitmapFont font_;
     AudioEngine audio_;
+    Steam steam_;
     std::string settings_path_; ///< Full path to the user settings file.
 
 #ifdef RAVEN_ENABLE_IMGUI
