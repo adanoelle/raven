@@ -53,4 +53,14 @@ target_link_libraries(raven_tests PRIVATE
     SDL3_image::SDL3_image
 )
 
+# Shared dependencies (SDL3.dll, ...) must sit next to the test binary
+if(WIN32)
+    add_custom_command(TARGET raven_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:raven_tests> $<TARGET_FILE_DIR:raven_tests>
+        COMMAND_EXPAND_LISTS
+        COMMENT "Copying runtime DLLs for tests"
+    )
+endif()
+
 catch_discover_tests(raven_tests)

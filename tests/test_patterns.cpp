@@ -7,6 +7,11 @@
 
 using namespace raven;
 
+namespace {
+// M_PI is not portable (MSVC needs _USE_MATH_DEFINES); match the game code
+constexpr float PI = 3.14159265358979323846f;
+} // namespace
+
 // Test bullet pattern math
 TEST_CASE("Radial pattern angle distribution", "[patterns]") {
     SECTION("3-way spread in 360 degrees") {
@@ -47,7 +52,7 @@ TEST_CASE("Bullet velocity from angle and speed", "[patterns]") {
     }
 
     SECTION("90 degrees = down") {
-        float angle_rad = static_cast<float>(M_PI) / 2.f;
+        float angle_rad = PI / 2.f;
         float vx = std::cos(angle_rad) * speed;
         float vy = std::sin(angle_rad) * speed;
         REQUIRE(vx == Catch::Approx(0.f).margin(0.001f));
