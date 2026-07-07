@@ -16,9 +16,11 @@ add_executable(raven_tests
     test_settings.cpp
     test_bitmap_font.cpp
     test_audio.cpp
+    test_save_data.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/core/paths.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/save_data.cpp
     ${CMAKE_SOURCE_DIR}/src/core/settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/bitmap_font.cpp
     ${CMAKE_SOURCE_DIR}/src/audio/audio_engine.cpp

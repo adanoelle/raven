@@ -37,6 +37,7 @@ add_executable(raven
     src/core/game.cpp
     src/core/input.cpp
     src/core/paths.cpp
+    src/core/save_data.cpp
     src/core/settings.cpp
 
     # Audio
@@ -86,6 +87,7 @@ add_executable(raven
     src/scenes/game_scene.cpp
     src/scenes/title_scene.cpp
     src/scenes/game_over_scene.cpp
+    src/scenes/victory_scene.cpp
     src/scenes/char_select_scene.cpp
     src/scenes/pause_scene.cpp
     src/scenes/options_scene.cpp
