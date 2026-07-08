@@ -35,17 +35,53 @@ just test     # Build + run Catch2 tests
 
 These are set via `-D` flags during configuration:
 
-| Option               | Default | Description                           |
-| -------------------- | ------- | ------------------------------------- |
-| `RAVEN_ENABLE_TESTS` | `ON`    | Build the Catch2 test suite.          |
-| `RAVEN_ENABLE_ASAN`  | `OFF`   | Enable AddressSanitizer + UBSan.      |
-| `RAVEN_ENABLE_IMGUI` | `ON`    | Compile the Dear ImGui debug overlay. |
+| Option                | Default | Description                                                    |
+| --------------------- | ------- | -------------------------------------------------------------- |
+| `RAVEN_ENABLE_TESTS`  | `ON`    | Build the Catch2 test suite.                                    |
+| `RAVEN_ENABLE_ASAN`   | `OFF`   | Enable AddressSanitizer + UBSan.                                |
+| `RAVEN_ENABLE_IMGUI`  | `ON`    | Compile the Dear ImGui debug overlay.                           |
+| `RAVEN_BUNDLED_DEPS`  | `OFF`   | Build SDL3/SDL3_image from source even if system packages exist. |
+| `RAVEN_ENABLE_STEAM`  | `OFF`   | Link the Steamworks SDK from `vendor/steamworks/sdk` (ADR-0021). |
+
+## Building on Windows
+
+No SDL3 distro packages exist on Windows; the build falls back to compiling
+SDL from source automatically (see
+[ADR-0020](../decisions/0020-bundled-dependency-fallback.md)). With Visual
+Studio installed:
+
+```powershell
+cmake -B build
+cmake --build build --config Debug --parallel
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+Assets and runtime DLLs are copied next to the executable post-build, so
+`build\bin\Debug\raven.exe` runs in place.
+
+## Continuous Integration
+
+`.github/workflows/ci.yml` runs on every push and pull request:
+
+- **format** — `clang-format --dry-run --Werror` over `src/` and `tests/`
+- **build-test (Debug/Release)** — Linux, cached source-built SDL prefix,
+  full ctest under dummy video/audio drivers
+- **build-test-windows** — MSVC with `RAVEN_BUNDLED_DEPS=ON`, full ctest
 
 ## Build Outputs
 
 - `build/bin/raven` — the game executable (Debug)
-- `build/bin/assets` — symlink to the `assets/` directory
+- `build/bin/assets` — symlink to `assets/` on Linux/macOS; copied on Windows
 - `build-release/bin/raven` — Release build
 - `build-docs/book/` — generated mdBook HTML
 - `build-docs/api/` — generated Doxygen HTML
 - `build-docs/doxygen-xml/` — generated Doxygen XML
+
+## Runtime Files
+
+The game writes per-user files to the SDL pref path
+(`~/.local/share/adanoelle/raven/` on Linux, `%APPDATA%` on Windows):
+
+- `settings.json` — user preferences (window, vsync, volumes), created on
+  first run and editable by hand
+- `save.json` — player progress (best score)

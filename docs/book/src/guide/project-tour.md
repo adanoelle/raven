@@ -28,7 +28,24 @@ The engine foundation.
 - **`clock.hpp`** — Fixed timestep clock at 120 Hz. Uses an accumulator pattern
   with a spiral-of-death cap (max 4 steps per frame).
 - **`input.hpp / .cpp`** — Keyboard and gamepad input abstraction. Provides
-  normalised movement axes and edge-detected button presses.
+  normalised movement axes and press edges latched across fixed ticks.
+- **`paths.hpp / .cpp`** — Executable-relative asset paths and the platform
+  pref dir (never CWD-dependent).
+- **`settings.hpp / .cpp`** — User settings persisted to `settings.json` in
+  the pref dir and applied live by the options menu.
+- **`save_data.hpp / .cpp`** — Player progress (best score) persisted to
+  `save.json` in the pref dir.
+
+### `src/audio/`
+
+- **`audio_engine.hpp / .cpp`** — Sound effects on SDL3's native audio: one
+  stream per playing instance, mixed by SDL, fed by `AudioQueue` events that
+  gameplay systems push.
+
+### `src/platform/`
+
+- **`steam.hpp / .cpp`** — Optional Steamworks wrapper. Compiles to no-ops
+  without `RAVEN_ENABLE_STEAM`; see ADR-0021 for the SDK drop-in flow.
 
 ### `src/ecs/`
 
@@ -53,11 +70,13 @@ One file per system. Systems are free functions that operate on registry views.
 
 ### `src/rendering/`
 
-SDL2 rendering abstraction.
+SDL3 rendering abstraction.
 
 - **`renderer.hpp / .cpp`** — Window management and virtual resolution scaling
-  (480x270 render target scaled to window).
+  (480x270 render target scaled to window); runtime fullscreen/scale/vsync.
 - **`sprite_sheet.hpp / .cpp`** — Texture atlas loading and frame-based drawing.
+- **`bitmap_font.hpp / .cpp`** — Monospace glyph-atlas text rendering with
+  color tinting and integer scaling.
 
 ### `src/scenes/`
 

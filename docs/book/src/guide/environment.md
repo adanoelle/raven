@@ -54,7 +54,8 @@ direnv allow
 
 ### Build Dependencies (linked at compile time)
 
-- SDL2, SDL2_image, SDL2_mixer, SDL2_ttf
+- SDL3 (>= 3.4), SDL3_image — found as system packages, or built from
+  source automatically when absent (see ADR-0020)
 - OpenGL libraries (libGL, libGLU)
 - X11 libraries (input, cursor, display)
 - Audio backends (PulseAudio, ALSA)
@@ -68,4 +69,5 @@ These are pulled automatically at configure time by
 - **nlohmann/json 3.11.3** — JSON parsing
 - **spdlog 1.14.1** — logging
 - **Catch2 3.7.0** — testing framework
-- **Dear ImGui 1.91.0** — debug UI (optional, SDL2 backend)
+- **Dear ImGui 1.91.8** — debug UI (optional, SDL3 backend)
+- **LDtkLoader 1.5.3.1** — LDtk level file parsing

@@ -12,17 +12,21 @@ book grows with the project.
 
 ## Technology Stack
 
-| Layer             | Choice        | Why                                                     |
-| ----------------- | ------------- | ------------------------------------------------------- |
-| Language          | C++20         | Modern features, high performance for 120 Hz tick rate  |
-| ECS               | EnTT          | Header-only, cache-friendly, widely used in indie games |
-| Windowing / Audio | SDL2          | Cross-platform, official Nintendo Switch support        |
-| Rendering         | SDL2_Renderer | Hardware-accelerated 2D — ideal for pixel art           |
-| Build             | CMake + Ninja | Industry standard; CPM for dependency management        |
-| Debug UI          | Dear ImGui    | Real-time tuning of hitboxes, spawn rates, etc.         |
-| Data              | nlohmann/json | Level data, config, bullet pattern definitions          |
-| Logging           | spdlog        | Fast, fmt-based structured logging                      |
-| Testing           | Catch2 v3     | BDD-style assertions, good CMake integration            |
+| Layer             | Choice          | Why                                                      |
+| ----------------- | --------------- | -------------------------------------------------------- |
+| Language          | C++20           | Modern features, high performance for 120 Hz tick rate   |
+| ECS               | EnTT            | Header-only, cache-friendly, widely used in indie games  |
+| Windowing / Audio | SDL3 (>= 3.4)   | Cross-platform; native stream mixing; `SCALEMODE_PIXELART` |
+| Rendering         | SDL_Renderer    | Hardware-accelerated 2D — ideal for pixel art            |
+| Build             | CMake + Ninja   | Industry standard; CPM for dependency management         |
+| Debug UI          | Dear ImGui      | Real-time tuning of hitboxes, spawn rates, etc.          |
+| Data              | nlohmann/json   | Level data, config, bullet pattern definitions           |
+| Logging           | spdlog          | Fast, fmt-based structured logging                       |
+| Testing           | Catch2 v3       | BDD-style assertions, good CMake integration             |
+
+The game builds and runs on Linux and Windows (MSVC), with CI covering both.
+Steamworks integration is available as an opt-in build flag (see
+[ADR-0021](decisions/0021-optional-steamworks.md)).
 
 ## What You'll Learn
 
@@ -30,8 +34,11 @@ book grows with the project.
 - Structuring a game around an Entity Component System (EnTT)
 - Implementing a fixed-timestep game loop at 120 Hz
 - Pixel-perfect rendering with virtual resolution scaling
+- Bitmap-font text rendering and menu/overlay scenes
+- Sound effects on SDL3's native audio, driven by ECS events
 - Data-driven bullet pattern definitions loaded from JSON
 - Stack-based scene management for game states
+- Cross-platform builds (Linux + Windows) and CI for a C++ game
 
 ## Source Code
 

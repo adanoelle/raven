@@ -35,9 +35,18 @@ Input → Fixed Update (120 Hz) → Render (vsync)
 
 - No `std::filesystem` — SDL file I/O only (console toolchain compatibility).
 - No exceptions in hot paths — some console compilers disable them.
-- Platform-specific code will live behind abstract interfaces in
-  `src/platform/`.
-- SDL2 is officially supported on Nintendo Switch, making future porting
-  straightforward.
+- Asset loads resolve relative to the executable via `paths::asset()`
+  ([ADR-0016](../decisions/0016-executable-relative-asset-paths.md)); user
+  settings and save data live in the SDL pref path
+  ([ADR-0017](../decisions/0017-settings-pref-path.md)).
+- Builds run on Linux and Windows/MSVC, with system-packages-first dependency
+  discovery and a CPM source fallback
+  ([ADR-0020](../decisions/0020-bundled-dependency-fallback.md)). CI covers
+  both platforms.
+- Platform-specific code lives in `src/platform/` — currently the optional
+  Steamworks wrapper ([ADR-0021](../decisions/0021-optional-steamworks.md)),
+  a no-op without the SDK.
+- SDL is officially supported on Nintendo Switch, keeping future console
+  porting plausible.
 
 See the individual architecture chapters for deep dives into each subsystem.
