@@ -28,6 +28,9 @@ bool Game::init() {
     settings_ = Settings::load(settings_path_);
     settings_.save(settings_path_);
 
+    save_path_ = paths::pref_dir() + "save.json";
+    save_data_ = SaveData::load(save_path_);
+
     if (!renderer_.init("Raven", settings_.window_scale, settings_.fullscreen, settings_.vsync)) {
         return false;
     }
@@ -187,6 +190,15 @@ void Game::run() {
 
 void Game::fixed_update(float dt) {
     scenes_.update(*this, dt);
+}
+
+bool Game::record_score(int score) {
+    if (score <= save_data_.best_score) {
+        return false;
+    }
+    save_data_.best_score = score;
+    save_data_.save(save_path_);
+    return true;
 }
 
 void Game::apply_settings() {

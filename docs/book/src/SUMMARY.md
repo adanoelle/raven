@@ -74,6 +74,7 @@
 - [Steam Readiness Sprint](devlog/2026-07-03-steam-readiness-sprint.md)
 - [Options Menu and Sound Effects](devlog/2026-07-05-options-and-audio.md)
 - [Windows Builds and Steamworks Scaffolding](devlog/2026-07-06-windows-and-steamworks.md)
+- [Victory Screen and High Scores](devlog/2026-07-07-victory-and-high-scores.md)
 
 ---
 

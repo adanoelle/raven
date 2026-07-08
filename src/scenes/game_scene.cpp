@@ -28,6 +28,7 @@
 #include "scenes/game_over_scene.hpp"
 #include "scenes/pause_scene.hpp"
 #include "scenes/title_scene.hpp"
+#include "scenes/victory_scene.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -299,8 +300,8 @@ void GameScene::update(Game& game, float dt) {
         if (next) {
             enter_room(game, next->level);
         } else {
-            // Victory — return to title
-            game.scenes().swap(std::make_unique<TitleScene>(), game);
+            // Final stage cleared
+            game.scenes().swap(std::make_unique<VictoryScene>(), game);
         }
         return;
     }
