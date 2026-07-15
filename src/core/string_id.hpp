@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -36,10 +37,24 @@ class StringInterner {
         if (it != map_.end()) {
             return it->second;
         }
+        // uint16_t index space is the hard capacity; wrapping silently
+        // would alias two strings to one ID.
+        assert(strings_.size() <= UINT16_MAX && "StringInterner capacity exhausted");
+        if (strings_.size() > UINT16_MAX) {
+            return StringId{}; // invalid sentinel in release builds
+        }
         auto id = StringId{static_cast<uint16_t>(strings_.size())};
         strings_.push_back(str);
         map_.emplace(str, id);
         return id;
+    }
+
+    /// @brief Look up a string's StringId without interning it.
+    /// @param str The string to look up.
+    /// @return The existing StringId, or the invalid sentinel if not interned.
+    [[nodiscard]] StringId find(const std::string& str) const {
+        auto it = map_.find(str);
+        return it != map_.end() ? it->second : StringId{};
     }
 
     /// @brief Resolve a StringId back to its original string.

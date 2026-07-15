@@ -64,7 +64,12 @@ class PatternLibrary {
     /// @return True on success, false if the JSON structure is invalid.
     bool load_from_json(const nlohmann::json& j);
 
-    /// @brief Retrieve a pattern by name.
+    /// @brief Retrieve a pattern by interned ID (hot path — integer lookup).
+    /// @param id The interned pattern name, e.g. BulletEmitter::pattern_name.
+    /// @return Pointer to the PatternDef, or nullptr if not found.
+    [[nodiscard]] const PatternDef* get(StringId id) const;
+
+    /// @brief Retrieve a pattern by name (cold path — hashes the string).
     /// @param name The pattern identifier.
     /// @return Pointer to the PatternDef, or nullptr if not found.
     [[nodiscard]] const PatternDef* get(const std::string& name) const;
@@ -78,7 +83,7 @@ class PatternLibrary {
     void set_interner(StringInterner& interner) { interner_ = &interner; }
 
   private:
-    std::unordered_map<std::string, PatternDef> patterns_;
+    std::unordered_map<uint16_t, PatternDef> patterns_; ///< Keyed by interned name.
     StringInterner* interner_ = nullptr;
 
     PatternDef parse_pattern(const nlohmann::json& j) const;

@@ -77,6 +77,17 @@ void AudioEngine::play(const std::string& id, float gain) {
     }
     const Sound& sound = it->second;
 
+    // Voice limit: reap finished streams first, then drop the play if the
+    // cap is still hit. Bounds stream count during bullet-hell bursts —
+    // past ~this many overlapping effects the new one is inaudible anyway.
+    if (streams_.size() >= MAX_VOICES) {
+        update();
+        if (streams_.size() >= MAX_VOICES) {
+            spdlog::debug("Voice cap reached, dropping '{}'", id);
+            return;
+        }
+    }
+
     // One stream per playing instance; SDL mixes all streams bound to the
     // device. The stream converts from the WAV format to the device format.
     SDL_AudioStream* stream = SDL_CreateAudioStream(&sound.spec, nullptr);

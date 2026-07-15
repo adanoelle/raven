@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/string_id.hpp"
+
 #include <SDL3/SDL.h>
 
 #include <memory>
@@ -63,26 +65,29 @@ class SpriteSheet {
     int sheet_h_ = 0;
 };
 
-/// @brief Registry of named sprite sheets. Owns all loaded SpriteSheet instances.
+/// @brief Registry of sprite sheets keyed by interned StringId.
+///
+/// Keyed by StringId rather than string so the render hot path does an
+/// integer map lookup per sprite instead of a string hash.
 class SpriteSheetManager {
   public:
-    /// @brief Load a sprite sheet and register it under a string ID.
+    /// @brief Load a sprite sheet and register it under an interned ID.
     /// @param renderer SDL_Renderer used to create the texture.
-    /// @param id Unique identifier for later retrieval.
+    /// @param id Interned identifier for later retrieval (must be valid).
     /// @param path File path to the PNG image.
     /// @param frame_w Width of a single frame in pixels.
     /// @param frame_h Height of a single frame in pixels.
-    /// @return True on success, false if loading failed.
-    bool load(SDL_Renderer* renderer, const std::string& id, const std::string& path, int frame_w,
+    /// @return True on success, false if loading failed or id is invalid.
+    bool load(SDL_Renderer* renderer, StringId id, const std::string& path, int frame_w,
               int frame_h);
 
     /// @brief Retrieve a loaded sprite sheet by ID.
     /// @param id The identifier used when the sheet was loaded.
     /// @return Pointer to the SpriteSheet, or nullptr if not found.
-    [[nodiscard]] const SpriteSheet* get(const std::string& id) const;
+    [[nodiscard]] const SpriteSheet* get(StringId id) const;
 
   private:
-    std::unordered_map<std::string, std::unique_ptr<SpriteSheet>> sheets_;
+    std::unordered_map<uint16_t, std::unique_ptr<SpriteSheet>> sheets_;
 };
 
 } // namespace raven

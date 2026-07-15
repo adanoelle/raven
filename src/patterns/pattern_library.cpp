@@ -68,7 +68,7 @@ bool PatternLibrary::load_file(const std::string& file_path) {
         auto j = nlohmann::json::parse(f);
         auto pattern = parse_pattern(j);
         auto name = pattern.name;
-        patterns_[name] = std::move(pattern);
+        patterns_[interner_->intern(name).value] = std::move(pattern);
         spdlog::debug("Loaded pattern '{}'", name);
         return true;
     } catch (const nlohmann::json::exception& e) {
@@ -85,7 +85,7 @@ bool PatternLibrary::load_from_json(const nlohmann::json& j) {
     try {
         auto pattern = parse_pattern(j);
         auto name = pattern.name;
-        patterns_[name] = std::move(pattern);
+        patterns_[interner_->intern(name).value] = std::move(pattern);
         spdlog::debug("Loaded pattern '{}' from JSON", name);
         return true;
     } catch (const nlohmann::json::exception& e) {
@@ -94,16 +94,26 @@ bool PatternLibrary::load_from_json(const nlohmann::json& j) {
     }
 }
 
-const PatternDef* PatternLibrary::get(const std::string& name) const {
-    auto it = patterns_.find(name);
+const PatternDef* PatternLibrary::get(StringId id) const {
+    if (!id.valid()) {
+        return nullptr;
+    }
+    auto it = patterns_.find(id.value);
     return it != patterns_.end() ? &it->second : nullptr;
+}
+
+const PatternDef* PatternLibrary::get(const std::string& name) const {
+    if (!interner_) {
+        return nullptr;
+    }
+    return get(interner_->find(name));
 }
 
 std::vector<std::string> PatternLibrary::names() const {
     std::vector<std::string> result;
     result.reserve(patterns_.size());
-    for (const auto& [name, _] : patterns_) {
-        result.push_back(name);
+    for (const auto& [id, def] : patterns_) {
+        result.push_back(def.name);
     }
     return result;
 }

@@ -63,18 +63,21 @@ void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int des
 
 // ── SpriteSheetManager ───────────────────────────────────────────
 
-bool SpriteSheetManager::load(SDL_Renderer* renderer, const std::string& id,
-                              const std::string& path, int frame_w, int frame_h) {
+bool SpriteSheetManager::load(SDL_Renderer* renderer, StringId id, const std::string& path,
+                              int frame_w, int frame_h) {
+    if (!id.valid()) {
+        return false;
+    }
     auto sheet = std::make_unique<SpriteSheet>();
     if (!sheet->load(renderer, path, frame_w, frame_h)) {
         return false;
     }
-    sheets_[id] = std::move(sheet);
+    sheets_[id.value] = std::move(sheet);
     return true;
 }
 
-const SpriteSheet* SpriteSheetManager::get(const std::string& id) const {
-    auto it = sheets_.find(id);
+const SpriteSheet* SpriteSheetManager::get(StringId id) const {
+    auto it = sheets_.find(id.value);
     return it != sheets_.end() ? it->second.get() : nullptr;
 }
 

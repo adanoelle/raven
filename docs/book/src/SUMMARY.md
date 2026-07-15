@@ -73,6 +73,7 @@
 - [SDL3 Migration](devlog/2026-02-12-sdl3-migration.md)
 - [Steam Readiness Sprint](devlog/2026-07-03-steam-readiness-sprint.md)
 - [Options Menu and Sound Effects](devlog/2026-07-05-options-and-audio.md)
+- [Architecture Review and Follow-up Fixes](devlog/2026-07-15-architecture-review-fixes.md)
 
 ---
 

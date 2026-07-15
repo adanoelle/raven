@@ -69,11 +69,15 @@ class Game {
     /// @return Mutable reference to the Settings.
     [[nodiscard]] Settings& settings_mut() { return settings_; }
 
-    /// @brief Apply the current settings to subsystems and save them.
+    /// @brief Apply the current settings to subsystems (does not persist).
     ///
-    /// Pushes fullscreen/scale/vsync to the renderer, volume to the audio
-    /// engine, and writes settings.json to the pref dir.
+    /// Pushes fullscreen/scale/vsync to the renderer and volume to the
+    /// audio engine. Call save_settings() to persist — callers that adjust
+    /// repeatedly (option sliders) apply per change and save once on exit.
     void apply_settings();
+
+    /// @brief Write the current settings to settings.json in the pref dir.
+    void save_settings();
 
     /// @brief Access the sound effect engine.
     /// @return Mutable reference to the AudioEngine (no-op when silent).
