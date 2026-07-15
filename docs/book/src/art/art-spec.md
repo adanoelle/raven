@@ -12,7 +12,8 @@ sprite, tile, and UI element is authored at this resolution.
 
 - A 24x24 character body (in a 32x32 frame) occupies ~5% of screen width —
   between Blazing Beaks and Nuclear Throne in proportion.
-- A 16x16 grunt enemy occupies ~3.3% of screen width (30 tiles across).
+- A 20x20 grunt enemy body (in a 24x24 frame) occupies ~4.2% of screen width —
+  clearly smaller than the player, but still readable at 480x270.
 - All art is authored at **1:1** — one pixel in Aseprite equals one game pixel.
   Never pre-scale.
 
@@ -52,7 +53,7 @@ placement.
 | Entity            | Frame Size | Body Size | Notes                                    |
 | ----------------- | ---------- | --------- | ---------------------------------------- |
 | Player character  | 32x32      | 24x24     | 4px padding for weapons and dash effects |
-| Standard enemies  | 16x16      | 14x14     | 1px padding, simple shapes               |
+| Standard enemies  | 24x24      | 20x20     | 2px padding, simple shapes               |
 | Mid-tier enemies  | 32x32      | 24x24     | Same tier as player                      |
 | Bosses            | 48x48      | 36x36     | 6px padding for dramatic attacks         |
 | Mega-bosses       | 64x64      | 48x48     | 8px padding, screen-dominating           |
@@ -90,6 +91,20 @@ All frames in a single sheet must be the same size — the engine uses a uniform
 grid to address frames. The body size is a guideline for idle/walk poses;
 action frames may extend into the padding zone.
 
+The body size is an **art** guideline only. Gameplay hitboxes are tuned
+separately in code (`wave_system.cpp`, `game_scene.cpp`) and are generally
+smaller than the body so combat feels fair.
+
+### Note on current placeholder art
+
+The grunt sheet currently in the repo (`assets/sprites/enemies.png`) predates
+this spec revision: it is authored at 16x16 and the engine temporarily upscales
+it to 24x24 at draw time (a 1.5x non-integer scale). This is a stopgap for
+placeholder art only — **new grunt art must be authored at 24x24** per the
+table above, at which point the sheet's `frame_w`/`frame_h` in
+`assets/data/config.json` changes from 16 to 24 and the engine draws it 1:1
+with no scaling.
+
 ---
 
 ## 4. Animation Frame Counts and Timing
@@ -115,7 +130,12 @@ visuals. Idle and walk frames stay within the 24x24 body zone.
 Key principle: fewer frames with longer holds looks better in pixel art than
 many frames played fast. Each frame should be a distinct, readable pose.
 
-### Standard Enemies (16x16)
+> **Placeholder status:** the current `player.png` implements only the idle
+> and walk rows; melee and dash temporarily reuse the walk row at faster
+> timings in `game_scene.cpp`. The table above is the target for final art —
+> when the attack/dodge/hurt/death rows land, the code switches to them.
+
+### Standard Enemies (24x24 frame, 20x20 body)
 
 | State       | Frames | Anim FPS | Loop? | Notes                          |
 | ----------- | ------ | -------- | ----- | ------------------------------ |
@@ -125,7 +145,7 @@ many frames played fast. Each frame should be a distinct, readable pose.
 | Hurt        | 2      | 8        | No    | Brief flinch                   |
 | Death       | 4      | 8        | No    | Satisfying pop / collapse      |
 
-### Large Enemies / Mini-bosses (24x24)
+### Mid-tier Enemies / Mini-bosses (32x32 frame, 24x24 body)
 
 Same states as standard enemies. The extra pixel real estate allows 1–2 more
 frames per state. Attack telegraph must be very readable — use a bright wind-up
@@ -170,7 +190,7 @@ Boss attack telegraphs should use the 6–8px padding zone for wind-up frames
   24x24 body size. Use the frame padding for overshoot.
 - **Overlapping action.** Hair, capes, and tails lag 1–2 frames behind the body.
 - **Silhouette test.** Every character must be recognizable as a solid black
-  fill at its body size (24x24 for player, 14x14 for grunts).
+  fill at its body size (24x24 for player, 20x20 for grunts).
 
 ---
 
@@ -273,7 +293,7 @@ Row 5: Death   [5 frames] █████░
 | Virtual resolution   | 480x270                           |
 | Primary scale target | 4x (1080p)                        |
 | Player frame / body  | 32x32 frame, 24x24 body           |
-| Grunt enemy size     | 16x16 frame, 14x14 body           |
+| Grunt enemy size     | 24x24 frame, 20x20 body           |
 | Mid enemy size       | 32x32 frame, 24x24 body           |
 | Boss size            | 48x48 frame, 36x36 body           |
 | Mega-boss size       | 64x64 frame, 48x48 body           |
@@ -293,7 +313,7 @@ Row 5: Death   [5 frames] █████░
 
 Run through this list before every handoff:
 
-- [ ] Frame size matches the spec table (32x32, 16x16, 48x48, etc.)
+- [ ] Frame size matches the spec table (32x32, 24x24, 48x48, etc.)
 - [ ] Idle/walk art stays within the body zone (see Aseprite Setup Guide)
 - [ ] Action frames use padding zone appropriately — no art clipped at frame edge
 - [ ] No padding between frames in the exported sheet

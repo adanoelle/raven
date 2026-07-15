@@ -57,17 +57,17 @@ Add an entry to the `sprite_sheets` array:
 {
   "id": "player",
   "path": "assets/sprites/player.png",
-  "frame_w": 16,
-  "frame_h": 16
+  "frame_w": 32,
+  "frame_h": 32
 }
 ```
 
-| Field     | Type   | Description                                       |
-| --------- | ------ | ------------------------------------------------- |
-| `id`      | string | Unique identifier used by `Sprite::sheet_id`      |
-| `path`    | string | Path to the PNG relative to the working directory |
-| `frame_w` | int    | Width of one frame in pixels                      |
-| `frame_h` | int    | Height of one frame in pixels                     |
+| Field     | Type   | Description                                                  |
+| --------- | ------ | ------------------------------------------------------------ |
+| `id`      | string | Unique identifier used by `Sprite::sheet_id`                 |
+| `path`    | string | Path to the PNG, resolved via `paths::asset()` (relative to the executable, never the CWD) |
+| `frame_w` | int    | Width of one frame in pixels                                 |
+| `frame_h` | int    | Height of one frame in pixels                                |
 
 ### Step 3: Optionally add sprite definitions
 
@@ -102,35 +102,50 @@ Defined in `src/ecs/components.hpp`:
 
 ```cpp
 struct Sprite {
-    std::string sheet_id;  // Identifier of the SpriteSheet to draw from.
+    StringId sheet_id;    // Interned identifier of the SpriteSheet to draw from.
     int frame_x = 0;      // Frame column index in the sheet.
     int frame_y = 0;      // Frame row index in the sheet.
-    int width = 16;        // Pixel width of one frame.
-    int height = 16;       // Pixel height of one frame.
-    int layer = 0;         // Render order (higher values draw on top).
-    bool flip_x = false;   // Flip the sprite horizontally when drawing.
+    int width = 32;       // Rendered width in pixels.
+    int height = 32;      // Rendered height in pixels.
+    int layer = 0;        // Render order (higher values draw on top).
+    bool flip_x = false;  // Flip the sprite horizontally when drawing.
+    float offset_x = 0.f; // Horizontal render offset from entity center in pixels.
+    float offset_y = 0.f; // Vertical render offset from entity center in pixels.
 };
 ```
 
 ### Attaching to an entity
 
+Sheet ids are interned through the registry's `StringInterner` context
+variable:
+
 ```cpp
+auto& interner = reg.ctx().get<StringInterner>();
+
 auto entity = reg.create();
 reg.emplace<Transform2D>(entity, 100.f, 50.f);
-reg.emplace<Sprite>(entity, "player", 0, 0, 16, 16, 0, false);
+reg.emplace<Sprite>(entity, interner.intern("player"), 0, 0, 32, 32, 10, false, 0.f, -5.f);
 ```
 
 ### Field reference
 
 | Field      | Meaning                                                         |
 | ---------- | --------------------------------------------------------------- |
-| `sheet_id` | Must match an `id` in config.json's `sprite_sheets`             |
+| `sheet_id` | Interned `StringId` of an `id` in config.json's `sprite_sheets` |
 | `frame_x`  | Column index — which frame within the current animation row     |
 | `frame_y`  | Row index — which animation state                               |
-| `width`    | Frame width in pixels (must match `frame_w` in config)          |
-| `height`   | Frame height in pixels (must match `frame_h` in config)         |
+| `width`    | Rendered width in pixels — normally equal to `frame_w`          |
+| `height`   | Rendered height in pixels — normally equal to `frame_h`         |
 | `layer`    | Drawing order. Higher values render on top of lower values      |
 | `flip_x`   | `true` draws the sprite mirrored horizontally (leftward facing) |
+| `offset_x` | Horizontal draw offset from the entity center                   |
+| `offset_y` | Vertical draw offset — negative shifts the visual up so feet align with the collision center |
+
+When `width`/`height` differ from the sheet's frame size, the engine scales
+the frame at draw time. This is reserved for placeholder art (the current
+16x16 grunt sheet drawn at 24x24); final art is always authored at its
+rendered size and drawn 1:1 — see the
+[Art Specification](art-spec.md).
 
 ### Layer conventions
 
@@ -206,16 +221,19 @@ higher layers draw on top.
 
 ### Centering
 
-Sprites are centered on the entity position. The draw destination is offset by
-half the frame size:
+Sprites are centered on the entity position, then shifted by the render
+offset:
 
 ```cpp
-dest_x = render_x - width / 2;
-dest_y = render_y - height / 2;
+dest_x = render_x + offset_x - width / 2;
+dest_y = render_y + offset_y - height / 2;
 ```
 
-The entity's `Transform2D` position represents the center of the sprite, not the
-top-left corner.
+The entity's `Transform2D` position represents the center of the sprite, not
+the top-left corner. Characters use a negative `offset_y` (the player uses
+-5) so the visual body sits higher while the feet line up with the entity's
+collision center — see the anchoring section of the
+[Aseprite Setup Guide](art-aseprite-guide.md).
 
 ### Horizontal flip
 
@@ -254,12 +272,13 @@ struct Animation {
 };
 ```
 
-### Design intent
+### How it's driven
 
-An animation system (to be implemented) ticks `elapsed` forward each update.
-When `elapsed >= frame_duration`, it advances `current_frame` and writes it back
-to `Sprite::frame_x`. This drives the visual frame displayed by the render
-system.
+`update_animation()` (`src/ecs/systems/animation_system.cpp`) ticks `elapsed`
+forward each update. When `elapsed >= frame_duration`, it advances
+`current_frame` and writes it back to `Sprite::frame_x`. This drives the
+visual frame displayed by the render system. See
+[Sprite Animation](../architecture/sprite-animation.md) for the full design.
 
 ### Field mapping
 
@@ -289,9 +308,11 @@ frame_duration = 1.0 / anim_fps
 
 ---
 
-## 7. Animation State Management (Design)
+## 7. Animation State Management
 
-This section describes the intended design for switching animation states.
+This section describes the pattern for switching animation states. The
+player's state switching lives in `game_scene.cpp` (see
+[Sprite Animation](../architecture/sprite-animation.md)).
 
 ### Switching states
 
@@ -376,25 +397,31 @@ Save the PNG to `assets/sprites/`. Verify it follows the art-spec:
 {
   "id": "goblin",
   "path": "assets/sprites/goblin.png",
-  "frame_w": 16,
-  "frame_h": 16
+  "frame_w": 24,
+  "frame_h": 24
 }
 ```
+
+The goblin is a grunt, so it uses the small tier (24x24 frame, 20x20 body)
+from the [Art Specification](art-spec.md).
 
 ### 3. Create the entity with components
 
 ```cpp
+auto& interner = reg.ctx().get<StringInterner>();
 auto goblin = reg.create();
 
 reg.emplace<Transform2D>(goblin, spawn_x, spawn_y);
 reg.emplace<PreviousTransform>(goblin, spawn_x, spawn_y);
 
-reg.emplace<Sprite>(goblin, "goblin",
+reg.emplace<Sprite>(goblin, interner.intern("goblin"),
     0,      // frame_x: first frame
     0,      // frame_y: idle row
-    16, 16, // width, height
+    24, 24, // width, height (match frame_w/frame_h — drawn 1:1)
     30,     // layer: enemy layer
-    false   // flip_x
+    false,  // flip_x
+    0.f,    // offset_x
+    -3.f    // offset_y: feet alignment (bottom-center anchor)
 );
 
 reg.emplace<Animation>(goblin,
