@@ -8,9 +8,11 @@ formats, and naming conventions.
 ## 1. Sonic Identity (Undecided)
 
 The game's sonic direction has not been finalized. Three viable approaches are
-presented here so the decision can be made later with full context. All three
-can work with the current SDL_mixer pipeline (see
-[ADR-0010](decisions/0010-sdl2-mixer-audio.md)).
+presented here so the decision can be made later — ideally with a composer —
+with full context. The choice is independent of the audio backend: sound
+effects already play through native SDL3 audio
+([ADR-0019](decisions/0019-sdl3-native-audio.md)), and all three directions
+deliver the same WAV/OGG formats.
 
 ### Option A: Chiptune / Retro
 

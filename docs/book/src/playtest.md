@@ -16,14 +16,19 @@ option. The overlay displays entity counts, component state, and frame timing.
 
 ## Controls reference
 
-| Action | Keyboard      | Gamepad            | Mouse           |
-| ------ | ------------- | ------------------ | --------------- |
-| Move   | WASD / Arrows | Left stick / D-pad | —               |
-| Aim    | —             | Right stick        | Cursor position |
-| Shoot  | Z             | A button           | Left click      |
-| Focus  | Left Shift    | Right shoulder     | —               |
-| Bomb   | X             | B button           | —               |
-| Pause  | Escape        | Start              | —               |
+| Action  | Keyboard      | Gamepad            | Mouse           |
+| ------- | ------------- | ------------------ | --------------- |
+| Move    | WASD / Arrows | Left stick / D-pad | —               |
+| Aim     | —             | Right stick        | Cursor position |
+| Shoot   | Z             | A (south)          | Left click      |
+| Melee   | C             | X (west)           | Right click     |
+| Dash    | Space         | Left shoulder      | —               |
+| Ability | X             | B (east)           | —               |
+| Pause   | Escape        | Start              | —               |
+
+The Ability button triggers the class ability: Ground Slam (Brawler) or
+Concussion Shot (Sharpshooter). The Sharpshooter's charged shot is hold-shoot,
+not a separate button.
 
 Keyboard and gamepad inputs stack — both can be used simultaneously. Mouse
 movement sets aim to cursor position; right stick input overrides it.

@@ -1,20 +1,32 @@
 # Summary
 
 [Introduction](introduction.md)
+[Creative Vision](creative-vision.md)
 
 ---
 
-# Getting Started
+# For Artists & Musicians
+
+- [Handoff Guide](artist-handoff.md)
+- [Art Specification](art/art-spec.md)
+- [Aseprite Setup Guide](art/art-aseprite-guide.md)
+- [Color Theory and Palette Design](art/color-theory.md)
+- [Tileset Palette Design](art/tileset-palette.md)
+- [Character Designs: Knight](art/characters/knight.md)
+- [Pigment — Palette Tool](art/pigment.md)
+- [Art Learning Resources](art/art-resources.md)
+- [Audio Specification](audio-spec.md)
+- [Music Track List](music-track-list.md)
+- [Audio Learning Resources](audio-resources.md)
+
+---
+
+# For Developers
 
 - [Development Environment](guide/environment.md)
 - [Building and Running](guide/building.md)
 - [Project Tour](guide/project-tour.md)
-
----
-
-# Architecture
-
-- [Overview](architecture/overview.md)
+- [Architecture Overview](architecture/overview.md)
 - [Game Loop and Fixed Timestep](architecture/game-loop.md)
 - [ECS with EnTT](architecture/ecs.md)
 - [Rendering Pipeline](architecture/rendering.md)
@@ -28,39 +40,14 @@
 - [Tilemaps and LDtk Integration](architecture/tilemaps.md)
 - [Scene Management](architecture/scenes.md)
 - [Player Classes](architecture/player-classes.md)
+- [Art Integration Guide](art/art-integration.md)
+- [Audio Integration Guide](audio-integration.md)
 
 ---
 
 # Playtesting
 
 - [Playtest Playbook](playtest.md)
-
----
-
-# Art & Animation
-
-- [Art Specification](art/art-spec.md)
-- [Aseprite Setup Guide](art/art-aseprite-guide.md)
-- [Color Theory and Palette Design](art/color-theory.md)
-- [Tileset Palette Design](art/tileset-palette.md)
-- [Pigment — Palette Tool](art/pigment.md)
-- [Art Integration Guide](art/art-integration.md)
-- [Learning Resources](art/art-resources.md)
-
----
-
-# Characters
-
-- [Knight](art/characters/knight.md)
-
----
-
-# Audio & Sound
-
-- [Audio Specification](audio-spec.md)
-- [Music Track List](music-track-list.md)
-- [Audio Integration Guide](audio-integration.md)
-- [Learning Resources](audio-resources.md)
 
 ---
 

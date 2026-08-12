@@ -234,8 +234,9 @@ the game is fully functional with side-facing sprites only.
 - Sheet width = longest animation × frame size.
 - Short animations padded with transparent frames to fill the row.
 - Consistent anchor point across all frames (feet at the same Y position).
-- The engine addresses frames by `(column, row)` index, reading left to right,
-  top to bottom.
+- Keep frames on an exact grid — the game reads the sheet by grid position,
+  so a frame drawn off-grid will render clipped or offset (details in the
+  [Art Integration Guide](art-integration.md)).
 
 Example player sheet (32x32 frames, 6 columns wide):
 

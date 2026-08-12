@@ -35,9 +35,24 @@ Input → Fixed Update (120 Hz) → Render (vsync)
 
 - No `std::filesystem` — SDL file I/O only (console toolchain compatibility).
 - No exceptions in hot paths — some console compilers disable them.
-- Platform-specific code will live behind abstract interfaces in
-  `src/platform/`.
-- SDL2 is officially supported on Nintendo Switch, making future porting
+- Platform-specific code lives behind thin wrappers in `src/platform/`
+  (currently the optional Steamworks integration).
+- SDL is well-supported across consoles, keeping future porting
   straightforward.
+
+## Technology Stack
+
+| Layer             | Choice                | Why                                                      |
+| ----------------- | --------------------- | -------------------------------------------------------- |
+| Language          | C++20                 | Modern features, high performance for 120 Hz tick rate   |
+| ECS               | EnTT                  | Header-only, cache-friendly, widely used in indie games  |
+| Windowing / Audio | SDL3 (>= 3.4)         | Cross-platform; native audio stream mixing for SFX       |
+| Rendering         | SDL_Renderer          | Hardware-accelerated 2D — ideal for pixel art            |
+| Levels            | LDtk + LDtkLoader     | Visual level editing with entity spawn placement         |
+| Build             | CMake + Ninja         | Industry standard; CPM for dependency management         |
+| Debug UI          | Dear ImGui (optional) | Real-time tuning of hitboxes, spawn rates, etc.          |
+| Data              | nlohmann/json         | Level data, config, bullet pattern definitions           |
+| Logging           | spdlog                | Fast, fmt-based structured logging                       |
+| Testing           | Catch2 v3             | BDD-style assertions, good CMake integration             |
 
 See the individual architecture chapters for deep dives into each subsystem.
