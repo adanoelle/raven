@@ -57,9 +57,9 @@ Free tools for generating and designing sound effects:
 
 ### DAWs (Modern / Hybrid)
 
-- **[KiraStudio](https://kirastudio.app/)** — Free DAW with a retro chip focus,
-  launched February 2026. Designed specifically for game audio with built-in
-  chiptune synths and a streamlined workflow.
+- **[KiraStudio](https://kirastudio.app/)** — Free DAW with a retro chip
+  focus, designed specifically for game audio with built-in chiptune synths
+  and a streamlined workflow.
 - **[REAPER](https://www.reaper.fm/)** — Full-featured DAW with a generous
   evaluation license and low indie price ($60). Industry-standard for game audio
   production.

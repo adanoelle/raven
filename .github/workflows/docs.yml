@@ -1,0 +1,51 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; don't cancel an in-flight production deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          # Keep in sync with the version in the nix dev shell.
+          mdbook-version: "0.5.2"
+
+      - name: Build book
+        run: mdbook build docs/book
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload book artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # book.toml build-dir resolves here relative to the repo root.
+          path: build-docs/book
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

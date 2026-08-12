@@ -1,39 +1,48 @@
 # Introduction
 
 **Raven** is a pixel art roguelike inspired by
-[Blazing Beaks](https://blazingbeaks.com/). You explore procedurally generated
-rooms, fight enemies with twin-stick controls, and collect items that change
-your build run-to-run.
+[Blazing Beaks](https://blazingbeaks.com/): twin-stick combat through the
+overgrown ruins of an ancient civilization, where the best weapons are stolen
+from your enemies and every one of them is on a timer. It is built from
+scratch in C++20 on SDL3 — no engine, one small codebase.
 
-This book documents how the game is built from scratch in C++20. It covers the
-development environment, engine architecture, and the decisions made along the
-way. Each chapter is written as the feature it describes is implemented, so the
-book grows with the project.
+Raven is in active development. The core game is playable end to end — two
+character classes, three stages, persistent high scores, Windows and Linux
+builds — and the current focus is content: rooms, enemies, art, and music.
+The [Development Log](devlog/2026-02-08-project-setup.md) tracks progress as
+it happens.
 
-## Technology Stack
+## Who This Book Is For
 
-| Layer             | Choice        | Why                                                     |
-| ----------------- | ------------- | ------------------------------------------------------- |
-| Language          | C++20         | Modern features, high performance for 120 Hz tick rate  |
-| ECS               | EnTT          | Header-only, cache-friendly, widely used in indie games |
-| Windowing / Audio | SDL2          | Cross-platform, official Nintendo Switch support        |
-| Rendering         | SDL2_Renderer | Hardware-accelerated 2D — ideal for pixel art           |
-| Build             | CMake + Ninja | Industry standard; CPM for dependency management        |
-| Debug UI          | Dear ImGui    | Real-time tuning of hitboxes, spawn rates, etc.         |
-| Data              | nlohmann/json | Level data, config, bullet pattern definitions          |
-| Logging           | spdlog        | Fast, fmt-based structured logging                      |
-| Testing           | Catch2 v3     | BDD-style assertions, good CMake integration            |
+This book is the single reference for everyone working on Raven. Different
+readers need different doors:
 
-## What You'll Learn
+| You are…                        | Start here                                                                 |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| An **artist** or **musician**   | [Creative Vision](creative-vision.md), then the [Handoff Guide](artist-handoff.md) — no coding or build tools required |
+| A **developer**                 | [Development Environment](guide/environment.md), then the [Architecture Overview](architecture/overview.md) |
+| A **playtester**                | The [Playtest Playbook](playtest.md)                                        |
+| Curious how decisions were made | The [Development Log](devlog/2026-02-08-project-setup.md) and the [decision records](decisions/0001-cpp20-entt-sdl2.md) |
 
-- Setting up a reproducible C++ dev environment with Nix flakes
-- Structuring a game around an Entity Component System (EnTT)
-- Implementing a fixed-timestep game loop at 120 Hz
-- Pixel-perfect rendering with virtual resolution scaling
-- Data-driven bullet pattern definitions loaded from JSON
-- Stack-based scene management for game states
+If you only read one page, read the [Creative Vision](creative-vision.md) —
+it explains what the game is trying to be, which is context for everything
+else here.
+
+## How This Book Is Written
+
+Each chapter is written as the feature it describes is implemented, so the
+book grows with the project. Three kinds of pages have distinct jobs:
+
+- **Specifications** (art, audio) are contracts: exact sizes, formats, and
+  delivery checklists.
+- **Architecture chapters** explain how a system works and why, with
+  references to the real source files.
+- **Decision records (ADRs)** are frozen history — each captures why a choice
+  was made at the time, including choices later superseded.
 
 ## Source Code
 
-The full source is available on GitHub. Each chapter references specific files
-so you can read along with the code.
+The full source is available on
+[GitHub](https://github.com/adanoelle/raven). Architecture chapters reference
+specific files so you can read along with the code; the technology stack is
+summarized in the [Architecture Overview](architecture/overview.md).

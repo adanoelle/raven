@@ -1,225 +1,160 @@
 # Audio Integration Guide
 
-Developer reference for integrating sound effects and music into the Raven
-engine. Read the [Audio Specification](audio-spec.md) first for asset format
-requirements.
+Developer reference for how audio works in the Raven engine and how to add new
+sounds. Read the [Audio Specification](audio-spec.md) for asset format
+requirements, and the [Music Track List](music-track-list.md) for the
+composer-facing track briefs.
 
 ---
 
 ## 1. Current State
 
-**Audio playback is not currently implemented.** The SDL3 migration
-([ADR-0013](decisions/0013-sdl3-migration.md)) removed SDL_mixer because a
-stable SDL3 port (sdl3-mixer) is not yet available in nixpkgs. No audio loading
-or playback code existed prior to the migration — only `Mix_OpenAudio` /
-`Mix_CloseAudio` init/shutdown calls — so nothing functional was lost.
+**Sound effects are implemented and shipping** on native SDL3 audio — no mixer
+library ([ADR-0019](decisions/0019-sdl3-native-audio.md)). **Music playback is
+not yet implemented**; see section 5 for the path forward.
 
-`SDL_INIT_AUDIO` has been removed from the `SDL_Init` call. The `config.json`
-audio volume fields (`audio.music_volume`, `audio.sfx_volume`) remain and are
-forward-compatible with any future audio backend.
+The pieces, all in the tree today:
 
-The previous audio middleware decision
-([ADR-0010](decisions/0010-sdl2-mixer-audio.md)) is superseded by ADR-0013.
+| Piece                | Location                        | Role                                              |
+| -------------------- | ------------------------------- | ------------------------------------------------- |
+| `AudioEngine`        | `src/audio/audio_engine.hpp`    | Device, WAV loading, per-play streams, voice cap  |
+| `Sfx` / `AudioQueue` | `src/ecs/components.hpp`        | Effect IDs and the per-tick event queue           |
+| `push_sfx()`         | `src/ecs/components.hpp`        | How systems request a sound                       |
+| Queue drain          | `src/scenes/game_scene.cpp`     | Dedupes and forwards to the engine each tick      |
+| Sound manifest       | `assets/data/config.json`       | `"sounds"` map: id → WAV path                     |
+| Placeholder WAVs     | `tools/gen_sfx.py`              | Deterministic synthesized effects                 |
 
----
+Seven effects exist: `shoot`, `player_hit`, `enemy_hit`, `enemy_down`,
+`pickup`, `dash`, `melee`. All are synthesized placeholders — **file names are
+the contract**, so the real audio pass replaces WAVs in `assets/audio/sfx/`
+with no code changes.
 
-## 2. Path Forward
-
-There are three options for re-adding audio, which can be combined:
-
-### Option A: sdl3-mixer (when stable)
-
-SDL3_mixer (sdl3-mixer) is the direct successor to SDL2_mixer. When it reaches a
-stable release and is packaged in nixpkgs, it can be added back as a dependency.
-The API will be similar to SDL2_mixer:
-
-- `Mix_OpenAudio` → device init
-- `Mix_LoadWAV` → SFX loading (WAV chunks, fully in memory)
-- `Mix_PlayChannel` → SFX playback on mixing channels
-- `Mix_LoadMUS` / `Mix_PlayMusic` → music streaming (OGG Vorbis)
-- `Mix_FadeInMusic` / `Mix_FadeOutMusic` → crossfading
-
-This is the simplest path if SDL3_mixer stabilises before audio integration
-begins. Re-adding it requires:
-
-1. Add `sdl3-mixer` to `flake.nix` build inputs
-2. Add `pkg_check_modules(sdl3-mixer ...)` to `Dependencies.cmake`
-3. Link `SDL3_mixer::SDL3_mixer` in `CMakeLists.txt`
-4. Add `SDL_INIT_AUDIO` back to the `SDL_Init` call in `game.cpp`
-5. Implement the `AudioManager` wrapper (see section 4)
-
-### Option B: SDL3 AudioStream (no mixer dependency)
-
-SDL3's `SDL_AudioStream` provides a push-model audio API with built-in
-resampling. This is viable for simple SFX playback without any external mixer
-dependency.
-
-The model:
-
-1. Open an audio device with `SDL_OpenAudioDevice`
-2. Create an `SDL_AudioStream` per sound effect or category
-3. Push PCM data into the stream with `SDL_PutAudioStreamData`
-4. SDL handles resampling and mixing to the output device
-
-Advantages over SDL_mixer:
-
-- No additional dependency — `SDL_AudioStream` is part of core SDL3
-- Push model is simpler than SDL2's callback-based `SDL_AudioCallback`
-- Built-in format conversion and resampling
-- Multiple streams can feed the same device
-
-Disadvantages:
-
-- No built-in music streaming (must decode OGG frames manually or use a decoder
-  library)
-- No built-in channel management or spatial mixing
-- More manual work for features SDL_mixer provides out of the box
-
-This is a good fit if the game only needs simple SFX (shoot, hit, pickup) and
-doesn't need streamed music yet.
-
-### Option C: FMOD or Wwise (adaptive music)
-
-If the game needs adaptive music — vertical layers, horizontal re-sequencing,
-dynamic mixing based on gameplay state — the path is a professional middleware:
-
-- **FMOD** — Industry-standard with a visual authoring tool (FMOD Studio). Free
-  for indie projects under $200K revenue.
-- **Wwise** — Sophisticated audio graphs and spatial audio. Free for indie
-  projects under $150K budget. Steeper learning curve.
-
-Both integrate as C/C++ libraries and are independent of SDL's audio system. The
-`AudioManager` wrapper pattern (section 4) isolates the middleware choice from
-game systems.
-
-When to consider this path:
-
-- Music needs to react to gameplay in real time (e.g., adding instrument layers
-  as intensity increases)
-- Complex DSP effects are needed (reverb zones, occlusion, real-time pitch
-  shifting)
-- A dedicated sound designer joins the project and needs a visual authoring tool
-
-See the [Audio Resources](audio-resources.md) page for FMOD and Wwise details.
+The historical decisions: [ADR-0010](decisions/0010-sdl2-mixer-audio.md) chose
+SDL_mixer, [ADR-0013](decisions/0013-sdl3-migration.md) removed it during the
+SDL3 migration, and ADR-0019 settled on SDL3's own audio API instead.
 
 ---
 
-## 3. Asset Pipeline (unchanged)
+## 2. Architecture
 
-The asset directory structure and format requirements are the same regardless of
-which audio backend is chosen:
+Gameplay systems never touch the audio backend. The flow per fixed tick:
 
 ```
-assets/audio/sfx/*.wav          WAV files for sound effects
-assets/audio/music/*.ogg        OGG files for music
+system detects event          GameScene::update, after systems run
+        │                              │
+        ▼                              ▼
+push_sfx(reg, Sfx::EnemyHit) ──► AudioQueue (registry ctx) ──► dedupe ──► AudioEngine::play("enemy_hit")
 ```
 
-- **SFX** — 16-bit 44100 Hz mono WAV. Loaded fully into memory.
-- **Music** — OGG Vorbis, stereo, 44100 Hz. Streamed from disk.
+- **`Sfx`** is a small enum (`Sfx::Shoot`, `Sfx::Dash`, …) with a `Count`
+  sentinel kept last. `sfx_sound_name()` maps each value to its `config.json`
+  key.
+- **`push_sfx()`** appends to the `AudioQueue` in the registry context. It is
+  a no-op when the queue is absent, so unit tests need no audio setup.
+- **`GameScene`** drains the queue after the system pipeline. Same-tick
+  duplicates are deduped: N sample-aligned copies of one effect sum to N-times
+  amplitude (a distorted pop, not a louder hit) — e.g. one shotgun burst
+  hitting five enemies at once.
+- **`AudioEngine::play()`** binds a fresh SDL audio stream per instance; SDL
+  mixes all bound streams. `update()` (called once per frame) reaps drained
+  streams. Playback is capped at `MAX_VOICES` (32) — further plays drop.
+- **Silent degradation**: a failed `init()` leaves the engine in no-op mode. A
+  machine without an audio device plays silently, never crashes — same
+  philosophy as missing sprites and fonts.
 
-The `config.json` volume settings apply to any backend:
+UI sounds outside the fixed-tick pipeline (e.g. the options menu volume
+preview) call `game.audio().play(...)` directly; the queue exists to keep
+*gameplay systems* pure and testable, not as the only entry point.
 
-```json
-"audio": {
-    "music_volume": 80,
-    "sfx_volume": 100
-}
-```
+### Volume
 
-Volume values are 0–100 and should be mapped to the backend's native range
-during initialisation.
+User volume lives in `settings.json` under the platform pref path
+([ADR-0017](decisions/0017-settings-pref-path.md)) — **not** `config.json`,
+which is read-only game data. `sfx_volume` (0–100) maps to linear gain through
+a quadratic curve (`volume_to_gain()` in `src/core/game.cpp`) so the slider
+feels perceptually even. `music_volume` is stored and shown in the options
+menu but drives nothing until music lands.
+
+Note: `set_master_gain()` only affects *subsequent* plays. Fine for sub-second
+effects; a future music stream must have its gain updated live.
 
 ---
 
-## 4. AudioManager Wrapper Pattern
+## 3. Adding a New Sound Effect
 
-Regardless of which backend is chosen, audio calls should go through a thin
-wrapper rather than being scattered through ECS systems. This isolates the
-middleware choice and centralises volume mapping, caching, and error logging.
+1. Add the WAV to `assets/audio/sfx/` (16-bit PCM, 44100 Hz — see the
+   [Audio Specification](audio-spec.md)). For a placeholder, extend
+   `tools/gen_sfx.py`.
+2. Register it in the `"sounds"` map in `assets/data/config.json`:
+   ```json
+   "sounds": {
+       "slam": "assets/audio/sfx/slam.wav"
+   }
+   ```
+   `Game::load_assets()` loads every entry at startup via `paths::asset()`.
+3. Add an enumerator to `Sfx` in `src/ecs/components.hpp` — **before the
+   `Count` sentinel** — and a matching case in `sfx_sound_name()` returning
+   the config key.
+4. Call `push_sfx(reg, Sfx::YourEffect)` from the system where the event
+   happens.
+5. Extend the name-mapping test in `tests/test_audio.cpp`.
 
-```cpp
-class AudioManager {
-public:
-    void play_sfx(const std::string& id);
-    void play_music(const std::string& id, int fade_ms = 0);
-    void stop_music(int fade_ms = 0);
-    void set_sfx_volume(int volume_0_100);
-    void set_music_volume(int volume_0_100);
-    void unload_all();
-};
-```
-
-The `AudioManager` can be stored in the EnTT registry context alongside the
-existing `SpriteSheetManager`:
-
-```cpp
-auto& audio = registry_.ctx().emplace<AudioManager>();
-```
-
-Systems call `audio.play_sfx("sfx_player_shoot")` rather than touching the
-backend directly. When the backend changes (e.g., from SDL3_mixer to FMOD), only
-the `AudioManager` implementation changes — not the call sites.
+A `static_assert` in `game_scene.cpp` guards the dedupe bitmask if `Sfx` ever
+grows past 32 entries.
 
 ---
 
-## 5. Event-Driven Audio Design
+## 4. Event-Driven Audio Design
 
-Audio playback should be triggered from ECS systems in response to game events.
-The pattern: a system detects a state change, then calls the audio manager.
-
-### Collision system → hit sounds
+The pattern for gameplay sounds: a system detects a state change, then pushes
+an event. Real examples from the tree:
 
 ```cpp
-void resolve_collisions(entt::registry& reg) {
-    auto& audio = reg.ctx().get<AudioManager>();
+// collision_system.cpp — bullet hits
+push_sfx(reg, Sfx::PlayerHit);
+push_sfx(reg, Sfx::EnemyHit);
 
-    // When a bullet hits an enemy:
-    audio.play_sfx("sfx_enemy_hurt");
+// shooting_system.cpp — shot fired
+push_sfx(reg, Sfx::Shoot);
 
-    // When the player takes damage:
-    audio.play_sfx("sfx_player_hurt");
-}
+// pickup_system.cpp — weapon or stabilizer collected
+push_sfx(reg, Sfx::Pickup);
 ```
 
-### Weapon system → shot sounds
+Systems stay pure functions on the registry: no audio handles, no engine
+includes, and tests exercise them without any audio device (`push_sfx` no-ops
+when the queue is absent). Swapping the audio backend later touches one drain
+site in `GameScene`, not every system.
 
-```cpp
-void update_shooting(entt::registry& reg) {
-    auto& audio = reg.ctx().get<AudioManager>();
-
-    // When a shot is fired:
-    audio.play_sfx("sfx_player_shoot");
-}
-```
-
-### Scene transitions → music changes
-
-```cpp
-void GameScene::on_enter() {
-    auto& audio = registry_.ctx().get<AudioManager>();
-    audio.play_music("mus_area_01", 500);  // 500ms fade-in
-}
-
-void TitleScene::on_enter() {
-    auto& audio = registry_.ctx().get<AudioManager>();
-    audio.play_music("mus_title", 1000);
-}
-```
-
-These patterns are backend-agnostic. The system code stays the same whether
-`AudioManager` uses SDL3_mixer, `SDL_AudioStream`, or FMOD internally.
+Known gap: the active abilities (Ground Slam, Concussion Shot) are still
+silent — tracked in the
+[architecture review devlog](devlog/2026-07-15-architecture-review-fixes.md).
 
 ---
 
-## 6. Implementation Priority
+## 5. Music: Path Forward
 
-The recommended order when audio work begins:
+Music needs what the SFX path deliberately lacks: a compressed format (OGG
+Vorbis) and a streaming decode path. ADR-0019 explicitly scoped it out.
+Options, in rough order of preference:
 
-1. **Choose a backend** — Check if sdl3-mixer is stable. If yes, use it (option
-   A). If not, evaluate whether simple SFX via `SDL_AudioStream` (option B) is
-   sufficient for the current milestone.
-2. **Implement `AudioManager`** with SFX loading and playback.
-3. **Add SFX triggers** to the collision, shooting, and pickup systems.
-4. **Add music playback** with scene-based track changes and crossfading.
-5. **Evaluate adaptive music** needs (option C) once the base gameplay loop is
-   polished.
+1. **Decode library feeding an SDL stream** — `stb_vorbis` or `dr_libs`
+   decoding OGG frames into a persistent `SDL_AudioStream` that stays bound to
+   the same device `AudioEngine` already owns. Zero heavyweight dependencies,
+   consistent with ADR-0019's approach.
+2. **SDL3_mixer** — the successor to SDL2_mixer. Reevaluate when it has a
+   stable release packaged in nixpkgs; it would bring music streaming, fades,
+   and loop-point handling for free.
+3. **FMOD / Wwise** — only if the game grows into adaptive music (vertical
+   layers, re-sequencing). Out of scope for the current design; the queue/drain
+   seam would isolate the swap.
+
+Whichever lands must support: live gain changes (the options menu adjusts
+`music_volume` in real time), seamless whole-file looping, and eventually
+`LOOPSTART`/`LOOPLENGTH` sample tags for intro-then-loop tracks (see the
+[Music Track List](music-track-list.md)).
+
+Scene-based track selection follows the same pattern as everything else:
+`on_enter()` asks for a track, the engine crossfades. The scene → track
+mapping is specified in the track list document so composition can start
+before the engine work does.
