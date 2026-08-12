@@ -95,7 +95,7 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
                 if (auto* emitter = reg.try_get<BulletEmitter>(hit.ent)) {
                     auto* e_tf = reg.try_get<Transform2D>(hit.ent);
                     if (e_tf && emitter->pattern_name.valid()) {
-                        const auto* pattern = patterns.get(interner.resolve(emitter->pattern_name));
+                        const auto* pattern = patterns.get(emitter->pattern_name);
                         if (pattern && !pattern->emitters.empty()) {
                             auto pickup_ent = reg.create();
                             reg.emplace<Transform2D>(pickup_ent, e_tf->x, e_tf->y);

@@ -39,6 +39,13 @@ void OptionsScene::on_enter(Game& /*game*/) {
     spdlog::info("Entered options scene");
 }
 
+void OptionsScene::on_exit(Game& game) {
+    // Persist once here instead of on every adjustment: sliders generate a
+    // write per input edge, and batching writes is kinder to save-data
+    // backends (notably consoles).
+    game.save_settings();
+}
+
 void OptionsScene::adjust(Game& game, int direction) {
     auto& s = game.settings_mut();
 

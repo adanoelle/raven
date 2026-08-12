@@ -12,6 +12,19 @@
 
 namespace raven {
 
+namespace {
+
+/// @brief Map a 0-100 volume setting to a linear gain, perceptually curved.
+///
+/// Loudness perception is roughly logarithmic; a quadratic curve keeps the
+/// slider feeling even instead of bunching audible change at the low end.
+float volume_to_gain(int volume) {
+    const float v = static_cast<float>(volume) / 100.f;
+    return v * v;
+}
+
+} // anonymous namespace
+
 Game::Game() = default;
 Game::~Game() = default;
 
@@ -37,7 +50,7 @@ bool Game::init() {
 
     // Audio is optional: a failed init leaves the engine in silent no-op mode
     audio_.init();
-    audio_.set_master_gain(static_cast<float>(settings_.sfx_volume) / 100.f);
+    audio_.set_master_gain(volume_to_gain(settings_.sfx_volume));
 
     // Steam is optional: no-op unless built with RAVEN_ENABLE_STEAM and
     // running under Steam (or with a dev steam_appid.txt)
@@ -47,16 +60,13 @@ bool Game::init() {
     debug_overlay_.init(renderer_.sdl_window(), renderer_.sdl_renderer());
 #endif
 
+    // The interner must exist before load_assets(): sprite sheets are
+    // registered under interned IDs.
+    registry_.ctx().emplace<StringInterner>();
+
     if (!load_assets()) {
         return false;
     }
-
-    // Pre-intern known sprite sheet IDs
-    auto& interner = registry_.ctx().emplace<StringInterner>();
-    interner.intern("player");
-    interner.intern("enemies");
-    interner.intern("projectiles");
-    interner.intern("pickups");
 
     // Start with title scene
     scenes_.push(std::make_unique<TitleScene>(), *this);
@@ -93,12 +103,14 @@ bool Game::load_assets() {
         }
 
         if (config.contains("sprite_sheets")) {
+            auto& interner = registry_.ctx().get<StringInterner>();
             for (const auto& sheet : config["sprite_sheets"]) {
                 auto id = sheet.at("id").get<std::string>();
                 auto path = sheet.at("path").get<std::string>();
                 int fw = sheet.at("frame_w").get<int>();
                 int fh = sheet.at("frame_h").get<int>();
-                if (!sprites_.load(renderer_.sdl_renderer(), id, paths::asset(path), fw, fh)) {
+                if (!sprites_.load(renderer_.sdl_renderer(), interner.intern(id),
+                                   paths::asset(path), fw, fh)) {
                     spdlog::warn("Failed to load sprite sheet '{}'", id);
                 }
             }
@@ -207,7 +219,10 @@ void Game::apply_settings() {
         renderer_.set_window_scale(settings_.window_scale);
     }
     renderer_.set_vsync(settings_.vsync);
-    audio_.set_master_gain(static_cast<float>(settings_.sfx_volume) / 100.f);
+    audio_.set_master_gain(volume_to_gain(settings_.sfx_volume));
+}
+
+void Game::save_settings() {
     settings_.save(settings_path_);
 }
 

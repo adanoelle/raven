@@ -20,6 +20,9 @@ namespace raven {
 /// audio device plays silently rather than crashing).
 class AudioEngine {
   public:
+    /// @brief Maximum simultaneously playing streams; further plays drop.
+    static constexpr size_t MAX_VOICES = 32;
+
     AudioEngine() = default;
     ~AudioEngine();
 
@@ -48,6 +51,9 @@ class AudioEngine {
     void update();
 
     /// @brief Set the master volume applied to all subsequent plays.
+    ///
+    /// Already-playing streams keep the gain they started with — fine for
+    /// sub-second effects, but a future music stream must be updated live.
     /// @param gain Linear gain, 0.0 (silent) to 1.0 (full).
     void set_master_gain(float gain);
 

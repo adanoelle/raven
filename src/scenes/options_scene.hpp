@@ -8,13 +8,15 @@ namespace raven {
 ///
 /// Pushed from the title screen or the pause menu; renders over whatever
 /// is beneath it (own dim layer, no clear). Up/down selects a setting,
-/// left/right adjusts it, and every change is applied live and persisted
-/// via Game::apply_settings(). Cancel or Back pops the scene.
+/// left/right adjusts it, and every change is applied live via
+/// Game::apply_settings(); settings.json is written once when the scene
+/// exits rather than on every adjustment. Cancel or Back pops the scene.
 ///
 /// Items: fullscreen, window scale, vsync, music volume, sfx volume, back.
 class OptionsScene : public Scene {
   public:
     void on_enter(Game& game) override;
+    void on_exit(Game& game) override;
     void update(Game& game, float dt) override;
     void render(Game& game) override;
 

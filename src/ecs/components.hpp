@@ -388,6 +388,7 @@ enum class Sfx : uint8_t {
     Pickup,    ///< Weapon or stabilizer collected.
     Dash,      ///< Player dashed.
     Melee,     ///< Player swung melee.
+    Count,     ///< Sentinel — keep last.
 };
 
 /// @brief Registry-context queue of sound requests for the current tick.
@@ -427,6 +428,8 @@ inline void push_sfx(entt::registry& reg, Sfx sfx) {
         return "dash";
     case Sfx::Melee:
         return "melee";
+    case Sfx::Count:
+        break;
     }
     return "shoot";
 }

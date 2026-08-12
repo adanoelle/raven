@@ -284,9 +284,20 @@ void GameScene::update(Game& game, float dt) {
         systems::update_waves(reg, tilemap_, *stage, pattern_lib_);
     }
 
-    // Forward sound requests pushed by the systems above to the engine
+    // Forward sound requests pushed by the systems above to the engine.
+    // Dedupe per tick: N same-tick copies of one effect play sample-aligned
+    // and sum to N-times amplitude (a distorted pop, not a louder hit) —
+    // e.g. one shotgun burst hitting five enemies at once.
     if (auto* audio_queue = reg.ctx().find<AudioQueue>()) {
+        static_assert(static_cast<uint32_t>(Sfx::Count) <= 32,
+                      "played_mask is 32 bits; widen it before growing Sfx");
+        uint32_t played_mask = 0;
         for (Sfx sfx : audio_queue->events) {
+            const uint32_t bit = 1u << static_cast<uint32_t>(sfx);
+            if (played_mask & bit) {
+                continue;
+            }
+            played_mask |= bit;
             game.audio().play(sfx_sound_name(sfx));
         }
         audio_queue->events.clear();
