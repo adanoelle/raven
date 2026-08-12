@@ -58,6 +58,7 @@
 # Audio & Sound
 
 - [Audio Specification](audio-spec.md)
+- [Music Track List](music-track-list.md)
 - [Audio Integration Guide](audio-integration.md)
 - [Learning Resources](audio-resources.md)
 

@@ -133,6 +133,9 @@ Each area of the game should have its own musical identity. Themes should loop
 seamlessly and feel appropriate for extended play sessions (players may be in an
 area for many minutes).
 
+The concrete per-track brief — file names, moods, BPM and key targets, and the
+music delivery checklist — is in the [Music Track List](music-track-list.md).
+
 | Context           | Characteristics                                        | Loop Length     |
 | ----------------- | ------------------------------------------------------ | --------------- |
 | Title / main menu | Sets the mood; establishes the game's tone             | 60–120s         |
@@ -146,21 +149,22 @@ area for many minutes).
 
 ### Looping
 
-All music tracks (except game-over and victory stings) must loop seamlessly. The
-loop point should be at the end of the file — SDL_mixer's `Mix_PlayMusic(-1)`
-loops from the beginning. For OGG files, use the `LOOPSTART` and `LOOPLENGTH`
-tags if a non-zero loop point is needed.
+All music tracks (except the game-over sting) must loop seamlessly. The default
+is a whole-file loop — the engine repeats from the beginning when the file
+ends. For OGG files, use the `LOOPSTART` and `LOOPLENGTH` tags (sample offsets)
+if a non-zero loop point is needed; see the
+[Music Track List](music-track-list.md#3-looping) for details.
 
 ### Layering and Adaptive Music (Future)
 
-SDL_mixer supports basic crossfading between tracks via `Mix_FadeInMusic` and
-`Mix_FadeOutMusic`. For initial implementation, this is sufficient for scene
-transitions.
+For the initial implementation, simple crossfades between tracks on scene
+transitions are sufficient (see the
+[Audio Integration Guide](audio-integration.md) for the planned music backend).
 
 More sophisticated approaches (vertical layering, horizontal re-sequencing,
 stinger overlays) would require FMOD or Wwise. These are explicitly out of scope
 for the initial implementation but should be considered if the game grows (see
-[ADR-0010](decisions/0010-sdl2-mixer-audio.md)).
+[ADR-0019](decisions/0019-sdl3-native-audio.md)).
 
 ---
 
