@@ -55,11 +55,7 @@ bool Game::init() {
 
     // The interner must exist before load_assets(): sprite sheets are
     // registered under interned IDs.
-    auto& interner = registry_.ctx().emplace<StringInterner>();
-    interner.intern("player");
-    interner.intern("enemies");
-    interner.intern("projectiles");
-    interner.intern("pickups");
+    registry_.ctx().emplace<StringInterner>();
 
     if (!load_assets()) {
         return false;

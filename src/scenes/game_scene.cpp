@@ -288,6 +288,8 @@ void GameScene::update(Game& game, float dt) {
     // and sum to N-times amplitude (a distorted pop, not a louder hit) —
     // e.g. one shotgun burst hitting five enemies at once.
     if (auto* audio_queue = reg.ctx().find<AudioQueue>()) {
+        static_assert(static_cast<uint32_t>(Sfx::Count) <= 32,
+                      "played_mask is 32 bits; widen it before growing Sfx");
         uint32_t played_mask = 0;
         for (Sfx sfx : audio_queue->events) {
             const uint32_t bit = 1u << static_cast<uint32_t>(sfx);
