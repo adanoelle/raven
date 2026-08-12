@@ -3,7 +3,9 @@
 #include "audio/audio_engine.hpp"
 #include "core/clock.hpp"
 #include "core/input.hpp"
+#include "core/save_data.hpp"
 #include "core/settings.hpp"
+#include "platform/steam.hpp"
 #include "rendering/bitmap_font.hpp"
 #include "rendering/renderer.hpp"
 #include "rendering/sprite_sheet.hpp"
@@ -83,6 +85,19 @@ class Game {
     /// @return Mutable reference to the AudioEngine (no-op when silent).
     AudioEngine& audio() { return audio_; }
 
+    /// @brief Access the Steamworks integration (no-op without the SDK).
+    /// @return Mutable reference to the Steam wrapper.
+    Steam& steam() { return steam_; }
+
+    /// @brief Access the persisted player progress.
+    /// @return Const reference to the SaveData loaded at startup.
+    [[nodiscard]] const SaveData& save_data() const { return save_data_; }
+
+    /// @brief Record a finished run's score, persisting a new best.
+    /// @param score The run's final score.
+    /// @return True if this beat the previous best (save file updated).
+    bool record_score(int score);
+
     /// @brief Access the UI bitmap font.
     /// @return Const reference to the BitmapFont (may be unloaded; draws no-op).
     [[nodiscard]] const BitmapFont& font() const { return font_; }
@@ -100,9 +115,12 @@ class Game {
     SceneManager scenes_;
     SpriteSheetManager sprites_;
     Settings settings_;
+    SaveData save_data_;
     BitmapFont font_;
     AudioEngine audio_;
+    Steam steam_;
     std::string settings_path_; ///< Full path to the user settings file.
+    std::string save_path_;     ///< Full path to the player save file.
 
 #ifdef RAVEN_ENABLE_IMGUI
     DebugOverlay debug_overlay_;

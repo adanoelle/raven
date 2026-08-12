@@ -26,5 +26,11 @@ function(raven_set_warnings target)
             -Wlogical-op
             -Wuseless-cast
         >
+        $<$<CXX_COMPILER_ID:MSVC>:
+            /W4
+            /permissive-
+            /utf-8
+            /Zc:__cplusplus
+        >
     )
 endfunction()

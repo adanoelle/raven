@@ -16,9 +16,11 @@ add_executable(raven_tests
     test_settings.cpp
     test_bitmap_font.cpp
     test_audio.cpp
+    test_save_data.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/core/paths.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/save_data.cpp
     ${CMAKE_SOURCE_DIR}/src/core/settings.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/bitmap_font.cpp
     ${CMAKE_SOURCE_DIR}/src/audio/audio_engine.cpp
@@ -52,5 +54,15 @@ target_link_libraries(raven_tests PRIVATE
     SDL3::SDL3
     SDL3_image::SDL3_image
 )
+
+# Shared dependencies (SDL3.dll, ...) must sit next to the test binary
+if(WIN32)
+    add_custom_command(TARGET raven_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:raven_tests> $<TARGET_FILE_DIR:raven_tests>
+        COMMAND_EXPAND_LISTS
+        COMMENT "Copying runtime DLLs for tests"
+    )
+endif()
 
 catch_discover_tests(raven_tests)

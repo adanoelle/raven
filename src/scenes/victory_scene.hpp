@@ -4,12 +4,15 @@
 
 namespace raven {
 
-/// @brief Game over screen showing final score with a blinking restart prompt.
+/// @brief Victory screen shown after clearing the final stage.
 ///
-/// Transitions to TitleScene when the confirm button is pressed.
-class GameOverScene : public Scene {
+/// Records the run's score against the persisted best (celebrating a new
+/// record), then returns to TitleScene on confirm. Mirrors GameOverScene's
+/// lifecycle: on_exit clears the registry and erases GameState so the next
+/// run starts fresh.
+class VictoryScene : public Scene {
   public:
-    /// @brief Read final score from GameState context.
+    /// @brief Capture the final score and record it against the best.
     /// @param game The Game instance providing access to subsystems.
     void on_enter(Game& game) override;
 
@@ -22,7 +25,7 @@ class GameOverScene : public Scene {
     /// @param dt Fixed timestep delta in seconds.
     void update(Game& game, float dt) override;
 
-    /// @brief Draw the game over screen with score and blinking prompt.
+    /// @brief Draw the victory screen with score, best, and prompt.
     /// @param game The Game instance.
     void render(Game& game) override;
 

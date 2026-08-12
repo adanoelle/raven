@@ -48,6 +48,11 @@ void TitleScene::render(Game& game) {
                        selected_ == 0 ? active : inactive, 1);
     font.draw_centered(r, selected_ == 1 ? "> OPTIONS <" : "OPTIONS", center_x, 200.f,
                        selected_ == 1 ? active : inactive, 1);
+
+    if (game.save_data().best_score > 0) {
+        font.draw_centered(r, "BEST " + std::to_string(game.save_data().best_score), center_x,
+                           244.f, {160, 140, 90, 255}, 1);
+    }
 }
 
 } // namespace raven

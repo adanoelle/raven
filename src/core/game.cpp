@@ -41,6 +41,9 @@ bool Game::init() {
     settings_ = Settings::load(settings_path_);
     settings_.save(settings_path_);
 
+    save_path_ = paths::pref_dir() + "save.json";
+    save_data_ = SaveData::load(save_path_);
+
     if (!renderer_.init("Raven", settings_.window_scale, settings_.fullscreen, settings_.vsync)) {
         return false;
     }
@@ -48,6 +51,10 @@ bool Game::init() {
     // Audio is optional: a failed init leaves the engine in silent no-op mode
     audio_.init();
     audio_.set_master_gain(volume_to_gain(settings_.sfx_volume));
+
+    // Steam is optional: no-op unless built with RAVEN_ENABLE_STEAM and
+    // running under Steam (or with a dev steam_appid.txt)
+    steam_.init();
 
 #ifdef RAVEN_ENABLE_IMGUI
     debug_overlay_.init(renderer_.sdl_window(), renderer_.sdl_renderer());
@@ -169,6 +176,9 @@ void Game::run() {
         // Reap finished sound effect streams
         audio_.update();
 
+        // Pump Steam callbacks (no-op when inactive)
+        steam_.run_callbacks();
+
         // Render
         render();
 
@@ -192,6 +202,15 @@ void Game::run() {
 
 void Game::fixed_update(float dt) {
     scenes_.update(*this, dt);
+}
+
+bool Game::record_score(int score) {
+    if (score <= save_data_.best_score) {
+        return false;
+    }
+    save_data_.best_score = score;
+    save_data_.save(save_path_);
+    return true;
 }
 
 void Game::apply_settings() {
@@ -232,6 +251,7 @@ void Game::shutdown() {
     font_ = BitmapFont{};
     renderer_.shutdown();
     audio_.shutdown();
+    steam_.shutdown();
     input_.shutdown(); // close gamepad before SDL_Quit
 
     SDL_Quit();

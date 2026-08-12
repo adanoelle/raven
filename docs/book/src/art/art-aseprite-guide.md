@@ -15,7 +15,7 @@ needing a separate overlay system.
 
 | Tier        | Frame Size | Body Size | Padding      | Used For                            |
 | ----------- | ---------- | --------- | ------------ | ----------------------------------- |
-| Small       | 16x16      | 14x14     | 1px per side | Grunt enemies, small pickups        |
+| Small       | 24x24      | 20x20     | 2px per side | Grunt enemies                       |
 | Medium      | 32x32      | 24x24     | 4px per side | Player characters, mid-tier enemies |
 | Large       | 48x48      | 36x36     | 6px per side | Bosses                              |
 | Extra-large | 64x64      | 48x48     | 8px per side | Mega-bosses, special encounters     |
@@ -59,29 +59,31 @@ or boss at that size.
 
 ### 2.2 Guide placement for each tier
 
-#### Small (16x16 frame, 14x14 body)
+#### Small (24x24 frame, 20x20 body)
 
 ```
-Guides: x=1, x=15, y=1, y=15 (body zone)
-Center: x=8, y=8
+Guides: x=2, x=22, y=2, y=22 (body zone)
+Center: x=12, y=12
 ```
 
 ```
-  0               15
-  ┌────────────────┐
-  │░░░░░░░░░░░░░░░░│ 0
-  │░┌────────────┐░│ 1  ← body top
-  │░│            │░│
-  │░│   14x14    │░│
-  │░│   body     │░│    ← x=8 center
-  │░│            │░│
-  │░│            │░│
-  │░└────────────┘░│ 15 ← body bottom
-  └────────────────┘
-    1              15
+  0                       23
+  ┌────────────────────────┐
+  │░░░░░░░░░░░░░░░░░░░░░░░░│ 0
+  │░░░░░░░░░░░░░░░░░░░░░░░░│ 2  ← body top
+  │░░┌──────────────────┐░░│
+  │░░│                  │░░│
+  │░░│      20x20       │░░│
+  │░░│      body        │░░│    ← x=12 center
+  │░░│                  │░░│
+  │░░│                  │░░│
+  │░░└──────────────────┘░░│ 22 ← body bottom
+  │░░░░░░░░░░░░░░░░░░░░░░░░│
+  └────────────────────────┘
+    2                    22
 ```
 
-The 1px padding is tight. Grunt enemies are simple shapes — the padding handles
+The 2px padding is tight. Grunt enemies are simple shapes — the padding handles
 minor animation overshoot (a bounce on idle, a slight lean on walk). Do not plan
 for weapon extensions at this size.
 
@@ -216,38 +218,44 @@ to y=17 = 11px, midpoint would be y=11.5). This low eye placement is what
 creates the chibi "big forehead" look — the forehead area above the eyes is
 larger than the face below.
 
-### 3.2 Small tier proportions (16x16 frame)
+### 3.2 Small tier proportions (24x24 frame)
 
-Grunt enemies at 2-head chibi, ~12px tall, bottom-anchored:
+Grunt enemies at 2-head chibi, ~18px tall, bottom-anchored:
 
 | Guide | Y Position | Zone          |
 | ----- | ---------- | ------------- |
-| HT    | y = 2      | Head top      |
-| EY    | y = 5      | Eye line      |
-| CH    | y = 8      | Chin / neck   |
-| WA    | y = 11     | Waist         |
-| FT    | y = 14     | Feet / ground |
+| HT    | y = 3      | Head top      |
+| EY    | y = 8      | Eye line      |
+| CH    | y = 12     | Chin / neck   |
+| WA    | y = 17     | Waist         |
+| FT    | y = 21     | Feet / ground |
 
 ```
-  0               15
-  ┌────────────────┐
-  │                │ 0
-  │· · · · · · · · │ 2  HT
-  │    ████████    │
-  │· · █·●··●·█ · ·│ 5  EY
-  │    ████████    │
-  │· · ·██████ · · │ 8  CH
-  │     █ ██ █     │
-  │· · ·██████· · ·│ 11 WA
-  │      █  █      │
-  │· · ·██··██· · ·│ 14 FT
-  │                │ 15
-  └────────────────┘
+  0                       23
+  ┌────────────────────────┐
+  │                        │ 0
+  │· · · · · · · · · · · · │ 3  HT
+  │       ██████████       │
+  │       ██████████       │
+  │· · · ·█·●●··●●·█· · · ·│ 8  EY
+  │       ██████████       │
+  │       ██████████       │
+  │· · · · ████████ · · · ·│ 12 CH
+  │        █ ████ █        │
+  │         ██████         │
+  │· · · · ·██████· · · · ·│ 17 WA
+  │          █  █          │
+  │         ██  ██         │
+  │· · · · ███··███ · · · ·│ 21 FT
+  │                        │
+  └────────────────────────┘
 ```
 
-At 16x16, there are very few pixels per zone. The eyes may be just 2
-vertical pixels or a 2x2 block. Personality comes from silhouette shape and
-color rather than facial detail.
+At 24x24, each zone gets a few more pixels than the player's face does —
+the head is ~9px tall, so eyes can be a 2x2 block with 1px of expression
+room. Even so, personality comes primarily from silhouette shape and color
+rather than facial detail. Grunts should read instantly as "threat type"
+at a glance.
 
 ### 3.3 Large tier proportions (48x48 frame)
 
@@ -413,8 +421,8 @@ mannequin back only when you need to double-check proportions.
 templates/
 ├── medium_32x32.aseprite            Blank template with guides
 ├── chibi_mannequin_32x32.aseprite   Full silhouette mannequin
-├── small_16x16.aseprite             Blank template with guides
-├── chibi_mannequin_16x16.aseprite   Grunt silhouette mannequin
+├── small_24x24.aseprite             Blank template with guides
+├── chibi_mannequin_24x24.aseprite   Grunt silhouette mannequin
 ├── large_48x48.aseprite             Blank template with guides
 └── boss_mannequin_48x48.aseprite    Boss silhouette mannequin
 ```

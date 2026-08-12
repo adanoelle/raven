@@ -18,6 +18,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 option(RAVEN_ENABLE_TESTS "Build tests" ON)
 option(RAVEN_ENABLE_ASAN "Enable Address Sanitizer" OFF)
 option(RAVEN_ENABLE_IMGUI "Enable Dear ImGui debug overlay" ON)
+option(RAVEN_ENABLE_STEAM "Enable Steamworks (needs SDK in vendor/steamworks/sdk)" OFF)
 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -36,10 +37,14 @@ add_executable(raven
     src/core/game.cpp
     src/core/input.cpp
     src/core/paths.cpp
+    src/core/save_data.cpp
     src/core/settings.cpp
 
     # Audio
     src/audio/audio_engine.cpp
+
+    # Platform
+    src/platform/steam.cpp
 
     # Rendering
     src/rendering/renderer.cpp
@@ -82,6 +87,7 @@ add_executable(raven
     src/scenes/game_scene.cpp
     src/scenes/title_scene.cpp
     src/scenes/game_over_scene.cpp
+    src/scenes/victory_scene.cpp
     src/scenes/char_select_scene.cpp
     src/scenes/pause_scene.cpp
     src/scenes/options_scene.cpp
@@ -103,15 +109,38 @@ if(RAVEN_ENABLE_IMGUI)
     target_sources(raven PRIVATE src/debug/debug_overlay.cpp)
 endif()
 
+if(RAVEN_ENABLE_STEAM)
+    include(Steamworks)
+    target_link_libraries(raven PRIVATE steamworks::steamworks)
+    target_compile_definitions(raven PRIVATE RAVEN_ENABLE_STEAM)
+endif()
+
 raven_set_warnings(raven)
 
-# Copy assets to build directory
-add_custom_command(TARGET raven POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E create_symlink
-        ${CMAKE_SOURCE_DIR}/assets
-        ${CMAKE_BINARY_DIR}/bin/assets
-    COMMENT "Symlinking assets directory"
-)
+# Make assets available next to the built binary (SDL_GetBasePath lookup).
+# Symlinks need developer mode on Windows, so copy there instead.
+if(WIN32)
+    add_custom_command(TARGET raven POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:raven>/assets
+        COMMENT "Copying assets directory"
+    )
+    # Shared dependencies (SDL3.dll, SDL3_image.dll) must sit next to the exe
+    add_custom_command(TARGET raven POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:raven> $<TARGET_FILE_DIR:raven>
+        COMMAND_EXPAND_LISTS
+        COMMENT "Copying runtime DLLs"
+    )
+else()
+    add_custom_command(TARGET raven POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E create_symlink
+            ${CMAKE_SOURCE_DIR}/assets
+            ${CMAKE_BINARY_DIR}/bin/assets
+        COMMENT "Symlinking assets directory"
+    )
+endif()
 
 # ── Tests ─────────────────────────────────────────────────────────
 if(RAVEN_ENABLE_TESTS)
