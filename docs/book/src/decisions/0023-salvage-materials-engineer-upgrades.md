@@ -1,4 +1,4 @@
-# 22. Salvage Materials and Engineer Weapon Upgrades
+# 23. Salvage Materials and Engineer Weapon Upgrades
 
 Date: 2026-08-29 Status: Proposed
 

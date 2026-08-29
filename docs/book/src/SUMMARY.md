@@ -93,4 +93,4 @@
 - [ADR-0020: Bundled Dependency Fallback for Windows Builds](decisions/0020-bundled-dependency-fallback.md)
 - [ADR-0021: Optional Steamworks Integration](decisions/0021-optional-steamworks.md)
 - [ADR-0022: Ability Hits via Component Latch, with Feedback Anchors](decisions/0022-ability-latch-and-feedback-anchors.md)
-- [ADR-0022: Salvage Materials and Engineer Weapon Upgrades](decisions/0022-salvage-materials-engineer-upgrades.md)
+- [ADR-0023: Salvage Materials and Engineer Weapon Upgrades](decisions/0023-salvage-materials-engineer-upgrades.md)
