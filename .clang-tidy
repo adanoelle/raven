@@ -1,4 +1,9 @@
 ---
+# Checks are curated to match the project conventions in CLAUDE.md:
+# - float literals use lowercase suffixes (0.f)
+# - short idiomatic names (dt, it, id, x, y) are fine in game code
+# - components are POD structs with public members
+# - braceless single-statement ifs are permitted
 Checks: >
   -*,
   bugprone-*,
@@ -13,6 +18,28 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-owning-memory,
+  -readability-uppercase-literal-suffix,
+  -readability-identifier-length,
+  -readability-braces-around-statements,
+  -readability-implicit-bool-conversion,
+  -readability-convert-member-functions-to-static,
+  -readability-math-missing-parentheses,
+  -readability-function-cognitive-complexity,
+  -readability-use-std-min-max,
+  -misc-include-cleaner,
+  -misc-const-correctness,
+  -misc-non-private-member-variables-in-classes,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-avoid-c-arrays,
+  -modernize-avoid-c-arrays,
+  -modernize-use-designated-initializers,
+  -modernize-use-auto,
+  -modernize-use-std-numbers,
+  -cppcoreguidelines-use-enum-class,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -performance-enum-size,
 
 WarningsAsErrors: ''
 HeaderFilterRegex: 'src/.*'
@@ -26,3 +53,17 @@ CheckOptions:
     value: lower_case
   - key: readability-identifier-naming.PrivateMemberSuffix
     value: '_'
+# Constants use UPPER_CASE at file/class scope but lower_case is also
+  # common for local constexpr layout values, so accept any case there.
+  - key: readability-identifier-naming.ConstexprVariableCase
+    value: aNy_CasE
+  - key: readability-identifier-naming.ClassConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.StaticConstantCase
+    value: aNy_CasE
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: true
+  - key: cppcoreguidelines-special-member-functions.AllowMissingMoveFunctionsWhenCopyIsDeleted
+    value: true

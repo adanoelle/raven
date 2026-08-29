@@ -71,7 +71,8 @@ CPMAddPackage(
 
 CPMAddPackage(
     NAME spdlog
-    VERSION 1.14.1
+    # 1.15+ bundles fmt 11, required for clang-tidy/clang >= 17 consteval checks
+    VERSION 1.15.3
     GITHUB_REPOSITORY gabime/spdlog
     SYSTEM YES
     OPTIONS "SPDLOG_FMT_EXTERNAL OFF"

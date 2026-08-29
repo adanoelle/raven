@@ -81,8 +81,9 @@ void BitmapFont::draw(SDL_Renderer* renderer, std::string_view text, float x, fl
             idx = font_glyph_index('?');
         }
         if (c != ' ') {
-            SDL_FRect src{static_cast<float>((idx % COLUMNS) * glyph_w_),
-                          static_cast<float>((idx / COLUMNS) * glyph_h_),
+            const int col = idx % COLUMNS;
+            const int row = idx / COLUMNS;
+            SDL_FRect src{static_cast<float>(col * glyph_w_), static_cast<float>(row * glyph_h_),
                           static_cast<float>(glyph_w_), static_cast<float>(glyph_h_)};
             SDL_FRect dst{pen_x, y, w, h};
             SDL_RenderTexture(renderer, texture_, &src, &dst);

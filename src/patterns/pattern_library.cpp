@@ -150,12 +150,14 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
         def.type = EmitterDef::Type::Radial;
 
     // Clamp values that could destabilize the game if mistyped in data:
-    // fire_rate <= 0 fires a burst every tick (runaway entity growth), and
-    // huge counts spawn thousands of bullets per burst.
+    // fire_rate <= 0 fires a burst every tick (runaway entity growth), huge
+    // counts spawn thousands of bullets per burst, and negative speed/damage
+    // move bullets backwards or heal targets.
     def.count = static_cast<int>(
         clamp_field(pattern_name, "count", static_cast<float>(j.value("count", 1)), 1.f, 256.f));
-    def.speed = j.value("speed", 100.f);
-    def.angular_velocity = j.value("angular_velocity", 0.f);
+    def.speed = clamp_field(pattern_name, "speed", j.value("speed", 100.f), 0.f, 1000.f);
+    def.angular_velocity = clamp_field(pattern_name, "angular_velocity",
+                                       j.value("angular_velocity", 0.f), -1080.f, 1080.f);
     def.fire_rate = clamp_field(pattern_name, "fire_rate", j.value("fire_rate", 0.1f), 0.05f, 60.f);
     def.spread_angle = j.value("spread_angle", 360.f);
     def.start_angle = j.value("start_angle", 0.f);
@@ -165,7 +167,7 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
     def.bullet_width = j.value("bullet_width", 8);
     def.bullet_height = j.value("bullet_height", 8);
     def.lifetime = clamp_field(pattern_name, "lifetime", j.value("lifetime", 5.f), 0.05f, 60.f);
-    def.damage = j.value("damage", 1.f);
+    def.damage = clamp_field(pattern_name, "damage", j.value("damage", 1.f), 0.f, 100.f);
     def.hitbox_radius =
         clamp_field(pattern_name, "hitbox_radius", j.value("hitbox_radius", 3.f), 0.f, 64.f);
 

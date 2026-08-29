@@ -62,8 +62,7 @@ void update_collision(entt::registry& reg) {
 
         for (auto [e_ent, e_tf, e_hb, enemy, e_hp] : enemies.each()) {
             // Piercing bullets damage each target once, then pass through
-            if (piercing && std::find(piercing->hit.begin(), piercing->hit.end(), e_ent) !=
-                                piercing->hit.end()) {
+            if (piercing && std::ranges::find(piercing->hit, e_ent) != piercing->hit.end()) {
                 continue;
             }
 

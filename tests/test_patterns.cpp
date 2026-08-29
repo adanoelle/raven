@@ -4,6 +4,9 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
+#include <cstdio>
+#include <fstream>
+#include <string>
 
 using namespace raven;
 
@@ -153,6 +156,36 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
         REQUIRE(pat->emitters[0].hitbox_radius >= 0.f);
     }
 
+    SECTION("Speed, damage and angular velocity are clamped") {
+        // Negative speed would move bullets backwards, negative damage would
+        // heal targets, and extreme spin rates come from data typos.
+        nlohmann::json j = {{"name", "hostile2"},
+                            {"emitters",
+                             {{{"type", "radial"},
+                               {"speed", -50.f},
+                               {"damage", 99999.f},
+                               {"angular_velocity", 100000.f}}}}};
+
+        REQUIRE(lib.load_from_json(j));
+
+        const auto* pat = lib.get("hostile2");
+        REQUIRE(pat != nullptr);
+        REQUIRE(pat->emitters[0].speed >= 0.f);
+        REQUIRE(pat->emitters[0].damage <= 100.f);
+        REQUIRE(pat->emitters[0].angular_velocity <= 1080.f);
+        REQUIRE(pat->emitters[0].angular_velocity >= -1080.f);
+    }
+
+    SECTION("Pattern with an empty emitters array loads with no emitters") {
+        nlohmann::json j = {{"name", "empty"}, {"emitters", nlohmann::json::array()}};
+
+        REQUIRE(lib.load_from_json(j));
+
+        const auto* pat = lib.get("empty");
+        REQUIRE(pat != nullptr);
+        REQUIRE(pat->emitters.empty());
+    }
+
     SECTION("names() returns loaded pattern names") {
         nlohmann::json j1 = {{"name", "alpha"}, {"emitters", {{{"type", "radial"}}}}};
         nlohmann::json j2 = {{"name", "beta"}, {"emitters", {{{"type", "aimed"}}}}};
@@ -173,5 +206,112 @@ TEST_CASE("PatternLibrary load_from_json", "[patterns]") {
         }
         REQUIRE(has_alpha);
         REQUIRE(has_beta);
+    }
+}
+
+namespace {
+
+/// Write content to a temp file in the working directory (like test_settings).
+void write_file(const std::string& path, const std::string& content) {
+    std::ofstream f(path);
+    f << content;
+}
+
+} // namespace
+
+TEST_CASE("PatternLibrary load_file", "[patterns]") {
+    StringInterner interner;
+    PatternLibrary lib;
+    lib.set_interner(interner);
+
+    SECTION("Missing file returns false") {
+        REQUIRE_FALSE(lib.load_file("does_not_exist_pattern.json"));
+    }
+
+    SECTION("Malformed JSON returns false") {
+        const std::string path = "test_pattern_malformed_tmp.json";
+        write_file(path, "{ this is not json");
+
+        REQUIRE_FALSE(lib.load_file(path));
+
+        std::remove(path.c_str());
+    }
+
+    SECTION("File missing required name field returns false") {
+        const std::string path = "test_pattern_noname_tmp.json";
+        write_file(path, R"({"emitters": [{"type": "radial"}]})");
+
+        REQUIRE_FALSE(lib.load_file(path));
+
+        std::remove(path.c_str());
+    }
+
+    SECTION("Valid file loads and registers the pattern") {
+        const std::string path = "test_pattern_valid_tmp.json";
+        write_file(path, R"({
+            "name": "from_file",
+            "emitters": [{"type": "aimed", "count": 2, "speed": 90.0}]
+        })");
+
+        REQUIRE(lib.load_file(path));
+
+        const auto* pat = lib.get("from_file");
+        REQUIRE(pat != nullptr);
+        REQUIRE(pat->emitters.size() == 1);
+        REQUIRE(pat->emitters[0].count == 2);
+        REQUIRE(pat->emitters[0].speed == Catch::Approx(90.f));
+
+        std::remove(path.c_str());
+    }
+
+    SECTION("Loading a file without an interner fails instead of crashing") {
+        PatternLibrary no_interner;
+        REQUIRE_FALSE(no_interner.load_file("irrelevant.json"));
+    }
+}
+
+TEST_CASE("PatternLibrary load_manifest", "[patterns]") {
+    StringInterner interner;
+    PatternLibrary lib;
+    lib.set_interner(interner);
+
+    SECTION("Missing manifest returns false") {
+        REQUIRE_FALSE(lib.load_manifest("does_not_exist_manifest.json"));
+    }
+
+    SECTION("Malformed manifest JSON returns false") {
+        const std::string path = "test_manifest_malformed_tmp.json";
+        write_file(path, "not json at all");
+
+        REQUIRE_FALSE(lib.load_manifest(path));
+
+        std::remove(path.c_str());
+    }
+
+    SECTION("Manifest missing the patterns key returns false") {
+        const std::string path = "test_manifest_nokey_tmp.json";
+        write_file(path, R"({"wrong_key": []})");
+
+        REQUIRE_FALSE(lib.load_manifest(path));
+
+        std::remove(path.c_str());
+    }
+
+    SECTION("Manifest with an empty patterns array returns false") {
+        const std::string path = "test_manifest_empty_tmp.json";
+        write_file(path, R"({"patterns": []})");
+
+        REQUIRE_FALSE(lib.load_manifest(path));
+
+        std::remove(path.c_str());
+    }
+
+    SECTION("Manifest whose entries all fail to load returns false") {
+        const std::string path = "test_manifest_badentries_tmp.json";
+        write_file(path, R"({"patterns": ["no_such_pattern_file.json"]})");
+
+        REQUIRE_FALSE(lib.load_manifest(path));
+
+        std::remove(path.c_str());
     }
 }

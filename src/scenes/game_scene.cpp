@@ -197,7 +197,7 @@ void GameScene::clear_room_entities(Game& game) {
 
 void GameScene::update(Game& game, float dt) {
     auto& reg = game.registry();
-    auto& input = game.input().state();
+    const auto& input = game.input().state();
 
     // Run ECS systems in order
     systems::update_charged_shot(reg, input, dt);
@@ -213,7 +213,7 @@ void GameScene::update(Game& game, float dt) {
     // Animation state switching (priority: Melee > Dash > Walk > Idle)
     auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();
     for (auto [entity, player, vel, anim, sprite, state] : anim_view.each()) {
-        AnimationState::State desired;
+        AnimationState::State desired = AnimationState::State::Idle;
         if (reg.any_of<MeleeAttack>(entity) || reg.any_of<GroundSlam>(entity)) {
             desired = AnimationState::State::Melee;
         } else if (reg.any_of<Dash>(entity)) {

@@ -1,10 +1,7 @@
 #include "ecs/systems/concussion_shot_system.hpp"
 
 #include "ecs/components.hpp"
-#include "ecs/systems/hitbox_math.hpp"
-
-#include <cmath>
-#include <vector>
+#include "ecs/systems/ability_hits.hpp"
 
 namespace raven::systems {
 
@@ -42,37 +39,8 @@ void update_concussion_shot(entt::registry& reg, const InputState& input, float 
         if (!shot.hit_checked) {
             shot.hit_checked = true;
 
-            auto enemy_view = reg.view<Transform2D, CircleHitbox, Enemy, Health>();
-            struct HitInfo {
-                entt::entity ent;
-                float dir_x;
-                float dir_y;
-            };
-            std::vector<HitInfo> hits;
-
-            for (auto [e_ent, e_tf, e_hb, enemy, e_hp] : enemy_view.each()) {
-                if (circles_overlap(tf.x, tf.y, shot.radius, e_tf.x + e_hb.offset_x,
-                                    e_tf.y + e_hb.offset_y, e_hb.radius)) {
-                    float dx = e_tf.x - tf.x;
-                    float dy = e_tf.y - tf.y;
-                    float dist = std::sqrt(dx * dx + dy * dy);
-                    float kb_x = 0.f;
-                    float kb_y = 0.f;
-                    if (dist > 0.f) {
-                        kb_x = dx / dist;
-                        kb_y = dy / dist;
-                    }
-                    hits.push_back({e_ent, kb_x, kb_y});
-                }
-            }
-
-            for (auto& hit : hits) {
-                auto& e_hp = reg.get<Health>(hit.ent);
-                e_hp.current -= shot.damage;
-
-                reg.emplace_or_replace<Knockback>(hit.ent, hit.dir_x * shot.knockback,
-                                                  hit.dir_y * shot.knockback, 0.15f);
-            }
+            auto hits = collect_enemies_in_circle(reg, tf.x, tf.y, shot.radius);
+            apply_ability_hits(reg, hits, shot.damage, shot.knockback);
         }
 
         // Tick duration

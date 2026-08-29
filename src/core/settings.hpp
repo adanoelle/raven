@@ -37,7 +37,8 @@ struct Settings {
     /// @brief Write settings to a file as pretty-printed JSON.
     /// @param file_path Full path to settings.json.
     /// @return True on success.
-    bool save(const std::string& file_path) const;
+    // Callers may deliberately fire-and-forget; failures are logged internally.
+    bool save(const std::string& file_path) const; // NOLINT(modernize-use-nodiscard)
 };
 
 } // namespace raven

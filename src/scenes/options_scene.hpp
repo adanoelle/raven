@@ -39,7 +39,7 @@ class OptionsScene : public Scene {
     /// @brief Adjust the selected setting by direction and apply.
     /// @param game The Game instance owning the settings.
     /// @param direction -1 to decrease, +1 to increase (or toggle).
-    void adjust(Game& game, int direction);
+    void adjust(Game& game, int direction) const;
 };
 
 } // namespace raven

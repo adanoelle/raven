@@ -45,6 +45,12 @@ class Input {
     Input();
     ~Input();
 
+    // Non-copyable/movable: owns the SDL gamepad handle.
+    Input(const Input&) = delete;
+    Input& operator=(const Input&) = delete;
+    Input(Input&&) = delete;
+    Input& operator=(Input&&) = delete;
+
     /// @brief Reset per-frame edge flags. Call once per frame before polling events.
     void begin_frame();
 

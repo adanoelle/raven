@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <utility>
 
 namespace raven {
 
@@ -71,15 +72,8 @@ AiBehavior make_ai(AiBehavior::Archetype archetype) {
 }
 
 /// @brief Get sprite frame_y for an enemy type.
-int enemy_frame(Enemy::Type type) {
-    switch (type) {
-    case Enemy::Type::Grunt:
-        return 0;
-    case Enemy::Type::Mid:
-        return 0;
-    case Enemy::Type::Boss:
-        return 0;
-    }
+int enemy_frame(Enemy::Type /*type*/) {
+    // All enemy types currently share frame row 0; per-type rows come with final art.
     return 0;
 }
 
@@ -166,7 +160,7 @@ bool StageLoader::load_from_json(const nlohmann::json& j) {
 }
 
 const StageDef* StageLoader::get(int index) const {
-    if (index < 0 || index >= static_cast<int>(stages_.size())) {
+    if (index < 0 || std::cmp_greater_equal(index, stages_.size())) {
         return nullptr;
     }
     return &stages_[static_cast<size_t>(index)];
@@ -214,7 +208,7 @@ namespace systems {
 
 void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& stage, int wave_index,
                 const PatternLibrary& patterns) {
-    if (wave_index < 0 || wave_index >= static_cast<int>(stage.waves.size())) {
+    if (wave_index < 0 || std::cmp_greater_equal(wave_index, stage.waves.size())) {
         return;
     }
 
@@ -272,7 +266,7 @@ void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& s
 
     // Count remaining enemies
     auto enemy_view = reg.view<Enemy>();
-    if (enemy_view.size() > 0) {
+    if (!enemy_view.empty()) {
         return; // Wave still in progress
     }
 

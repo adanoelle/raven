@@ -7,9 +7,7 @@
 
 namespace raven {
 
-Input::Input() {
-    keyboard_ = SDL_GetKeyboardState(nullptr);
-
+Input::Input() : keyboard_(SDL_GetKeyboardState(nullptr)) {
     // Try to open first available gamepad
     int count = 0;
     SDL_JoystickID* gamepads = SDL_GetGamepads(&count);
@@ -105,13 +103,15 @@ void Input::update_mouse() {
     if (!window_)
         return;
 
-    float wx, wy;
+    float wx = 0.f;
+    float wy = 0.f;
     SDL_MouseButtonFlags buttons = SDL_GetMouseState(&wx, &wy);
 
     // Manual window-to-virtual resolution conversion (480x270).
     // This avoids SDL_RenderWindowToLogical which gives incorrect results
     // when a render-target texture is combined with SDL_RenderSetLogicalSize.
-    int win_w, win_h;
+    int win_w = 0;
+    int win_h = 0;
     SDL_GetWindowSize(window_, &win_w, &win_h);
 
     constexpr double VIRTUAL_W = 480.0;

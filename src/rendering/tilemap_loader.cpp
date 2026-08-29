@@ -4,6 +4,7 @@
 #include <spdlog/spdlog.h>
 
 #include <LDtkLoader/Project.hpp>
+#include <ranges>
 
 namespace raven {
 
@@ -45,9 +46,7 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
 
     // Iterate layers in reverse (LDtk orders front-to-back; we want back-to-front)
     const auto& layers = level->allLayers();
-    for (auto it = layers.rbegin(); it != layers.rend(); ++it) {
-        const auto& layer = *it;
-
+    for (const auto& layer : std::views::reverse(layers)) {
         if (!layer.isVisible()) {
             continue;
         }
@@ -97,13 +96,15 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
             cell_size_ = layer.getCellSize();
             grid_w_ = grid_size.x;
             grid_h_ = grid_size.y;
-            collision_grid_.resize(static_cast<size_t>(grid_w_ * grid_h_), false);
+            collision_grid_.resize(static_cast<size_t>(grid_w_) * static_cast<size_t>(grid_h_),
+                                   false);
 
             for (int gy = 0; gy < grid_h_; ++gy) {
                 for (int gx = 0; gx < grid_w_; ++gx) {
                     const auto& val = layer.getIntGridVal(gx, gy);
                     if (val.value > 0) {
-                        collision_grid_[static_cast<size_t>(gy * grid_w_ + gx)] = true;
+                        collision_grid_[static_cast<size_t>(gy) * static_cast<size_t>(grid_w_) +
+                                        static_cast<size_t>(gx)] = true;
                     }
                 }
             }
@@ -154,7 +155,9 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
                                 sp.fields[field_def.name] = field.value();
                             }
                         } catch (...) {
-                            // Field access can throw on type mismatch; skip silently
+                            // Field access can throw on type mismatch; skip the field
+                            spdlog::debug("Skipping LDtk field '{}' on entity '{}': type mismatch",
+                                          field_def.name, sp.name);
                         }
                     }
                 }

@@ -64,9 +64,9 @@ class StageLoader {
   private:
     std::vector<StageDef> stages_;
 
-    StageDef parse_stage(const nlohmann::json& j) const;
-    WaveDef parse_wave(const nlohmann::json& j) const;
-    WaveEnemyDef parse_enemy(const nlohmann::json& j) const;
+    [[nodiscard]] StageDef parse_stage(const nlohmann::json& j) const;
+    [[nodiscard]] WaveDef parse_wave(const nlohmann::json& j) const;
+    [[nodiscard]] WaveEnemyDef parse_enemy(const nlohmann::json& j) const;
 };
 
 namespace systems {

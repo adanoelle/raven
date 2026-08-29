@@ -93,7 +93,12 @@ void update_damage(entt::registry& reg, const PatternLibrary& /*patterns*/, floa
     for (auto [entity, hp] : health_view.each()) {
         if (hp.current <= 0.f) {
             if (auto* player = reg.try_get<Player>(entity)) {
-                handle_player_death(reg, entity, hp, *player);
+                // The player entity persists after the final death (the scene
+                // handles the game-over transition), so guard against
+                // re-processing the death on subsequent ticks.
+                if (player->lives > 0) {
+                    handle_player_death(reg, entity, hp, *player);
+                }
             } else {
                 handle_enemy_death(reg, entity, interner);
                 to_destroy.push_back(entity);

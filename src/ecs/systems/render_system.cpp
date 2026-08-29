@@ -69,13 +69,12 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
     // exact ties keep a consistent order across frames — view iteration
     // order changes as entities churn, and std::sort would let equal
     // sprites swap draw order frame-to-frame (z-flicker).
-    std::stable_sort(entries.begin(), entries.end(),
-                     [](const RenderEntry& a, const RenderEntry& b) {
-                         if (a.layer != b.layer) {
-                             return a.layer < b.layer;
-                         }
-                         return a.y < b.y;
-                     });
+    std::ranges::stable_sort(entries, [](const RenderEntry& a, const RenderEntry& b) {
+        if (a.layer != b.layer) {
+            return a.layer < b.layer;
+        }
+        return a.y < b.y;
+    });
 
     // Draw
     for (const auto& e : entries) {

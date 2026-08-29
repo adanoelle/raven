@@ -46,7 +46,7 @@ void OptionsScene::on_exit(Game& game) {
     game.save_settings();
 }
 
-void OptionsScene::adjust(Game& game, int direction) {
+void OptionsScene::adjust(Game& game, int direction) const {
     auto& s = game.settings_mut();
 
     switch (selected_) {

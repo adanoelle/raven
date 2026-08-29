@@ -17,6 +17,9 @@ add_executable(raven_tests
     test_bitmap_font.cpp
     test_audio.cpp
     test_save_data.cpp
+    test_tile_collision.cpp
+    test_input.cpp
+    test_movement.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/core/paths.cpp
@@ -39,6 +42,7 @@ add_executable(raven_tests
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/melee_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/dash_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/input_system.cpp
+    ${CMAKE_SOURCE_DIR}/src/ecs/systems/movement_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/wave_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/ground_slam_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/charged_shot_system.cpp

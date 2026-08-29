@@ -72,7 +72,8 @@ bool Tilemap::is_solid(float x, float y, float w, float h) const {
 
     for (int gy = min_gy; gy <= max_gy; ++gy) {
         for (int gx = min_gx; gx <= max_gx; ++gx) {
-            if (collision_grid_[static_cast<size_t>(gy * grid_w_ + gx)]) {
+            if (collision_grid_[static_cast<size_t>(gy) * static_cast<size_t>(grid_w_) +
+                                static_cast<size_t>(gx)]) {
                 return true;
             }
         }
@@ -84,7 +85,8 @@ bool Tilemap::is_cell_solid(int grid_x, int grid_y) const {
     if (grid_x < 0 || grid_x >= grid_w_ || grid_y < 0 || grid_y >= grid_h_) {
         return false;
     }
-    return collision_grid_[static_cast<size_t>(grid_y * grid_w_ + grid_x)];
+    return collision_grid_[static_cast<size_t>(grid_y) * static_cast<size_t>(grid_w_) +
+                           static_cast<size_t>(grid_x)];
 }
 
 const SpawnPoint* Tilemap::find_spawn(const std::string& name) const {
