@@ -143,7 +143,8 @@ from the title screen:
   arrived-after-death vs. arrived-after-victory, salvage delivered this
   run, lifetime salvage thresholds (her research milestones — this is
   the "thank you for funding the work" beat), first core, class played,
-  fully-upgraded. Entries carry `id`, `conditions`, `priority`, and a
+  total deaths and first death to each boss (a new wall should unlock a
+  conversation), fully-upgraded. Entries carry `id`, `conditions`, `priority`, and a
   `once` flag; `SaveData` records seen ids and a visit counter. Writing
   more flavor never touches code.
 
@@ -154,8 +155,11 @@ exist on `Weapon` and `MeleeStats`:
 
 - **Salvage → stat ranks** (the Mirror of Night analog). Incremental,
   multi-rank tracks per class: `Weapon::bullet_damage`, `fire_rate`,
-  `bullet_speed`, `MeleeStats::damage`, `range`. Escalating costs,
-  modest ceilings — a maxed class should feel sharper, not trivialized.
+  `bullet_speed`, `MeleeStats::damage`, `range` — plus one
+  **reinforced-frame track** (`Player::lives` +1, at most +2, at brutal
+  cost), which is deliberately the flagship of the catalog (see the
+  difficulty budget below). Escalating costs, modest ceilings — a maxed
+  class should feel sharper, not trivialized.
 - **Cores → weapon mods** (the weapon-aspect analog). One-time unlocks
   that change behavior rather than numbers, toggleable in the workshop
   (equip at most one per class to start). Launch candidates use existing
@@ -164,7 +168,53 @@ exist on `Weapon` and `MeleeStats`:
   `spread_angle` up, `bullet_damage` down). Mods are where class
   identity deepens; ranks are where it solidifies.
 
-Both live in `assets/data/upgrades/upgrade_manifest.json`, loaded by an
+### Difficulty budget
+
+Hades' meta-progression barely eases individual encounters: the Mirror
+raises the floor (consistency, extra attempts) rather than the ceiling,
+the power budget stays dominated by skill and in-run acquisition, and
+after the first clear the Pact of Punishment lets players re-steepen the
+curve voluntarily. Raven adopts the same contract, with one
+danmaku-specific caution:
+
+- **DPS upgrades are secretly survivability upgrades here.** Raven's
+  difficulty is time spent inside bullet patterns; +damage and
+  +fire-rate shorten fights and therefore shrink exposure time, so an
+  offensive ceiling reduces effective danger by more than its face
+  value. Rank ceilings must account for the double-dip.
+- **Ceilings and steps:** each rank is a +3–5% step, and a fully maxed
+  class lands at roughly **1.2–1.25× baseline** offense. Costs escalate
+  steeply per rank (later ranks cost multiples of earlier ones), so the
+  last few percent are long-haul goals, not week-one purchases.
+- **Tuning assumption:** encounters are balanced assuming a maxed save
+  (~1.25×). A fresh save therefore runs slightly under-tuned — the
+  Hades trade: veterans never find the game hollowed out; newcomers
+  earn their way to par while they learn the patterns.
+- **The flagship rank is attempts, not power.** The reinforced-frame
+  (extra life) track is the Death Defiance analog: it buys learning
+  time per run with near-zero per-encounter erosion, and should be the
+  most prominent, most desirable line in the catalog.
+- **Mods are sidegrades.** Cores never buy raw power; every mod trades
+  something (the scatter mod lowers per-bullet damage as it widens
+  spread). Build variety grows while the curve holds.
+- **Counter-pressure valve (future work, designed for now):** after the
+  first victory, an *overclock* toggle in the workshop — denser
+  patterns or +enemy HP for bonus salvage — is Raven's Pact of
+  Punishment. It also answers the "no upgrades" purist from the other
+  direction. Not v1 scope; the catalog schema and `SaveData` should
+  simply not preclude a `modifiers` block later.
+- **Failure pays in story, not just salvage.** The dialogue conditions
+  (after-death lines, lifetime-salvage research milestones, deaths-count
+  and first-death-to-a-boss triggers) are the retention engine as much
+  as the stats are; a new wall should feel like it unlocked a
+  conversation.
+
+Structural insurance Raven already has: the strongest in-run power —
+stolen weapons — is skill-priced by the melee-disarm loop (ADR-0008) and
+excluded from upgrades by boundary 3, so the meta-layer cannot inflate
+it no matter how deep the catalog gets.
+
+Both ranks and mods live in `assets/data/upgrades/upgrade_manifest.json`, loaded by an
 `UpgradeCatalog` class copying the `PatternLibrary` loader shape,
 including the `load_from_json` overload so tests build catalogs inline.
 Schema per entry: `id`, `class`, `kind` (`rank` | `mod`), `name`, `desc`,
@@ -296,9 +346,14 @@ ship alone):
 
 **Negative:**
 
-- Permanent upgrades erode difficulty over time; costs must escalate
-  steeply and stat ceilings stay modest — balancing this is ongoing
-  work, not a one-time task
+- Permanent upgrades erode difficulty over time, and in a danmaku game
+  offensive stats double-dip (shorter fights = less exposure); the
+  difficulty budget above bounds this by design, but holding the
+  1.2–1.25× ceiling against feature pressure is ongoing work, not a
+  one-time task
+- Tuning encounters against a maxed save means a fresh save runs
+  slightly under-tuned; early stages must be beatable — and fair — at
+  1.0×, which constrains stage-1 pattern density
 - The hub room adds real content scope a menu would not: an LDtk level,
   an NPC sprite, dialogue writing, an overlay UI — the price of the
   Hades feel
