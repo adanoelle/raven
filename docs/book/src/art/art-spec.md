@@ -145,6 +145,14 @@ many frames played fast. Each frame should be a distinct, readable pose.
 | Hurt        | 2      | 8        | No    | Brief flinch                   |
 | Death       | 4      | 8        | No    | Satisfying pop / collapse      |
 
+The *character* of these animations should come from the enemy's movement
+brain — a Chaser lunges, a Drifter floats, a Stalker sidesteps, a Coward
+flees glancing backwards. Read [Enemy Archetypes](../enemy-archetypes.md)
+before designing an enemy: it describes what each archetype actually does
+in play and the silhouette language each one asks for. Note also that the
+hurt pose doubles as the "knocked back" look, and every enemy needs its
+dormant idle plus a brief wake-up tell.
+
 ### Mid-tier Enemies / Mini-bosses (32x32 frame, 24x24 body)
 
 Same states as standard enemies. The extra pixel real estate allows 1–2 more
@@ -178,6 +186,34 @@ Boss attack telegraphs should use the 6–8px padding zone for wind-up frames
 | Explosion            | 16x16 | 5–6    | 12       | No    | Enemy death VFX               |
 | Muzzle flash         | 8x8   | 2      | 15       | No    | 1–2 frame burst at gun        |
 | Pickup shimmer       | 8x8   | 4      | 6        | Yes   | Draws the eye to items        |
+
+### Ability VFX
+
+Each player ability has a built-in animation timeline in the engine (the
+ability's active window — see [Game Feel](../game-feel.md)), so these
+effects need no timing logic: frames map onto the ability's own countdown.
+
+| Effect                  | Size    | Frames | Duration      | Notes                                                                 |
+| ----------------------- | ------- | ------ | ------------- | --------------------------------------------------------------------- |
+| Melee arc slash         | 48x48   | 3–4    | 0.08–0.12s    | Sweeping crescent along the swing cone; Brawler's arc is wide (90°), Sharpshooter's narrow (~46°) |
+| Ground slam shockwave   | 112x112 | 4–5    | 0.15s         | Expands to the 50px-radius edge; heavy, dusty — this is *mass*        |
+| Concussion ring         | 96x96   | 4      | 0.1s          | Expands to 45px radius, additive glow; light and airy — this is *air pressure*. Fully specced in [ADR-0012](../decisions/0012-concussion-shot-vfx.md) |
+| Charge glow             | 32x32   | 2–3    | loops while charging | Overlay on the player; brightens with charge level              |
+| Weapon decay explosion  | 32x32   | 5–6    | 0.5s          | The stolen-weapon explosion on the player — bigger and angrier than the enemy-death explosion |
+
+### Pickup sprites
+
+Pickups are the currency of the steal economy and need to read instantly at
+8x8:
+
+| Pickup            | Size | Notes                                                                       |
+| ----------------- | ---- | --------------------------------------------------------------------------- |
+| Weapon pickup     | 8x8  | Dropped by disarmed enemies; on the ground for only 5s, so it must pop      |
+| Stabilizer        | 8x8  | Rarer and more precious than a weapon — visually distinct, not a variant    |
+
+> **Status:** the engine currently references a `"pickups"` sprite sheet
+> that does not yet exist in the repo — pickups render as placeholder
+> shapes. These two sprites are a high-impact, low-effort delivery.
 
 ---
 

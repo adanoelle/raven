@@ -13,6 +13,8 @@
 - [Color Theory and Palette Design](art/color-theory.md)
 - [Tileset Palette Design](art/tileset-palette.md)
 - [Character Designs: Knight](art/characters/knight.md)
+- [Enemy Archetypes](enemy-archetypes.md)
+- [Game Feel — Feedback Anchors](game-feel.md)
 - [Pigment — Palette Tool](art/pigment.md)
 - [Art Learning Resources](art/art-resources.md)
 - [Audio Specification](audio-spec.md)
@@ -90,3 +92,4 @@
 - [ADR-0019: Sound Effects on Native SDL3 Audio](decisions/0019-sdl3-native-audio.md)
 - [ADR-0020: Bundled Dependency Fallback for Windows Builds](decisions/0020-bundled-dependency-fallback.md)
 - [ADR-0021: Optional Steamworks Integration](decisions/0021-optional-steamworks.md)
+- [ADR-0022: Ability Hits via Component Latch, with Feedback Anchors](decisions/0022-ability-latch-and-feedback-anchors.md)

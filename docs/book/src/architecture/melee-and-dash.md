@@ -111,9 +111,15 @@ giving a generous margin so the arc feels good to use.
    `MeleeAttack`, emplace `MeleeAttack` with current `AimDirection` snapshot.
 3. **Hit check** — on the first tick of an active `MeleeAttack`
    (`!hit_checked`):
-   - Iterate all enemies with `(Transform2D, CircleHitbox, Enemy, Health)`.
-   - For each enemy inside the cone: deal damage, apply knockback (away from
-     player, 250 px/s, 0.15 s).
+   - Iterate all enemies with `(Transform2D, CircleHitbox, Enemy, Health)`
+     and collect every enemy inside the cone into `AbilityHit` records
+     (entity + knockback direction).
+   - Apply damage and knockback via the shared `apply_ability_hits()` helper
+     (`src/ecs/systems/ability_hits.hpp`) — the same collect/apply pipeline
+     used by Ground Slam and Concussion Shot. Knockback runs at the melee's
+     knockback speed for the shared `ABILITY_KNOCKBACK_DURATION` (0.15 s).
+     See [ADR-0022](../decisions/0022-ability-latch-and-feedback-anchors.md)
+     for the design.
    - If the enemy has a `BulletEmitter`: look up pattern, call
      `weapon_from_emitter()`, spawn `WeaponPickup` at enemy position, remove
      `BulletEmitter`, emplace `Disarmed` tag.
@@ -125,8 +131,11 @@ its values are copied into the `MeleeAttack` at creation instead of using the
 struct defaults. This allows each class to have different melee characteristics.
 See [Player Classes](player-classes.md) for the per-class stat table.
 
-Hit enemies are collected into a `std::vector` before applying effects, avoiding
-issues with component modification during iteration.
+Hit enemies are collected into a `std::vector<AbilityHit>` before applying
+effects, avoiding component modification during view iteration (the same
+reasoning as deferred destruction, ADR-0007). The `hit_checked` latch and the
+collect/apply split are documented in
+[ADR-0022](../decisions/0022-ability-latch-and-feedback-anchors.md).
 
 ## Dash system
 

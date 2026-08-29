@@ -54,76 +54,72 @@ processed through NI MASSIVE and triggered via FMOD.
 
 ---
 
-## 2. Sound Effects Categories
+## 2. Sound Effects Catalog
 
-Exhaustive table of every sound event the game needs. Each entry includes
-recommended characteristics to guide creation regardless of which sonic
-direction is chosen.
+Every entry below corresponds to a mechanic that exists in the game today.
+The catalog is split into **shipping** effects (synthesized placeholders in
+the tree — replacing the file replaces the sound) and **needed** effects
+(the mechanic fires, but no sound plays yet). For *when* each sound triggers
+and what it must communicate, read the
+[Game Feel — Feedback Anchors](game-feel.md) page; this table is the
+delivery spec.
 
-### Player Actions
+### Shipping today (replace the placeholder)
 
-| Event               | Duration  | Pitch            | Style Notes                                                         |
-| ------------------- | --------- | ---------------- | ------------------------------------------------------------------- |
-| Shoot (standard)    | 50–100ms  | Mid-high         | Snappy, satisfying pop; vary pitch ±5% per shot to avoid repetition |
-| Shoot (charged)     | 100–150ms | Lower, fuller    | Weightier than standard; brief bass thump at start                  |
-| Melee swing         | 80–120ms  | Mid, sweeping    | Whoosh with slight metallic edge                                    |
-| Melee hit (connect) | 60–100ms  | Mid, punchy      | Crisp impact; distinct from bullet hit                              |
-| Dash / dodge        | 60–100ms  | Mid-high, rising | Quick swoosh; conveys speed                                         |
-| Jump / land         | 40–80ms   | Low thud         | Subtle; should not compete with combat sounds                       |
-| Hurt / take damage  | 100–150ms | Low-mid, harsh   | Unpleasant enough to feel bad, brief enough to not annoy            |
-| Death               | 200–400ms | Descending       | Dramatic; can layer with a brief reverb tail                        |
-| Pickup weapon       | 80–120ms  | Ascending        | Positive, rewarding click-chime                                     |
-| Pickup item         | 60–100ms  | High, bright     | Short cheerful tone                                                 |
-| Pickup health       | 80–120ms  | Ascending, warm  | Softer than weapon pickup; restorative feel                         |
-| Out of ammo (click) | 30–60ms   | Dry, flat        | Unsatisfying click to signal "empty"                                |
-| Reload              | 100–200ms | Mechanical       | Click-slide-click cadence                                           |
+These seven effects play in the game now. Deliver a WAV under the **exact
+file name** and it supersedes the placeholder with zero code changes.
 
-### Enemy Actions
+| File               | Event                                | Duration  | Pitch            | Style Notes                                                         |
+| ------------------ | ------------------------------------ | --------- | ---------------- | ------------------------------------------------------------------- |
+| `shoot.wav`        | Player fires (also charged release)  | 50–100ms  | Mid-high         | Snappy, satisfying pop; must not fatigue at ~5 shots/second         |
+| `melee.wav`        | Melee swing (on button press)        | 80–120ms  | Mid, sweeping    | Whoosh with slight metallic edge; the *swing*, not the connect      |
+| `dash.wav`         | Dash start                           | 60–100ms  | Mid-high, rising | Quick swoosh; conveys speed                                         |
+| `pickup.wav`       | Weapon **or** stabilizer collected   | 80–120ms  | Ascending        | Positive, rewarding click-chime (split into two sounds — see below) |
+| `player_hit.wav`   | Player takes bullet/contact damage   | 100–150ms | Low-mid, harsh   | Unpleasant enough to feel bad, brief enough to not annoy            |
+| `enemy_hit.wav`    | Enemy takes bullet damage            | 60–100ms  | Mid              | Satisfying feedback; plays constantly, so keep it light             |
+| `enemy_down.wav`   | Enemy dies                           | 100–200ms | Mid, popping     | Rewarding destruction sound                                         |
 
-| Event              | Duration   | Pitch                   | Style Notes                                           |
-| ------------------ | ---------- | ----------------------- | ----------------------------------------------------- |
-| Enemy shoot        | 50–100ms   | Distinct from player    | Must be immediately distinguishable from player shots |
-| Enemy melee attack | 80–120ms   | Lower than player melee | Heavier, more threatening                             |
-| Enemy hurt         | 60–100ms   | Mid                     | Satisfying feedback; brief                            |
-| Enemy death        | 100–200ms  | Mid, popping            | Rewarding destruction sound; can vary per enemy type  |
-| Boss entrance      | 500–1000ms | Low, ominous            | Rumble or roar; signals danger                        |
-| Boss phase change  | 300–600ms  | Rising intensity        | Escalation cue                                        |
-| Boss death         | 500–1500ms | Dramatic, multi-layered | Spectacular; should feel like an achievement          |
+### Needed — mechanic exists, currently silent
 
-### Environment
+These events happen in the game but have no sound. Each needs a one-line
+registration by a developer (see the
+[Audio Integration Guide](audio-integration.md#3-adding-a-new-sound-effect)),
+so agree on the file name at delivery time. Suggested names below.
 
-| Event                       | Duration  | Pitch             | Style Notes                                   |
-| --------------------------- | --------- | ----------------- | --------------------------------------------- |
-| Door open / room transition | 200–400ms | Mechanical        | Thud, grind, or whoosh depending on aesthetic |
-| Door locked (attempt)       | 100–200ms | Dull buzz/clunk   | Signals "not yet"                             |
-| Chest open                  | 150–300ms | Ascending, bright | Reward sound with anticipation                |
-| Destructible break          | 100–200ms | Mid, crunchy      | Satisfying crumble                            |
-| Hazard (spikes, fire)       | 100–200ms | Sharp, alarming   | Should read as "danger" instantly             |
-| Ambient loop (per area)     | Looping   | Low, atmospheric  | Subtle background texture; area-specific      |
+| Suggested file          | Event                                          | Duration   | Pitch                  | Style Notes                                                                 |
+| ----------------------- | ---------------------------------------------- | ---------- | ---------------------- | --------------------------------------------------------------------------- |
+| `disarm.wav`            | Melee knocks a weapon out of an enemy          | 80–150ms   | Metallic clang         | **The game's signature reward moment** — must cut through everything        |
+| `melee_connect.wav`     | Melee swing actually hits flesh                | 60–100ms   | Mid, punchy            | Crisp impact; distinct from bullet `enemy_hit`                              |
+| `ground_slam.wav`       | Brawler's AoE slam (50px radius)               | 150–300ms  | Low, booming           | Heaviest player sound; pairs with knockback shove                           |
+| `concussion_shot.wav`   | Sharpshooter's AoE blast (45px radius)         | 100–200ms  | Mid whump + airy ring  | More "air pressure" than explosion — it pushes, barely damages              |
+| `charge_ready.wav`      | Charge crosses full threshold (shot will pierce)| 60–100ms  | High, clear ping       | Tells the player "release now"; matches the HUD bar turning yellow          |
+| `decay_warning.wav`     | Stolen weapon's 10s timer near expiry          | 30–60ms    | Dry tick/beep          | Repeating countdown feel over the final ~3 seconds                          |
+| `decay_explosion.wav`   | Stolen weapon explodes on the player           | 200–400ms  | Low, booming           | The loop's punishment beat; biggest explosion in the game                   |
+| `stabilizer.wav`        | Stabilizer collected — weapon now permanent    | 100–200ms  | Ascending, resolving   | "Locked in" — warmer and more final than `pickup.wav`                       |
+| `player_death.wav`      | Player loses a life                            | 200–400ms  | Descending             | Dramatic; can layer a brief reverb tail                                     |
+| `wave_clear.wav`        | Last enemy of final wave dies, exits open      | 200–400ms  | Ascending, triumphant  | Brief fanfare; also marks the exit becoming usable                          |
+| `enemy_shoot.wav`       | Enemy bullet pattern fires                     | 50–100ms   | Distinct from player   | Must be immediately distinguishable from player shots; fires *very* often   |
+| `boss_entrance.wav`     | Boss wave spawns (stage 3, wave 3)             | 500–1000ms | Low, ominous           | Rumble or roar; signals danger                                              |
+| `boss_death.wav`        | Boss dies                                      | 500–1500ms | Dramatic, layered      | Spectacular; should feel like an achievement                                |
 
 ### UI
 
-| Event              | Duration         | Pitch                     | Style Notes                            |
-| ------------------ | ---------------- | ------------------------- | -------------------------------------- |
-| Menu navigate      | 20–40ms          | High, soft                | Subtle tick or blip                    |
-| Menu confirm       | 40–80ms          | Rising, bright            | Decisive positive tone                 |
-| Menu cancel / back | 40–80ms          | Descending, soft          | Gentle negative tone                   |
-| Pause              | 50–100ms         | Mid, neutral              | Brief snap or tone that says "stopped" |
-| Unpause            | 50–100ms         | Reverse of pause          | Continuation cue                       |
-| Game over sting    | 500–1500ms       | Descending, somber        | Musical phrase; not just an effect     |
-| Wave clear         | 200–400ms        | Ascending, triumphant     | Brief fanfare or chime                 |
-| Score tick-up      | 20–40ms per tick | Ascending pitch per digit | Rapid-fire ticks as score increments   |
+| Suggested file      | Event              | Duration   | Pitch              | Style Notes                            |
+| ------------------- | ------------------ | ---------- | ------------------ | -------------------------------------- |
+| `ui_navigate.wav`   | Menu navigate      | 20–40ms    | High, soft         | Subtle tick or blip                    |
+| `ui_confirm.wav`    | Menu confirm       | 40–80ms    | Rising, bright     | Decisive positive tone                 |
+| `ui_back.wav`       | Menu cancel / pause| 40–80ms    | Descending, soft   | Gentle negative tone                   |
 
-### Weapons (per weapon type — expand as arsenal grows)
+The game-over moment is covered by the `mus_game_over.ogg` sting in the
+[Music Track List](music-track-list.md), not an SFX.
 
-| Event             | Duration  | Pitch           | Style Notes                                 |
-| ----------------- | --------- | --------------- | ------------------------------------------- |
-| Pistol fire       | 50–80ms   | Mid, sharp      | Baseline weapon sound                       |
-| Shotgun fire      | 80–120ms  | Low, wide       | Bassy with spread feel                      |
-| Machine gun fire  | 30–60ms   | Mid, staccato   | Tight, rapid; must not fatigue ears on loop |
-| Laser fire        | 100–200ms | High, sustained | Beam-like with slight warble                |
-| Grenade launch    | 80–120ms  | Low thump       | Hollow, projectile-in-flight feel           |
-| Grenade explosion | 200–400ms | Low, booming    | Biggest explosion sound; bass-heavy         |
+### A note on weapon variety
+
+There is no fixed arsenal of pistols and shotguns. Stolen weapons are
+**enemy bullet patterns** (`spiral_3way`, `aimed_burst`, `nova_legendary`,
+and future patterns defined in JSON), all currently firing with `shoot.wav`.
+Per-pattern or per-tier fire sounds (a Legendary weapon *sounding* dangerous)
+are a desirable future refinement — raise it when the core set above is done.
 
 ---
 
@@ -172,64 +168,63 @@ for the initial implementation but should be considered if the game grows (see
 
 ## 4. Technical Requirements
 
-| Property        | Value           | Rationale                                                           |
-| --------------- | --------------- | ------------------------------------------------------------------- |
-| Sample rate     | 44100 Hz        | Matches `Mix_OpenAudio(44100, ...)` in `game.cpp:31`                |
-| Format (SFX)    | WAV, 16-bit PCM | Zero decode latency; SDL_mixer loads as `Mix_Chunk`                 |
-| Format (music)  | OGG Vorbis      | Streaming playback; small file size; SDL_mixer `Mix_Music`          |
-| Channels        | Stereo (2ch)    | Matches `Mix_OpenAudio(..., 2, ...)` init                           |
-| Audio buffer    | 2048 samples    | Matches `Mix_OpenAudio(..., 2048)` init; ~46ms latency              |
-| Mixing channels | 16 (default)    | SDL_mixer default; increase with `Mix_AllocateChannels()` if needed |
-| SFX loudness    | -16 to -12 LUFS | Consistent perceived volume across all effects                      |
-| Music loudness  | -18 to -14 LUFS | Sits behind SFX in the mix                                          |
-| Volume config   | `config.json`   | `audio.music_volume` (0–100), `audio.sfx_volume` (0–100)            |
-| Peak ceiling    | -1 dBFS         | No clipping; leave headroom for mixing                              |
+Sound effects play on **native SDL3 audio** — no mixer library
+([ADR-0019](decisions/0019-sdl3-native-audio.md)). The engine
+(`src/audio/audio_engine.hpp`) binds one SDL audio stream per playing
+instance and lets SDL mix them.
 
-### Volume Mapping
+| Property         | Value            | Rationale                                                              |
+| ---------------- | ---------------- | ---------------------------------------------------------------------- |
+| Sample rate      | 44100 Hz         | SDL converts on load, but delivering 44100 avoids resampling artifacts |
+| Format (SFX)     | WAV, 16-bit PCM  | Zero decode latency; loaded whole at startup                           |
+| Format (music)   | OGG Vorbis       | For the planned streaming path — see the [integration guide](audio-integration.md#5-music-path-forward) |
+| Channels         | Stereo (2ch)     | Mono is accepted and converted, but deliver stereo for consistency     |
+| Simultaneous voices | 32 (`MAX_VOICES`) | Further plays in the same moment are dropped, not queued            |
+| Same-tick dedupe | Yes              | N identical effects in one tick play **once** (prevents amplitude stacking) |
+| SFX loudness     | -16 to -12 LUFS  | Consistent perceived volume across all effects                         |
+| Music loudness   | -18 to -14 LUFS  | Sits behind SFX in the mix                                             |
+| Peak ceiling     | -1 dBFS          | No clipping; leave headroom for mixing                                 |
 
-The `config.json` volume values (0–100) map to SDL_mixer's 0–128 range:
+### Volume
 
-```
-sdl_volume = static_cast<int>(config_volume / 100.0 * MIX_MAX_VOLUME);
-```
+User volume settings live in `settings.json` under the platform preference
+path ([ADR-0017](decisions/0017-settings-pref-path.md)) — **not** in
+`config.json`, which is read-only game data. `sfx_volume` and `music_volume`
+are 0–100 sliders in the options menu; the engine maps them through a
+quadratic gain curve (`volume_to_gain()` in `src/core/game.cpp`) so the
+slider feels perceptually even. `music_volume` is stored and displayed but
+drives nothing until music playback lands.
 
-`Mix_VolumeMusic(sdl_volume)` for music, `Mix_VolumeChunk(chunk, sdl_volume)`
-for individual SFX, or `Mix_Volume(channel, sdl_volume)` for a specific channel.
+Practical consequence for sound design: because the same master gain applies
+to every effect, **relative loudness between effects must be baked into the
+files** — hit the LUFS targets rather than relying on per-sound mixing.
 
 ---
 
 ## 5. Naming Conventions
 
-All audio files use **lowercase with underscores**. A category prefix identifies
-the type at a glance.
+All audio files use **lowercase with underscores**. Sound effects and music
+live in separate directories, so no `sfx_` prefix is used on effect files —
+the directory conveys the type.
 
 ### SFX
 
-Pattern: `sfx_<category>_<action>[_<variant>].wav`
+Effect file names are keys in the game's sound manifest
+(`assets/data/config.json`, `"sounds"` map). Two cases:
 
-```
-sfx_player_shoot.wav
-sfx_player_shoot_charged.wav
-sfx_player_dash.wav
-sfx_player_hurt.wav
-sfx_player_death.wav
-sfx_enemy_shoot.wav
-sfx_enemy_death_01.wav
-sfx_enemy_death_02.wav
-sfx_boss_entrance.wav
-sfx_boss_phase_change.wav
-sfx_ui_navigate.wav
-sfx_ui_confirm.wav
-sfx_env_door_open.wav
-sfx_env_chest_open.wav
-sfx_weapon_shotgun_fire.wav
-sfx_weapon_laser_fire.wav
-sfx_pickup_health.wav
-sfx_pickup_weapon.wav
-```
+- **Replacing a shipping placeholder** — deliver under the *exact* manifest
+  name (`shoot.wav`, `melee.wav`, `dash.wav`, `pickup.wav`,
+  `player_hit.wav`, `enemy_hit.wav`, `enemy_down.wav`). The file drops into
+  `assets/audio/sfx/` and supersedes the placeholder with zero code changes.
+- **A new effect** — the name must also be registered in the manifest and
+  the `Sfx` enum (a one-line change each — see the
+  [Audio Integration Guide](audio-integration.md#3-adding-a-new-sound-effect)).
+  Use the suggested names from the catalog in section 2, or agree on a name
+  with us before delivery.
 
-Numbered variants (`_01`, `_02`) are for randomized playback to reduce
-repetition.
+Numbered variants (`_01`, `_02`) for randomized playback are a planned
+engine feature — deliver variants with numbered suffixes and we will wire
+the random selection.
 
 ### Music
 
@@ -272,21 +267,20 @@ assets.
 
 ## 7. Quick Reference Card
 
-| Property                 | Value                   |
-| ------------------------ | ----------------------- |
-| Sample rate              | 44100 Hz                |
-| SFX format               | WAV, 16-bit PCM, stereo |
-| Music format             | OGG Vorbis, stereo      |
-| SFX prefix               | `sfx_`                  |
-| Music prefix             | `mus_`                  |
-| SFX directory            | `assets/audio/sfx/`     |
-| Music directory          | `assets/audio/music/`   |
-| Volume range (config)    | 0–100                   |
-| Volume range (SDL_mixer) | 0–128 (MIX_MAX_VOLUME)  |
-| Loudness target (SFX)    | -16 to -12 LUFS         |
-| Loudness target (music)  | -18 to -14 LUFS         |
-| Peak ceiling             | -1 dBFS                 |
-| Mixing channels          | 16 (default)            |
+| Property                 | Value                                    |
+| ------------------------ | ---------------------------------------- |
+| Sample rate              | 44100 Hz                                 |
+| SFX format               | WAV, 16-bit PCM, stereo                  |
+| Music format             | OGG Vorbis, stereo                       |
+| SFX naming               | Bare manifest key (`shoot.wav`)          |
+| Music prefix             | `mus_`                                   |
+| SFX directory            | `assets/audio/sfx/`                      |
+| Music directory          | `assets/audio/music/`                    |
+| Volume settings          | `settings.json` (pref path), 0–100       |
+| Loudness target (SFX)    | -16 to -12 LUFS                          |
+| Loudness target (music)  | -18 to -14 LUFS                          |
+| Peak ceiling             | -1 dBFS                                  |
+| Simultaneous voices      | 32                                       |
 
 ---
 
@@ -297,12 +291,12 @@ Run through this list before every audio asset handoff:
 - [ ] Sample rate is 44100 Hz
 - [ ] SFX are WAV, 16-bit PCM, stereo
 - [ ] Music tracks are OGG Vorbis, stereo
-- [ ] Filename follows naming convention (`sfx_` or `mus_` prefix, lowercase,
-      underscores)
+- [ ] SFX filename matches the sound manifest exactly (replacement), or the
+      name was agreed with us (new effect); music uses the `mus_` prefix
 - [ ] File is in the correct directory (`assets/audio/sfx/` or
       `assets/audio/music/`)
-- [ ] SFX duration is appropriate for the event (see category tables above)
-- [ ] Music loops seamlessly (test with `Mix_PlayMusic(-1)`)
+- [ ] SFX duration is appropriate for the event (see catalog above)
+- [ ] Music loops seamlessly across the end-to-start joint
 - [ ] Peak level does not exceed -1 dBFS
 - [ ] Perceived loudness is within the target LUFS range
 - [ ] No audible clicks, pops, or DC offset at loop points or file boundaries

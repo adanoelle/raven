@@ -220,14 +220,17 @@ selected `ClassId::Id` to `GameScene`'s constructor via swap.
 2. **Activate** — on `bomb_pressed` with cooldown elapsed, no active
    `GroundSlam`, and no active `Dash`, emplace `GroundSlam` and reset cooldown.
 3. **Hit check** — on the first tick of an active `GroundSlam` (`!hit_checked`):
-   - Iterate all enemies with `(Transform2D, CircleHitbox, Enemy, Health)`.
-   - For each enemy within `radius` (circle-circle overlap): deal damage, apply
-     knockback radially away from the player (350 px/s, 0.15 s).
+   - `collect_enemies_in_circle()` gathers every enemy within `radius` into
+     `AbilityHit` records (entity + radial knockback direction).
+   - `apply_ability_hits()` deals damage and applies knockback (350 px/s for
+     the shared `ABILITY_KNOCKBACK_DURATION`, 0.15 s).
    - Set `hit_checked = true`.
 4. **Expire** — tick `remaining`, remove `GroundSlam` when expired.
 
-Enemies are collected into a `std::vector<HitInfo>` before applying effects,
-matching the pattern used by `update_melee`.
+Both helpers live in `src/ecs/systems/ability_hits.hpp` and are shared with
+the concussion shot and melee systems — one place owns the damage
+application, knockback direction math, and no-stacking policy
+([ADR-0022](../decisions/0022-ability-latch-and-feedback-anchors.md)).
 
 ### Charged shot system
 
@@ -258,9 +261,9 @@ matching the pattern used by `update_melee`.
    `ConcussionShot`, and no active `Dash`, emplace `ConcussionShot` and reset
    cooldown.
 3. **Hit check** — on the first tick (`!hit_checked`):
-   - Iterate all enemies with `(Transform2D, CircleHitbox, Enemy, Health)`.
-   - For each enemy within `radius` (circle-circle overlap): deal damage, apply
-     knockback radially (400 px/s, 0.15 s).
+   - `collect_enemies_in_circle()` + `apply_ability_hits()` from the shared
+     `ability_hits.hpp` helper — identical resolution to Ground Slam, with
+     the concussion's own stats (1 damage, 400 px/s knockback).
    - Set `hit_checked = true`.
 4. **Expire** — tick `remaining`, remove `ConcussionShot` when expired.
 

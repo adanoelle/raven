@@ -32,6 +32,10 @@ Depending on your discipline, this is the short reading path:
 4. [Color Theory](art/color-theory.md) and
    [Tileset Palette Design](art/tileset-palette.md) — the palette system
    your work needs to live inside
+5. [Game Feel](game-feel.md) and [Enemy Archetypes](enemy-archetypes.md) —
+   what the mechanics ask of the art: which effects and animations exist to
+   serve a gameplay moment, and the personality each enemy's movement
+   demands
 
 **Musicians / sound designers**
 
@@ -40,13 +44,17 @@ Depending on your discipline, this is the short reading path:
    tempo and key targets, loop rules. **This is the contract for music.**
 3. [Audio Specification](audio-spec.md) — sound-effect catalog, formats,
    loudness targets, naming
+4. [Game Feel](game-feel.md) — when each sound triggers in play and what it
+   must communicate
 
 ## File Names Are the Contract
 
 The single most important convention: **deliver files under the exact names
-the specs define** (`mus_area_01.ogg`, `sfx_player_shoot.wav`,
-`player.png`, …). The game finds assets by name, so a correctly named file
-drops into place with zero code changes — and a renamed one doesn't.
+the specs define** (`mus_area_01.ogg`, `shoot.wav`, `player.png`, …). The
+game finds assets by name, so a correctly named file drops into place with
+zero code changes — and a renamed one doesn't. (Brand-new sounds and sprites
+that don't replace an existing placeholder also need a one-line registration
+on our side — agree on the name with us and deliver; the wiring is our job.)
 
 Everything currently in the game (synthesized sound effects, placeholder
 sprites) is designed to be *replaced* this way. Your work supersedes a

@@ -32,6 +32,7 @@ struct GameState {
     int total_waves = 0;       // Total number of waves in the current stage.
     bool room_cleared = false; // True when all waves are exhausted.
     bool game_over = false;    // True when the player has lost all lives.
+    ClassId::Id player_class = ClassId::Id::Brawler; // Class used this session.
 };
 ```
 
@@ -182,7 +183,7 @@ empty string if no transition should occur.
 
 When the player clears the final stage and steps on an exit, `GameScene::update`
 increments `current_stage_` and checks for a next stage. If none exists, it
-swaps to `TitleScene` (victory).
+swaps to `VictoryScene`, which shows the final score and the high-score table.
 
 ## Score and game over
 
@@ -195,7 +196,8 @@ zero. It sets `GameState::game_over = true`. On the next tick,
 `GameScene::update` detects the flag and swaps to `GameOverScene`.
 
 `GameOverScene` captures the final score from `GameState` in `on_enter`, then
-renders a dark red background, a title placeholder, score digits, and a blinking
+renders a dark red background, bitmap-font title and score text
+([ADR-0018](../decisions/0018-bitmap-font-text.md)), and a blinking
 restart prompt. Pressing confirm swaps to `TitleScene`. `on_exit` clears the
 registry and erases `GameState` for a fresh start.
 
@@ -209,7 +211,7 @@ SDL primitives at the 480x270 virtual resolution:
 | Health bar   | Top-left (4, 4)     | 40x4 px, dark gray background, red fill (white when invulnerable)           |
 | Lives pips   | Right of health bar | 4x4 px white squares, one per remaining life                                |
 | Weapon decay | Below health bar    | 30x3 px, yellow fill proportional to remaining time                         |
-| Score        | Top-right           | 5x7 px digit rectangles, right-aligned, brightness varies by digit value    |
+| Score        | Top-right           | Bitmap-font text, right-aligned ([ADR-0018](../decisions/0018-bitmap-font-text.md)) |
 | Wave dots    | Top-center          | 3x3 px dots — bright gray (completed), yellow (current), hollow (remaining) |
 
 The decay timer only renders when the player has a `WeaponDecay` component
