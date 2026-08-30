@@ -11,7 +11,9 @@ Nothing on the art or music side depends on the development environment,
 the command line, or git. This book is published as a website precisely so
 all of it is readable anywhere. If you *like* working in the repo,
 everything works that way too — `just run` builds and launches the game —
-but drawing and composing never require it.
+but drawing and composing never require it. The small tools that do exist
+(placeholder generators, the palette tool, the level editor) are catalogued
+in [Tools and Generators](tools.md).
 
 ## Reading Paths
 

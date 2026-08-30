@@ -18,6 +18,7 @@
 - [Enemy Archetypes](enemy-archetypes.md)
 - [Game Feel — Feedback Anchors](game-feel.md)
 - [Pigment — Palette Tool](art/pigment.md)
+- [Tools and Generators](tools.md)
 - [Art Learning Resources](art/art-resources.md)
 - [Audio Specification](audio-spec.md)
 - [Music Track List](music-track-list.md)
