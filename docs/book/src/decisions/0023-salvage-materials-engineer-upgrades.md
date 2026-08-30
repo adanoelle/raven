@@ -186,10 +186,15 @@ danmaku-specific caution:
   class lands at roughly **1.2–1.25× baseline** offense. Costs escalate
   steeply per rank (later ranks cost multiples of earlier ones), so the
   last few percent are long-haul goals, not week-one purchases.
-- **Tuning assumption:** encounters are balanced assuming a maxed save
-  (~1.25×). A fresh save therefore runs slightly under-tuned — the
-  Hades trade: veterans never find the game hollowed out; newcomers
-  earn their way to par while they learn the patterns.
+- **Tuning baseline: a fresh save (1.0×), not a maxed one.** Hades
+  tunes for the maxed Mirror and lets newcomers run under par; Raven
+  inverts this. This is the studio's first game — reviewers, festival
+  demo players, and refund-window buyers all play fresh saves, and
+  they must see the intended difficulty. The cost is that a maxed
+  veteran runs ~1.2–1.25× overpowered, which the rank ceiling above is
+  sized to keep modest. The double-dip caution cuts the same way:
+  holding the ceiling low is exactly what makes tuning at the floor
+  safe.
 - **The flagship rank is attempts, not power.** The reinforced-frame
   (extra life) track is the Death Defiance analog: it buys learning
   time per run with near-zero per-encounter erosion, and should be the
@@ -260,8 +265,10 @@ upgrades, assert values.
   `tests/CMakeLists.txt` so tests reach the math without a scene)
 - `src/scenes/workshop_scene.{hpp,cpp}` — the hub room: movement-slice
   pipeline, engineer proximity prompt, dialogue line via `BitmapFont`
+  (hub phase only; see release phasing)
 - `src/scenes/upgrade_overlay_scene.{hpp,cpp}` — catalog browse/buy
-  overlay, `PauseScene` idiom
+  overlay, `PauseScene` idiom (v1: pushed from run-end scenes and the
+  title menu; hub phase: pushed from the workshop)
 
 **Changed core:**
 
@@ -271,7 +278,8 @@ upgrades, assert values.
   round-trip, defensive load (corrupt file → defaults, never a crash)
 - `title_scene.cpp` — `WORKSHOP` menu entry (visit without running)
 - `game_over_scene.cpp` / `victory_scene.cpp` — banking + recovered
-  line + confirm routes to `WorkshopScene` instead of the title
+  line; confirm opens the upgrade overlay in v1, and routes to
+  `WorkshopScene` once the hub ships
 
 **New data/assets** (no CMake changes needed):
 
@@ -292,17 +300,14 @@ upgrades, assert values.
 - Magnet drift (pickups within a radius drift toward the player)
 - Engineer idle animation, portrait, workshop ambience track
 
-## Sequencing and the hit-mechanics branch
+## Sequencing and release phasing
 
-A hit-mechanics branch is in flight and owns the death/damage flow this
-feature hooks (`damage_system.cpp`, likely `collision_system.cpp` /
-`melee_system.cpp` / `components.hpp`). Implementation therefore waits
-for that merge; the only hard coupling is "where an enemy death is
-detected", so the plan survives any reshaping of hit resolution short of
-moving death handling out of the damage system.
+The hit-mechanics work this feature hooks has since merged to main (the
+shared ability-hit helper and ADR-0022's latch/anchor model), so nothing
+blocks implementation. The only hard coupling is "where an enemy death
+is detected" — `handle_enemy_death` in `damage_system.cpp`.
 
-Implementation order once unblocked (each step builds, tests, and could
-ship alone):
+Implementation order (each step builds, tests, and could ship alone):
 
 1. **Drops + wallet + HUD** — `SalvageValue`, `SalvagePickup`,
    death-roll, collection pass, counter. Tests: seeded-RNG drop rolls,
@@ -322,6 +327,45 @@ ship alone):
 5. **Cores + mods** — `CorePickup`, boss drop, mod entries, equip
    toggle. Tests: mod application (piercing/scatter fields), equip
    exclusivity.
+
+### Release phasing
+
+The five steps split into a low-variance systems layer and a
+high-variance content bet, and they ship on different schedules:
+
+- **v1 (launch): steps 1, 2, 3, and 5.** Drops, wallet, banking,
+  catalog, ranks, and mods, with the catalog presented as an **upgrade
+  overlay** (the `PauseScene` idiom) reachable from the game-over and
+  victory scenes and from a title-menu entry — no walkable room
+  required. This ships the retention arc (every kill pays; the first
+  two hours visibly progress) at minimal art cost: two more 8×8
+  sprites on the already-planned `pickups` sheet and a HUD counter.
+- **Step 4 (workshop hub + engineer) is conditional, not assumed.**
+  The hub's value over a menu is entirely the character, and the
+  character only pays off if funded to a bar above the rest of the
+  game's current content: a settled identity, character-design
+  iterations, portrait-quality art, and a dialogue pool deep enough
+  (60+ lines) that the condition system doesn't repeat by run five.
+  If that budget is committed, she ships in v1 as the game's face —
+  and appears in marketing, not just in-game. If not, she arrives as
+  a launch-window content update, which is itself a second Steam
+  visibility beat. The one outcome to avoid is a half-funded engineer
+  in an empty room: it reads as diluted craft, which is what first
+  games are graded on.
+- **Gates for the hub, whichever schedule it lands on:** answer the
+  engineer-identity question (open question 2) before any art or
+  writing starts; prototype the room with placeholder art and a ~20
+  line pool to playtest the ritual before committing character art;
+  write dialogue in tiers (a must-ship core, milestone lines added
+  later — the JSON design means new lines never touch code); and
+  enforce the door rule from the first prototype: death to
+  back-in-a-run in under ~5 seconds, dialogue always skippable.
+- **The feel gap outranks all of this.** The disarm — the game's
+  signature reward — currently has no sound, the music set is empty,
+  and the spec'd ability VFX are unshipped. Meta-progression retains
+  players; feel is what reviews grade. Steps 1–3+5 must not compete
+  with that work for art/audio budget, and the hub explicitly queues
+  behind it.
 
 ## Consequences
 
@@ -351,9 +395,9 @@ ship alone):
   difficulty budget above bounds this by design, but holding the
   1.2–1.25× ceiling against feature pressure is ongoing work, not a
   one-time task
-- Tuning encounters against a maxed save means a fresh save runs
-  slightly under-tuned; early stages must be beatable — and fair — at
-  1.0×, which constrains stage-1 pattern density
+- Tuning at the fresh-save baseline means a maxed veteran runs
+  ~1.2–1.25× overpowered; the rank ceiling is the only thing keeping
+  that modest, so it is doubly load-bearing against feature pressure
 - The hub room adds real content scope a menu would not: an LDtk level,
   an NPC sprite, dialogue writing, an overlay UI — the price of the
   Hades feel
