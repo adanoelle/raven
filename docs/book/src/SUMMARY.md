@@ -10,6 +10,8 @@
 - [Getting Work Into the Game](getting-work-into-the-game.md)
 - [Art Specification](art/art-spec.md)
 - [Aseprite Setup Guide](art/art-aseprite-guide.md)
+- [Character Animation Process](art/character-animation-process.md)
+- [Art Files and Organization](art/art-organization.md)
 - [Color Theory and Palette Design](art/color-theory.md)
 - [Tileset Palette Design](art/tileset-palette.md)
 - [Character Designs: Knight](art/characters/knight.md)

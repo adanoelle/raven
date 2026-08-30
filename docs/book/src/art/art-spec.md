@@ -338,9 +338,10 @@ display size:
 - **PNG**, 32-bit RGBA, non-interlaced, no embedded ICC profile.
 - Transparent background (alpha 0) — not a color key.
 - Filenames: lowercase with underscores (`player.png`, `boss_raven.png`).
-- Files go in `assets/sprites/`.
+- Exported PNGs go in `assets/sprites/`.
 - Aseprite source files (`.ase` / `.aseprite`) with animation tags live
-  alongside exported PNGs.
+  in the `art/` source tree — see
+  [Art Files and Organization](art-organization.md).
 - **No padding** between frames in exported sheets.
 - Note frame dimensions and row/column counts whenever a sheet changes.
 

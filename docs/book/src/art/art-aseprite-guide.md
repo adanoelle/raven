@@ -53,8 +53,8 @@ or boss at that size.
    grid for precise pixel placement. Alternatively, set to **8x8** subdivisions
    for quick spatial reference.
 
-5. **Save as template.** File > Save As: `templates/medium_32x32.aseprite`. Keep
-   this file clean — no art, just guides. Duplicate it to start each new
+5. **Save as template.** File > Save As: `art/templates/medium_32x32.aseprite`.
+   Keep this file clean — no art, just guides. Duplicate it to start each new
    character.
 
 ### 2.2 Guide placement for each tier
@@ -384,7 +384,7 @@ persistent silhouette guide underneath your working layers.
 1. In the medium template, draw a clean front-facing chibi silhouette in
    solid black on the proportion guides. Include the head, torso, and legs
    at the correct 2-head ratio. No detail — just the mass.
-2. Save as `templates/chibi_mannequin_32x32.aseprite`.
+2. Save as `art/templates/chibi_mannequin_32x32.aseprite`.
 
 **Using the mannequin:**
 
@@ -415,10 +415,10 @@ individual body-part silhouettes as custom brushes. From then on, use the
 brushes for fast blocking on new characters and frames, and bring the
 mannequin back only when you need to double-check proportions.
 
-**Suggested file organization:**
+**File organization:**
 
 ```
-templates/
+art/templates/
 ├── medium_32x32.aseprite            Blank template with guides
 ├── chibi_mannequin_32x32.aseprite   Full silhouette mannequin
 ├── small_24x24.aseprite             Blank template with guides
@@ -426,6 +426,9 @@ templates/
 ├── large_48x48.aseprite             Blank template with guides
 └── boss_mannequin_48x48.aseprite    Boss silhouette mannequin
 ```
+
+The full source-tree layout (per-character folders, sketches, palettes)
+is described in [Art Files and Organization](art-organization.md).
 
 Custom brushes are saved in Aseprite's user configuration directory
 (`user.aseprite-brushes`) and persist across all files automatically.
@@ -592,8 +595,9 @@ playtesting, and tune until it feels fair.
 
 ### 7.1 Starting a new character
 
-1. **Duplicate** the tier template (`templates/medium_32x32.aseprite`).
-2. **Rename** to the character name (`player_brawler.aseprite`).
+1. **Duplicate** the tier template (`art/templates/medium_32x32.aseprite`)
+   into the character's folder (`art/characters/<name>/`).
+2. **Rename** to the character name (`knight.aseprite`).
 3. **Draw the idle pose** in frame 1 within the body guides. Get the silhouette
    right first — fill with a single dark color and check readability at 1x zoom
    before adding detail.
@@ -630,7 +634,7 @@ tags. Each tag becomes one row, frames within the tag become columns.
 **Batch export command** (for scripting or a `justfile` recipe):
 
 ```bash
-aseprite -b player_brawler.aseprite \
+aseprite -b art/characters/knight/knight.aseprite \
   --sheet assets/sprites/player.png \
   --sheet-type rows \
   --split-tags

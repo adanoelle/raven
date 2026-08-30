@@ -25,10 +25,13 @@ Depending on the work at hand, the short path through the book:
    format, and animation timing
 3. [Aseprite Setup Guide](art/art-aseprite-guide.md) — the recommended
    workflow, template setup, and export settings
-4. [Color Theory](art/color-theory.md) and
+4. [Character Animation Process](art/character-animation-process.md) and
+   [Art Files and Organization](art/art-organization.md) — the order of
+   operations for animating a character, and where every file lives
+5. [Color Theory](art/color-theory.md) and
    [Tileset Palette Design](art/tileset-palette.md) — the palette system
    the work lives inside
-5. [Game Feel](game-feel.md) and [Enemy Archetypes](enemy-archetypes.md) —
+6. [Game Feel](game-feel.md) and [Enemy Archetypes](enemy-archetypes.md) —
    what the mechanics ask of the art: which effects and animations exist to
    serve a gameplay moment, and the personality each enemy's movement
    demands
