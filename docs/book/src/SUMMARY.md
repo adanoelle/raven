@@ -7,7 +7,7 @@
 
 # For Artists & Musicians
 
-- [Handoff Guide](artist-handoff.md)
+- [Getting Work Into the Game](getting-work-into-the-game.md)
 - [Art Specification](art/art-spec.md)
 - [Aseprite Setup Guide](art/art-aseprite-guide.md)
 - [Color Theory and Palette Design](art/color-theory.md)

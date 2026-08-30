@@ -19,7 +19,7 @@ readers need different doors:
 
 | You are…                        | Start here                                                                 |
 | ------------------------------- | -------------------------------------------------------------------------- |
-| An **artist** or **musician**   | [Creative Vision](creative-vision.md), then the [Handoff Guide](artist-handoff.md) — no coding or build tools required |
+| An **artist** or **musician**   | [Creative Vision](creative-vision.md), then [Getting Work Into the Game](getting-work-into-the-game.md) — no coding or build tools required |
 | A **developer**                 | [Development Environment](guide/environment.md), then the [Architecture Overview](architecture/overview.md) |
 | A **playtester**                | The [Playtest Playbook](playtest.md)                                        |
 | Curious how decisions were made | The [Development Log](devlog/2026-02-08-project-setup.md) and the [decision records](decisions/0001-cpp20-entt-sdl2.md) |
