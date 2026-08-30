@@ -195,8 +195,11 @@ Each of these has burned someone before; they're cheap to avoid:
 
 ---
 
-## Where the Files Go
+## Where to Go Next
 
-Sources, sketches, exports, and the notes that accumulate around them
-all have a home — the directory layout and naming conventions are on
-their own page: [Art Files and Organization](art-organization.md).
+- The concrete route through the steps above — every file path, tool,
+  and command in order, with the knight as the example — is the
+  [First Character Walkthrough](first-character-walkthrough.md).
+- Sources, sketches, exports, and the notes that accumulate around them
+  all have a home — the directory layout and naming conventions are in
+  [Art Files and Organization](art-organization.md).
