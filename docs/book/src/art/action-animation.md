@@ -83,6 +83,52 @@ comes from context, not from a different animation:
    drawing a combined frame. *(Planned: the engine has the pattern for
    short-lived visual entities; the spawner is a small addition.)*
 
+## What About a Full 360° Spin?
+
+A spin attack was considered for the knight's swipe, and the tradeoffs
+are worth recording because they cut in opposite directions.
+
+**What it buys — radial symmetry kills every direction problem at
+once.** The arc VFX becomes an expanding *ring* (the one VFX shape with
+zero rotation issues — the concussion ring is the precedent), the
+`flip_x` sword-hand question disappears, and the dash-spin looks
+identical whatever direction the dash travels. A spinning character
+trailing afterimages is the best-case visual interaction with the dash
+of any melee shape.
+
+**The hidden art cost — this is a side-facing game.** Every sprite is
+drawn facing right and mirrored; a true spin needs back and front views
+that exist nowhere else, and an honest turnaround for one animation
+commits every future character to the same debt. The escape hatch is
+the classic tiny-sprite trick (Zelda's spin attack at similar scale):
+**wind-up in side view** (sword pulled back, big anticipation) → **1–2
+frames of spin blur** — a smear disc with a sword ring, more VFX than
+anatomy — → **recover in side view**. Personality lives in the wind-up
+and recovery; the middle is pure motion. It also happens to obey the
+craft rules above: one frame of maximum distortion, and the crisp
+leading edge *is* the ring.
+
+**The real cost is the economy.** Melee is the risk lever of the steal
+loop ([ADR-0008](../decisions/0008-melee-disarm-over-death-drops.md)):
+closing distance *and aiming the cone* is the price of a weapon. A 360
+removes the aiming half of that price — and the visual must match the
+hitbox (a 360-looking swing with a 90° hitbox is exactly the "it felt
+unfair" bug), so it can't be faked visually. The Brawler's Ground Slam
+also already owns "the radial move," and a radial basic melee would
+spend some of that contrast.
+
+**Where it landed: the spin is the dash-slash.** The standing melee
+keeps its aimed cone — the economy stays priced — and a melee started
+*mid-dash* widens to a full circle. The safer 360 hitbox is gated
+behind the dash's own commitment and cooldown, and the dash-slash gets
+a real mechanical identity, not just a visual one.
+
+> **Status:** the mechanic is prototyped — `melee_system.cpp` widens
+> `half_angle` to a full circle when a `Dash` is active, so the feel
+> can be judged with placeholder art before any smear frame is drawn.
+> If it survives playtesting, the dash-attack variant row is cheap:
+> its middle frames are smear-disc, not anatomy.
+
 ## Open Questions
 
 - **Arc direction vs. the no-rotation rule.** Melee aims anywhere, but
@@ -91,7 +137,8 @@ comes from context, not from a different animation:
   left/right via `flip_x` (the knight's swipe is horizontal anyway), and
   only add a hand-drawn up/down variant — or allow rotation for soft
   additive VFX only — if flip-only bothers anyone in playtests.
-- **A dedicated dash-attack row?** Some games have one; we deliberately
-  don't draw it up front. Ship the shared attack row, judge the
-  dash-slash in-engine, and only add a variant row if it feels wrong in
-  play. The bet: velocity + ghosts + arc make it feel great without one.
+- **Does the dash-spin keep its hitbox advantage?** The prototype makes
+  the dash-slash strictly better at disarming. If playtesting shows it
+  crowding out the aimed swipe, the levers are dash cooldown, spin
+  damage, or reduced spin range — the shape can stay even if the
+  numbers move.
