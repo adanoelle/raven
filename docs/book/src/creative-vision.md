@@ -119,7 +119,7 @@ composer, not before one. What is already fixed:
 
 ## Where to Go Next
 
-- **Artists** — the [Art Specification](art/art-spec.md) is the contract;
+- **Artists** — the [Art Specification](art/art-spec.md) is the reference;
   the [Aseprite guide](art/art-aseprite-guide.md) is the workflow.
 - **Musicians** — the [Music Track List](music-track-list.md) and
   [Audio Specification](audio-spec.md).

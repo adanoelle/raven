@@ -62,12 +62,12 @@ the tree — replacing the file replaces the sound) and **needed** effects
 (the mechanic fires, but no sound plays yet). For *when* each sound triggers
 and what it must communicate, read the
 [Game Feel — Feedback Anchors](game-feel.md) page; this table is the
-delivery spec.
+spec sheet.
 
 ### Shipping today (replace the placeholder)
 
-These seven effects play in the game now. Deliver a WAV under the **exact
-file name** and it supersedes the placeholder with zero code changes.
+These seven effects play in the game now. A WAV saved under the **exact
+file name** supersedes the placeholder with zero code changes.
 
 | File               | Event                                | Duration  | Pitch            | Style Notes                                                         |
 | ------------------ | ------------------------------------ | --------- | ---------------- | ------------------------------------------------------------------- |
@@ -84,7 +84,7 @@ file name** and it supersedes the placeholder with zero code changes.
 These events happen in the game but have no sound. Each needs a one-line
 registration by a developer (see the
 [Audio Integration Guide](audio-integration.md#3-adding-a-new-sound-effect)),
-so agree on the file name at delivery time. Suggested names below.
+so agree on the file name up front. Suggested names below.
 
 | Suggested file          | Event                                          | Duration   | Pitch                  | Style Notes                                                                 |
 | ----------------------- | ---------------------------------------------- | ---------- | ---------------------- | --------------------------------------------------------------------------- |
@@ -132,7 +132,7 @@ seamlessly and feel appropriate for extended play sessions (players may be in an
 area for many minutes).
 
 The concrete per-track brief — file names, moods, BPM and key targets, and the
-music delivery checklist — is in the [Music Track List](music-track-list.md).
+music pre-flight checklist — is in the [Music Track List](music-track-list.md).
 
 | Context           | Characteristics                                        | Loop Length     |
 | ----------------- | ------------------------------------------------------ | --------------- |
@@ -175,10 +175,10 @@ instance and lets SDL mix them.
 
 | Property         | Value            | Rationale                                                              |
 | ---------------- | ---------------- | ---------------------------------------------------------------------- |
-| Sample rate      | 44100 Hz         | SDL converts on load, but delivering 44100 avoids resampling artifacts |
+| Sample rate      | 44100 Hz         | SDL converts on load, but authoring at 44100 avoids resampling artifacts |
 | Format (SFX)     | WAV, 16-bit PCM  | Zero decode latency; loaded whole at startup                           |
 | Format (music)   | OGG Vorbis       | For the planned streaming path — see the [integration guide](audio-integration.md#5-music-path-forward) |
-| Channels         | Stereo (2ch)     | Mono is accepted and converted, but deliver stereo for consistency     |
+| Channels         | Stereo (2ch)     | Mono is accepted and converted, but stereo keeps the set consistent    |
 | Simultaneous voices | 32 (`MAX_VOICES`) | Further plays in the same moment are dropped, not queued            |
 | Same-tick dedupe | Yes              | N identical effects in one tick play **once** (prevents amplitude stacking) |
 | SFX loudness     | -16 to -12 LUFS  | Consistent perceived volume across all effects                         |
@@ -212,19 +212,19 @@ the directory conveys the type.
 Effect file names are keys in the game's sound manifest
 (`assets/data/config.json`, `"sounds"` map). Two cases:
 
-- **Replacing a shipping placeholder** — deliver under the *exact* manifest
+- **Replacing a shipping placeholder** — save under the *exact* manifest
   name (`shoot.wav`, `melee.wav`, `dash.wav`, `pickup.wav`,
   `player_hit.wav`, `enemy_hit.wav`, `enemy_down.wav`). The file drops into
   `assets/audio/sfx/` and supersedes the placeholder with zero code changes.
 - **A new effect** — the name must also be registered in the manifest and
   the `Sfx` enum (a one-line change each — see the
   [Audio Integration Guide](audio-integration.md#3-adding-a-new-sound-effect)).
-  Use the suggested names from the catalog in section 2, or agree on a name
-  with us before delivery.
+  Use the suggested names from the catalog in section 2, or pick a name
+  together first.
 
 Numbered variants (`_01`, `_02`) for randomized playback are a planned
-engine feature — deliver variants with numbered suffixes and we will wire
-the random selection.
+engine feature — name variants with numbered suffixes and the random
+selection gets wired when the feature lands.
 
 ### Music
 
@@ -237,7 +237,7 @@ mus_area_02.ogg
 mus_area_03.ogg
 mus_boss.ogg
 mus_shop.ogg
-mus_gameover.ogg
+mus_game_over.ogg
 mus_victory.ogg
 ```
 
@@ -249,9 +249,9 @@ mus_victory.ogg
 assets/
 └── audio/
     ├── sfx/
-    │   ├── sfx_player_shoot.wav
-    │   ├── sfx_player_dash.wav
-    │   ├── sfx_enemy_death_01.wav
+    │   ├── shoot.wav
+    │   ├── dash.wav
+    │   ├── enemy_down.wav
     │   └── ...
     └── music/
         ├── mus_title.ogg
@@ -284,15 +284,15 @@ assets.
 
 ---
 
-## 8. Delivery Checklist
+## 8. Pre-flight Checklist
 
-Run through this list before every audio asset handoff:
+A quick self-check before a sound goes into the game:
 
 - [ ] Sample rate is 44100 Hz
 - [ ] SFX are WAV, 16-bit PCM, stereo
 - [ ] Music tracks are OGG Vorbis, stereo
 - [ ] SFX filename matches the sound manifest exactly (replacement), or the
-      name was agreed with us (new effect); music uses the `mus_` prefix
+      name is agreed and registered (new effect); music uses the `mus_` prefix
 - [ ] File is in the correct directory (`assets/audio/sfx/` or
       `assets/audio/music/`)
 - [ ] SFX duration is appropriate for the event (see catalog above)

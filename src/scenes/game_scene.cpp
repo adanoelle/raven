@@ -224,6 +224,17 @@ void GameScene::update(Game& game, float dt) {
             desired = AnimationState::State::Idle;
         }
 
+        // Hold a non-looping action animation until its last frame so the
+        // full attack/dash art plays even after the ability component
+        // expires. A new action (melee during a dash tail) still interrupts.
+        const bool action_playing = (state.current == AnimationState::State::Melee ||
+                                     state.current == AnimationState::State::Dash) &&
+                                    !anim.looping && anim.current_frame < anim.end_frame;
+        if (action_playing &&
+            (desired == AnimationState::State::Walk || desired == AnimationState::State::Idle)) {
+            desired = state.current;
+        }
+
         if (state.current != desired) {
             state.current = desired;
             switch (desired) {

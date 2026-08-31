@@ -1,7 +1,7 @@
 # Raven Art Specification
 
-Reference document for sprite dimensions, animation specs, sheet layout, display
-scaling, and delivery format.
+Reference for sprite dimensions, animation specs, sheet layout, display
+scaling, and file format.
 
 ---
 
@@ -21,8 +21,10 @@ sprite, tile, and UI element is authored at this resolution.
 
 ## 2. Display Scaling
 
-The engine scales the 480x270 canvas up to the display using
-**nearest-neighbor** filtering. Every game pixel becomes a sharp block.
+The engine renders the game to a 480x270 texture and scales it to the
+display with SDL's **pixel-art scale mode** (`SDL_SCALEMODE_PIXELART` —
+the reason the project requires SDL >= 3.4), letterboxed to preserve
+aspect ratio.
 
 | Display            | Resolution | Scale | Integer? |
 | ------------------ | ---------- | ----- | -------- |
@@ -33,12 +35,17 @@ The engine scales the 480x270 canvas up to the display using
 | Switch docked      | 1920x1080  | 4x    | Yes      |
 | Switch handheld    | 1280x720   | 2.67x | No       |
 
-At non-integer scales (1440p, Switch handheld), some pixels are one screen pixel
-wider than their neighbors. This is standard for the genre and barely visible in
-practice.
+At integer scales the result is identical to nearest-neighbor: every game
+pixel is a sharp, uniform block. At non-integer scales (1440p, Switch
+handheld) the pixel-art mode keeps pixels sharp and **uniformly sized**,
+blending only at pixel boundaries — no uneven pixel columns, no shimmer
+during scrolling. All six displays above are first-class targets; nothing
+about the art needs to change for any of them.
 
-**Primary target: 1080p at 4x.** A 32x32 frame becomes 128x128 screen pixels;
-the 24x24 character body within it renders at 96x96.
+**Primary authoring reference: 1080p at 4x.** A 32x32 frame becomes
+128x128 screen pixels; the 24x24 character body within it renders at
+96x96. For handheld legibility, the more useful habit is checking work at
+**2x** — close to the Switch handheld's effective size.
 
 ---
 
@@ -118,11 +125,19 @@ The game loop runs at 120Hz. Animation playback is independent — driven by
 | ------------ | ------ | -------- | -------------- | ----- | ------ |
 | Idle         | 4      | 4        | 0.250s         | Yes   | 1.0s   |
 | Walk         | 6      | 10       | 0.100s         | Yes   | 0.6s   |
-| Run          | 6      | 12       | 0.083s         | Yes   | 0.5s   |
 | Attack       | 4      | 12       | 0.083s         | No    | 0.33s  |
 | Dodge / dash | 3      | 15       | 0.067s         | No    | 0.2s   |
 | Hurt         | 2      | 8        | 0.125s         | No    | 0.25s  |
 | Death        | 5      | 8        | 0.125s         | No    | 0.625s |
+
+There is no run state — movement is single-speed, so walk is the only
+locomotion cycle.
+
+Attack and dodge animations are *longer* than their gameplay windows (the
+melee hitbox lives 0.1s, the dash 0.12s) — that's intentional and fine.
+The engine holds a non-looping action animation until its last frame
+before returning to walk/idle, so the wind-up and follow-through always
+play out. A new action interrupts the tail.
 
 Attack and dash frames may extend into the 4px padding zone for weapon
 visuals. Idle and walk frames stay within the 24x24 body zone.
@@ -211,9 +226,14 @@ Pickups are the currency of the steal economy and need to read instantly at
 | Weapon pickup     | 8x8  | Dropped by disarmed enemies; on the ground for only 5s, so it must pop      |
 | Stabilizer        | 8x8  | Rarer and more precious than a weapon — visually distinct, not a variant    |
 
+At 8x8 a pickup is about 2mm tall on a Switch in handheld mode, so the
+**pickup shimmer** (see the VFX table above) is not optional polish here —
+the motion is what makes a 5-second weapon drop findable mid-firefight.
+Contrast against the floor palette matters more than interior detail.
+
 > **Status:** the engine currently references a `"pickups"` sprite sheet
 > that does not yet exist in the repo — pickups render as placeholder
-> shapes. These two sprites are a high-impact, low-effort delivery.
+> shapes. These two sprites are a high-impact, low-effort pair to draw.
 
 ---
 
@@ -289,7 +309,10 @@ Row 5: Death   [5 frames] █████░
 
 ---
 
-## 8. Pixel Art Rules for Nearest-Neighbor
+## 8. Pixel Art Rules for Crisp Scaling
+
+These rules keep sprites sharp under the pixel-art scaler at every
+display size:
 
 - **Hard edges.** Fully opaque or fully transparent — no anti-aliased outlines.
 - **1px line weight** consistently.
@@ -306,20 +329,21 @@ Row 5: Death   [5 frames] █████░
 - The player must be the most visually distinct entity on screen.
 - Enemy projectiles need high contrast against any background.
 - Background tiles use lower saturation and contrast than foreground sprites.
-- Deliver a `.pal` or `.gpl` palette file alongside the art.
+- Keep a `.pal` or `.gpl` palette file alongside the art.
 
 ---
 
-## 10. File Format and Delivery
+## 10. File Format
 
 - **PNG**, 32-bit RGBA, non-interlaced, no embedded ICC profile.
 - Transparent background (alpha 0) — not a color key.
 - Filenames: lowercase with underscores (`player.png`, `boss_raven.png`).
-- Files go in `assets/sprites/`.
-- Aseprite source files (`.ase` / `.aseprite`) with animation tags delivered
-  alongside exported PNGs.
+- Exported PNGs go in `assets/sprites/`.
+- Aseprite source files (`.ase` / `.aseprite`) with animation tags live
+  in the `art/` source tree — see
+  [Art Files and Organization](art-organization.md).
 - **No padding** between frames in exported sheets.
-- Communicate frame dimensions and row/column counts with each delivery.
+- Note frame dimensions and row/column counts whenever a sheet changes.
 
 ---
 
@@ -336,7 +360,7 @@ Row 5: Death   [5 frames] █████░
 | Mega-boss size       | 64x64 frame, 48x48 body           |
 | Projectile size      | 8x8                               |
 | Tile size            | 16x16                             |
-| Scaling filter       | Nearest-neighbor                  |
+| Scaling filter       | Pixel-art mode (sharp at any scale) |
 | Facing directions    | Left / right (flip_x)             |
 | Animation timing     | `frame_duration` seconds           |
 | File format          | PNG, 32-bit RGBA                  |
@@ -346,9 +370,11 @@ Row 5: Death   [5 frames] █████░
 
 ---
 
-## 12. Delivery Checklist
+## 12. Pre-flight Checklist
 
-Run through this list before every handoff:
+A quick self-check before a sheet goes into the game — it catches the
+round-trip mistakes (wrong export settings, off-grid frames) before
+anyone hits them in-engine:
 
 - [ ] Frame size matches the spec table (32x32, 24x24, 48x48, etc.)
 - [ ] Idle/walk art stays within the body zone (see Aseprite Setup Guide)
@@ -363,5 +389,5 @@ Run through this list before every handoff:
 - [ ] PNG exported as 32-bit RGBA, non-interlaced, no ICC profile
 - [ ] Filename is lowercase with underscores
 - [ ] Aseprite source file included with animation tags
-- [ ] Frame count and dimensions noted in the delivery message
+- [ ] Frame count and dimensions noted alongside the sheet
 - [ ] Palette file (`.pal` or `.gpl`) included or updated

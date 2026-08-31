@@ -9,6 +9,10 @@ and .gpl/.pal export in a focused UI.
 
 **Repository:** github.com/adanoelle/pigment (private, separate from Raven)
 
+**Download:** builds for Windows, macOS, and Linux are on
+[itch.io](https://adanoelle.itch.io/pigment) — using Pigment never requires
+its source.
+
 ---
 
 ## Why We're Building This

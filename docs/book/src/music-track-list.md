@@ -1,14 +1,14 @@
 # Music Track List
 
-The composer-facing brief for Raven's soundtrack: one row per track with mood,
-tempo, key, and loop targets. Read alongside the
+The brief for Raven's soundtrack: one row per track with mood, tempo,
+key, and loop targets. Read alongside the
 [Audio Specification](audio-spec.md) (formats, loudness, naming) — this page
-is *what to write*, that page is *how to deliver it*.
+is *what to write*, that page is *the technical format it lives in*.
 
 **Status:** music playback is not yet implemented in the engine
 ([ADR-0019](decisions/0019-sdl3-native-audio.md) scoped it to sound effects;
 the [Audio Integration Guide](audio-integration.md) describes the plan).
-Composition can start now — **file names are the contract**. Tracks dropped
+Composition can start now — **file names do the wiring**. Tracks dropped
 into `assets/audio/music/` under the names below will be picked up when the
 streaming work lands, with no renaming.
 
@@ -47,7 +47,8 @@ Notes on the set:
 
 ## 2. Priority Order
 
-If delivering incrementally: **2, 1, 7, 8, 3, 4, 5, 6.** Area 1 and the title
+Writing one track at a time, the useful order is: **2, 1, 7, 8, 3, 4, 5,
+6.** Area 1 and the title
 theme define the game's sound; the game-over and victory pieces are short;
 areas 2–3 extend the established palette; boss and shop land with their
 features.
@@ -62,12 +63,12 @@ features.
   boundary (bake the tail into the start of the loop if needed).
 - **Intro-then-loop (optional).** If a track wants a one-time intro before the
   repeating section, use `LOOPSTART` and `LOOPLENGTH` Vorbis comment tags with
-  **sample offsets**, and note the values in your delivery. The streaming
+  **sample offsets**, and note the values alongside the file. The streaming
   implementation will honor them; until then whole-file looping is the
   fallback, so the track should still survive an end-to-start jump.
 - **Stings don't loop.** `mus_game_over.ogg` plays once and ends in silence.
 
-## 4. Delivery
+## 4. File Format
 
 Formats and levels are specified in the
 [Audio Specification](audio-spec.md#4-technical-requirements); the short
@@ -78,7 +79,7 @@ version:
 - Files in `assets/audio/music/`, named exactly as in the table above
 - No leading silence; no trailing silence on looping tracks
 
-### Music delivery checklist
+### Music pre-flight checklist
 
 - [ ] File is OGG Vorbis, stereo, 44100 Hz
 - [ ] Named exactly per the track list (`mus_<context>.ogg`)

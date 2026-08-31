@@ -7,15 +7,19 @@
 
 # For Artists & Musicians
 
-- [Handoff Guide](artist-handoff.md)
+- [Getting Work Into the Game](getting-work-into-the-game.md)
 - [Art Specification](art/art-spec.md)
 - [Aseprite Setup Guide](art/art-aseprite-guide.md)
+- [Character Animation Process](art/character-animation-process.md)
+- [First Character: A Walkthrough](art/first-character-walkthrough.md)
+- [Art Files and Organization](art/art-organization.md)
 - [Color Theory and Palette Design](art/color-theory.md)
 - [Tileset Palette Design](art/tileset-palette.md)
 - [Character Designs: Knight](art/characters/knight.md)
 - [Enemy Archetypes](enemy-archetypes.md)
 - [Game Feel — Feedback Anchors](game-feel.md)
 - [Pigment — Palette Tool](art/pigment.md)
+- [Tools and Generators](tools.md)
 - [Art Learning Resources](art/art-resources.md)
 - [Audio Specification](audio-spec.md)
 - [Music Track List](music-track-list.md)
