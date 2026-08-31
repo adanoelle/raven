@@ -123,11 +123,16 @@ keeps its aimed cone — the economy stays priced — and a melee started
 behind the dash's own commitment and cooldown, and the dash-slash gets
 a real mechanical identity, not just a visual one.
 
-> **Status:** the mechanic is prototyped — `melee_system.cpp` widens
-> `half_angle` to a full circle when a `Dash` is active, so the feel
-> can be judged with placeholder art before any smear frame is drawn.
-> If it survives playtesting, the dash-attack variant row is cheap:
-> its middle frames are smear-disc, not anatomy.
+> **Status:** the mechanic is prototyped as a one-branch combo. A dash
+> from neutral grants a single *follow-up token* (`DashFollowUp`),
+> spendable on either a **second dash** (`dash_system` lets it bypass
+> the cooldown) or the **360° spin** (`melee_system` widens
+> `half_angle` to a full circle and consumes the token). Whichever is
+> used first ends the chain — mobility or the spin, never both — so
+> the spin's price is the escape it replaces. The feel can be judged
+> with placeholder art before any smear frame is drawn; if it survives
+> playtesting, the dash-attack variant row is cheap: its middle frames
+> are smear-disc, not anatomy.
 
 ## Open Questions
 
@@ -137,8 +142,13 @@ a real mechanical identity, not just a visual one.
   left/right via `flip_x` (the knight's swipe is horizontal anyway), and
   only add a hand-drawn up/down variant — or allow rotation for soft
   additive VFX only — if flip-only bothers anyone in playtests.
-- **Does the dash-spin keep its hitbox advantage?** The prototype makes
-  the dash-slash strictly better at disarming. If playtesting shows it
-  crowding out the aimed swipe, the levers are dash cooldown, spin
-  damage, or reduced spin range — the shape can stay even if the
-  numbers move.
+- **Does the dash-spin keep its hitbox advantage?** The follow-up
+  token already prices it — spinning forfeits the second dash, so the
+  360 costs an escape. If playtesting still shows it crowding out the
+  aimed swipe, the remaining levers are dash cooldown, the follow-up
+  window length, spin damage, or reduced spin range — the shape can
+  stay even if the numbers move.
+- **Should melee during the *second* dash spin too?** It doesn't (the
+  token is spent), which keeps dash-dash-spin from collecting both
+  rewards. But a mid-dash slash with the aimed cone might read oddly
+  next to the spinning first-dash version — watch for it in playtests.
