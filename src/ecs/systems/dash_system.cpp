@@ -14,13 +14,24 @@ void update_dash(entt::registry& reg, const InputState& input, float dt) {
         cooldown.remaining -= dt;
     }
 
+    // Tick follow-up windows; unspent follow-ups expire
+    auto fu_view = reg.view<DashFollowUp>();
+    for (auto [entity, followup] : fu_view.each()) {
+        followup.remaining -= dt;
+        if (followup.remaining <= 0.f) {
+            reg.remove<DashFollowUp>(entity);
+        }
+    }
+
     // Initiate dash on press
     auto player_view = reg.view<Player, Velocity, AimDirection, DashCooldown>();
     for (auto [entity, player, vel, aim, cooldown] : player_view.each()) {
         if (!input.dash_pressed) {
             continue;
         }
-        if (cooldown.remaining > 0.f) {
+        // A follow-up dash bypasses the cooldown started by the first dash.
+        const bool is_follow_up = reg.any_of<DashFollowUp>(entity);
+        if (cooldown.remaining > 0.f && !is_follow_up) {
             continue;
         }
         if (reg.any_of<Dash>(entity)) {
@@ -47,6 +58,15 @@ void update_dash(entt::registry& reg, const InputState& input, float dt) {
         dash.dir_y = dir_y;
         reg.emplace<Dash>(entity, dash);
         cooldown.remaining = cooldown.rate;
+
+        // Dash-chain prototype: a dash from neutral grants one follow-up
+        // token, spendable on a second dash (here) or the 360-degree spin
+        // (melee_system). A follow-up dash consumes it; the chain is over.
+        if (is_follow_up) {
+            reg.remove<DashFollowUp>(entity);
+        } else {
+            reg.emplace<DashFollowUp>(entity);
+        }
         push_sfx(reg, Sfx::Dash);
 
         // Grant invulnerability (slightly longer than dash for grace period).

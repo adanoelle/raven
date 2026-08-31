@@ -347,6 +347,16 @@ struct DashCooldown {
     float rate = 0.6f;     ///< Minimum interval between dashes (seconds).
 };
 
+/// @brief One follow-up granted by a dash from neutral.
+///
+/// The token buys either a second dash (dash_system) or the 360-degree
+/// spin melee (melee_system) — whichever is used first consumes it, so
+/// each dash chain gets mobility or the spin, never both. Expires
+/// unspent when the window runs out.
+struct DashFollowUp {
+    float remaining = 0.35f; ///< Window to spend the follow-up (seconds).
+};
+
 // ── Tags (empty structs for filtering) ───────────────────────────
 
 /// @brief Tag: enemy lost its BulletEmitter via melee disarm.

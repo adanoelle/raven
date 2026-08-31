@@ -50,11 +50,15 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
         attack.hit_checked = false;
 
         // Dash-spin prototype: a melee started mid-dash widens to a full
-        // 360-degree spin. The standing attack keeps its aimed cone (the
-        // disarm economy prices in aiming), so the wider hitbox is gated
-        // behind the dash's own commitment and cooldown.
-        if (reg.any_of<Dash>(entity)) {
+        // 360-degree spin, spending the dash's follow-up token — the same
+        // token a second dash would use — so each dash chain buys either
+        // the spin or a second dash, never both. Melee during a follow-up
+        // dash (token already spent) is the normal aimed cone, and the
+        // standing attack is untouched (the disarm economy prices in
+        // aiming).
+        if (reg.any_of<Dash>(entity) && reg.any_of<DashFollowUp>(entity)) {
             attack.half_angle = PI;
+            reg.remove<DashFollowUp>(entity);
         }
         reg.emplace<MeleeAttack>(entity, attack);
         cooldown.remaining = cooldown.rate;
