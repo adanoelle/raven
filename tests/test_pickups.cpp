@@ -250,10 +250,10 @@ TEST_CASE("Decay explosion damages player", "[pickups][explosion]") {
         auto& hp = reg.get<Health>(player);
         REQUIRE(hp.current == Catch::Approx(0.f));
 
-        // Player should be invulnerable for 2s
+        // Player should be invulnerable for the post-hit grace period
         auto* inv = reg.try_get<Invulnerable>(player);
         REQUIRE(inv != nullptr);
-        REQUIRE(inv->remaining == Catch::Approx(2.f));
+        REQUIRE(inv->remaining == Catch::Approx(post_hit_invuln));
 
         // Weapon should revert to default
         auto& weapon = reg.get<Weapon>(player);

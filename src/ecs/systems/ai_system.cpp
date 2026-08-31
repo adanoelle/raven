@@ -310,7 +310,7 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
                                 e_tf.x + e_hb.offset_x, e_tf.y + e_hb.offset_y, e_hb.radius)) {
                 p_hp.current -= contact.damage;
                 contact.timer = contact.cooldown;
-                reg.emplace_or_replace<Invulnerable>(p_ent, 2.f);
+                reg.emplace_or_replace<Invulnerable>(p_ent, post_hit_invuln);
                 break; // one contact hit per frame
             }
         }

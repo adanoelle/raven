@@ -125,6 +125,11 @@ struct Invulnerable {
     float remaining = 0.f; ///< Seconds of invulnerability left.
 };
 
+/// @brief Post-hit grace period in seconds, shared by every damage source.
+/// Long enough that one overlapping bullet clump costs one hit; short
+/// enough that tanking through patterns is not viable.
+inline constexpr float post_hit_invuln = 0.5f;
+
 /// @brief Score value awarded when this entity is destroyed.
 struct ScoreValue {
     int points = 100; ///< Points awarded to the player on kill.
