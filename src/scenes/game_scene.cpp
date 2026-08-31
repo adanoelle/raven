@@ -119,6 +119,9 @@ void GameScene::spawn_player(Game& game) {
     case ClassId::Id::Sharpshooter:
         apply_sharpshooter(reg, player);
         break;
+    case ClassId::Id::Knight:
+        apply_knight(reg, player);
+        break;
     }
 
     spdlog::debug("Player spawned at ({}, {})", spawn_x, spawn_y);

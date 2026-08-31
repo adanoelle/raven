@@ -347,6 +347,7 @@ TEST_CASE("Dash cooldown blocks dashing once the follow-up window expires", "[da
     reg.ctx().emplace<StringInterner>();
 
     auto player = make_player(reg, 100.f, 100.f);
+    reg.emplace<DashChainTalent>(player);
 
     // First dash
     auto input = dash_input(1.f, 0.f);
@@ -371,6 +372,7 @@ TEST_CASE("Dash chain: a follow-up dash bypasses the cooldown, once", "[dash]") 
     reg.ctx().emplace<StringInterner>();
 
     auto player = make_player(reg, 100.f, 100.f);
+    reg.emplace<DashChainTalent>(player);
 
     // First dash grants the follow-up token
     auto input = dash_input(1.f, 0.f);
@@ -399,12 +401,34 @@ TEST_CASE("Dash chain: a follow-up dash bypasses the cooldown, once", "[dash]") 
     REQUIRE_FALSE(reg.any_of<Dash>(player));
 }
 
+TEST_CASE("No dash chain without the talent", "[dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+
+    auto player = make_player(reg, 100.f, 100.f);
+
+    // Dash without DashChainTalent: no follow-up token granted
+    auto input = dash_input(1.f, 0.f);
+    systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE(reg.any_of<Dash>(player));
+    REQUIRE_FALSE(reg.any_of<DashFollowUp>(player));
+
+    // Expire the dash — a second dash is blocked by the cooldown
+    auto empty = no_input();
+    for (int i = 0; i < 20; ++i) {
+        systems::update_dash(reg, empty, 1.f / 120.f);
+    }
+    systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE_FALSE(reg.any_of<Dash>(player));
+}
+
 TEST_CASE("Dash-spin forfeits the second dash", "[melee][dash]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
 
     auto player = make_player(reg, 100.f, 100.f);
+    reg.emplace<DashChainTalent>(player);
 
     // Real dash grants the follow-up token
     systems::update_dash(reg, dash_input(1.f, 0.f), 1.f / 120.f);

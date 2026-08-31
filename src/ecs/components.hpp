@@ -253,8 +253,9 @@ struct Knockback {
 struct ClassId {
     /// @brief Available player classes.
     enum class Id : uint8_t {
-        Brawler,     ///< Melee-focused tank class.
-        Sharpshooter ///< Ranged glass-cannon class.
+        Brawler,      ///< Melee-focused tank class.
+        Sharpshooter, ///< Ranged glass-cannon class.
+        Knight        ///< Mobile melee class with the dash chain.
     };
     Id id = Id::Brawler; ///< This player's class.
 };
@@ -356,6 +357,10 @@ struct DashCooldown {
 struct DashFollowUp {
     float remaining = 0.35f; ///< Window to spend the follow-up (seconds).
 };
+
+/// @brief Tag: this class earns a DashFollowUp when dashing from neutral
+/// (the Knight's class talent). Without it a dash grants no follow-up.
+struct DashChainTalent {};
 
 // ── Tags (empty structs for filtering) ───────────────────────────
 

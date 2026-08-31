@@ -59,12 +59,13 @@ void update_dash(entt::registry& reg, const InputState& input, float dt) {
         reg.emplace<Dash>(entity, dash);
         cooldown.remaining = cooldown.rate;
 
-        // Dash-chain prototype: a dash from neutral grants one follow-up
-        // token, spendable on a second dash (here) or the 360-degree spin
-        // (melee_system). A follow-up dash consumes it; the chain is over.
+        // Dash-chain prototype (Knight talent): a dash from neutral grants
+        // one follow-up token, spendable on a second dash (here) or the
+        // 360-degree spin (melee_system). A follow-up dash consumes it;
+        // the chain is over.
         if (is_follow_up) {
             reg.remove<DashFollowUp>(entity);
-        } else {
+        } else if (reg.any_of<DashChainTalent>(entity)) {
             reg.emplace<DashFollowUp>(entity);
         }
         push_sfx(reg, Sfx::Dash);

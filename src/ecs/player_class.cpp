@@ -39,4 +39,24 @@ void apply_sharpshooter(entt::registry& reg, entt::entity entity) {
     weapon.fire_rate = 0.3f;
 }
 
+void apply_knight(entt::registry& reg, entt::entity entity) {
+    auto& player = reg.get<Player>(entity);
+    player.speed = 125.f;
+    player.lives = 3;
+
+    auto& hp = reg.get<Health>(entity);
+    hp.current = 100.f;
+    hp.max = 100.f;
+
+    reg.emplace<ClassId>(entity, ClassId::Id::Knight);
+    reg.emplace<MeleeStats>(entity, MeleeStats{2.f, 30.f, 0.785f, 250.f, 0.1f});
+
+    // Signature: the dash chain. Each dash from neutral grants one
+    // follow-up token, spendable on a second dash or the 360-degree
+    // dash-spin (see dash_system / melee_system).
+    reg.emplace<DashChainTalent>(entity);
+
+    // Weapon: default stats (bullet_damage=1)
+}
+
 } // namespace raven
