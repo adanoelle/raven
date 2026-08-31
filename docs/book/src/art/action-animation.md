@@ -129,7 +129,9 @@ a real mechanical identity, not just a visual one.
 > the cooldown) or the **360° spin** (`melee_system` widens
 > `half_angle` to a full circle and consumes the token). Whichever is
 > used first ends the chain — mobility or the spin, never both — so
-> the spin's price is the escape it replaces. The feel can be judged
+> the spin's price is the escape it replaces. The chain is the
+> **knight's class talent**: other classes get a single dash and the
+> aimed cone. The feel can be judged
 > with placeholder art before any smear frame is drawn; if it survives
 > playtesting, the dash-attack variant row is cheap: its middle frames
 > are smear-disc, not anatomy.
