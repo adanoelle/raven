@@ -10,6 +10,10 @@
 
 namespace raven::systems {
 
+namespace {
+constexpr float PI = 3.14159265358979323846f;
+} // namespace
+
 void update_melee(entt::registry& reg, const InputState& input, const PatternLibrary& patterns,
                   float dt) {
     auto& interner = reg.ctx().get<StringInterner>();
@@ -44,6 +48,14 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
         attack.aim_x = aim.x;
         attack.aim_y = aim.y;
         attack.hit_checked = false;
+
+        // Dash-spin prototype: a melee started mid-dash widens to a full
+        // 360-degree spin. The standing attack keeps its aimed cone (the
+        // disarm economy prices in aiming), so the wider hitbox is gated
+        // behind the dash's own commitment and cooldown.
+        if (reg.any_of<Dash>(entity)) {
+            attack.half_angle = PI;
+        }
         reg.emplace<MeleeAttack>(entity, attack);
         cooldown.remaining = cooldown.rate;
         push_sfx(reg, Sfx::Melee);

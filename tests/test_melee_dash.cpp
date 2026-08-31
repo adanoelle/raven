@@ -140,6 +140,26 @@ TEST_CASE("Melee arc misses enemy behind player", "[melee]") {
     REQUIRE(e_hp.current == Approx(3.f)); // No damage
 }
 
+TEST_CASE("Dash-spin: melee during dash hits enemy behind player", "[melee][dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+
+    auto player = make_player(reg, 100.f, 100.f);
+    auto enemy = make_enemy(reg, 70.f, 100.f); // Behind player (aim is +x)
+    reg.emplace<Dash>(player);                 // Mid-dash: melee widens to 360
+
+    auto input = melee_input();
+    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+
+    REQUIRE(reg.any_of<MeleeAttack>(player));
+    REQUIRE(reg.get<MeleeAttack>(player).half_angle == Approx(3.14159265f));
+
+    auto& e_hp = reg.get<Health>(enemy);
+    REQUIRE(e_hp.current < 3.f); // Spin connects behind the player
+    REQUIRE(reg.any_of<Knockback>(enemy));
+}
+
 TEST_CASE("Melee arc misses enemy outside range", "[melee]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
