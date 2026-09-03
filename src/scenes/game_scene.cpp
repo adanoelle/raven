@@ -30,6 +30,7 @@
 #include "scenes/title_scene.hpp"
 #include "scenes/victory_scene.hpp"
 
+#include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
 
 #include <random>
@@ -48,7 +49,10 @@ void GameScene::on_enter(Game& game) {
     pattern_lib_.set_interner(interner);
     pattern_lib_.load_manifest(paths::asset("assets/data/patterns/manifest.json"));
 
-    game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
+    // Seed from SDL's clocks rather than std::random_device: some console
+    // standard libraries implement the latter as a constant or throw.
+    const auto seed = static_cast<std::uint32_t>(SDL_GetPerformanceCounter() ^ SDL_GetTicksNS());
+    game.registry().ctx().emplace<std::mt19937>(seed);
     game.registry().ctx().emplace<AudioQueue>();
 
     // Erase any stale GameState first: ctx().emplace is a no-op when the
