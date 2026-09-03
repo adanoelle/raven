@@ -72,6 +72,7 @@
 - [Windows Builds and Steamworks Scaffolding](devlog/2026-07-06-windows-and-steamworks.md)
 - [Victory Screen and High Scores](devlog/2026-07-07-victory-and-high-scores.md)
 - [Architecture Review and Follow-up Fixes](devlog/2026-07-15-architecture-review-fixes.md)
+- [Switch Port Readiness Pass](devlog/2026-09-02-switch-port-readiness.md)
 
 ---
 
