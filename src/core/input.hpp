@@ -51,6 +51,12 @@ class Input {
     Input(Input&&) = delete;
     Input& operator=(Input&&) = delete;
 
+    /// @brief Open input devices. Call once after SDL_Init(SDL_INIT_GAMEPAD).
+    ///
+    /// Device discovery lives here rather than in the constructor because
+    /// Input is a Game member and is constructed before SDL is initialised.
+    void init();
+
     /// @brief Reset per-frame edge flags. Call once per frame before polling events.
     void begin_frame();
 

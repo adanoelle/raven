@@ -34,6 +34,8 @@ bool Game::init() {
         return false;
     }
 
+    input_.init();
+
     // Load persisted user settings, then write them back: the first run
     // creates the file, and later runs pick up any fields added since.
     // An empty pref dir (SDL_GetPrefPath failed) leaves both paths empty so
