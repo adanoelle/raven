@@ -39,7 +39,25 @@ These are set via `-D` flags during configuration:
 | -------------------- | ------- | ------------------------------------- |
 | `RAVEN_ENABLE_TESTS` | `ON`    | Build the Catch2 test suite.          |
 | `RAVEN_ENABLE_ASAN`  | `OFF`   | Enable AddressSanitizer + UBSan.      |
-| `RAVEN_ENABLE_IMGUI` | `ON`    | Compile the Dear ImGui debug overlay. |
+| `RAVEN_ENABLE_IMGUI` | `ON`\* | Compile the Dear ImGui debug overlay. |
+| `RAVEN_PLATFORM_CONSOLE` | `OFF` | Console target: hides desktop-only display options (fullscreen, window scale, vsync). |
+| `RAVEN_BUNDLED_DEPS` | `OFF`   | Build SDL3/SDL3_image from source via CPM even if system packages exist. |
+
+\* Defaults to `OFF` for `Release` builds; `just release` and the Nix package
+pass it explicitly.
+
+## Offline / Console Builds
+
+CPM downloads EnTT, nlohmann_json, spdlog, LDtkLoader, Dear ImGui, and Catch2
+at configure time. For an isolated machine, populate a source cache once while
+online and reuse it:
+
+```bash
+CPM_SOURCE_CACHE=/path/to/cpm-cache cmake -B build -G Ninja
+```
+
+Configure with the same `CPM_SOURCE_CACHE` on the isolated machine and nothing
+is fetched. CI does exactly this (see `.github/workflows/ci.yml`).
 
 ## Build Outputs
 

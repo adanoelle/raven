@@ -26,6 +26,7 @@ else()
 endif()
 option(RAVEN_ENABLE_IMGUI "Enable Dear ImGui debug overlay" ${RAVEN_IMGUI_DEFAULT})
 option(RAVEN_ENABLE_STEAM "Enable Steamworks (needs SDK in vendor/steamworks/sdk)" OFF)
+option(RAVEN_PLATFORM_CONSOLE "Fixed-display console target: hides window settings" OFF)
 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -115,6 +116,10 @@ if(RAVEN_ENABLE_IMGUI)
     target_link_libraries(raven PRIVATE imgui::imgui)
     target_compile_definitions(raven PRIVATE RAVEN_ENABLE_IMGUI)
     target_sources(raven PRIVATE src/debug/debug_overlay.cpp)
+endif()
+
+if(RAVEN_PLATFORM_CONSOLE)
+    target_compile_definitions(raven PRIVATE RAVEN_PLATFORM_CONSOLE)
 endif()
 
 if(RAVEN_ENABLE_STEAM)
