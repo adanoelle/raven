@@ -7,7 +7,11 @@
 
 namespace raven {
 
-Input::Input() : keyboard_(SDL_GetKeyboardState(nullptr)) {
+Input::Input() = default;
+
+void Input::init() {
+    keyboard_ = SDL_GetKeyboardState(nullptr);
+
     // Try to open first available gamepad
     int count = 0;
     SDL_JoystickID* gamepads = SDL_GetGamepads(&count);
@@ -125,9 +129,6 @@ void Input::update_mouse() {
     float lx = static_cast<float>((static_cast<double>(wx) - offset_x) / scale);
     float ly = static_cast<float>((static_cast<double>(wy) - offset_y) / scale);
 
-    spdlog::debug("mouse: win=({:.0f},{:.0f}) logical=({:.1f},{:.1f}) scale={:.2f}", wx, wy, lx, ly,
-                  scale);
-
     if (lx != current_.mouse_x || ly != current_.mouse_y) {
         mouse_moved_ = true;
     }
@@ -142,6 +143,9 @@ void Input::update_mouse() {
 }
 
 void Input::update_from_keyboard() {
+    if (!keyboard_)
+        return;
+
     // Movement
     if (keyboard_[SDL_SCANCODE_LEFT] || keyboard_[SDL_SCANCODE_A])
         current_.move_x -= 1.f;

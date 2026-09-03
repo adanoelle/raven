@@ -150,6 +150,30 @@ the character's personality.
 
 ---
 
+## Export
+
+| | |
+| --- | --- |
+| Working file | `art/characters/knight/knight.aseprite` |
+| Export | `assets/sprites/knight.png` (192x64), registered as sheet id `knight` |
+| Row 0 | `idle` — 4 frames @ 250 ms |
+| Row 1 | `walk` — 6 frames @ 100 ms |
+
+Export with the headless command from the
+[Aseprite Setup Guide](../art-aseprite-guide.md#73-exporting-the-sprite-sheet);
+the Knight class recipe points the player's `Sprite` at this sheet
+([Player Classes](../../architecture/player-classes.md)), so `player.png`
+is untouched.
+
+**Current state:** the frames are a mechanical blocking pass — the
+centered sketch pose repeated across both rows with only the body bob
+applied (offsets from
+[Walk Cycle: Blocking Strategy](../walk-cycle-blocking.md#frame-by-frame-blocking-notes)).
+The actual poses (leg split, counter-swing, hair lag) are still to be
+drawn.
+
+---
+
 ## Open Questions
 
 - Exact hex values for the palette (pending Aseprite iteration)

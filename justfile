@@ -15,7 +15,7 @@ build:
 
 # Configure and build (Release)
 release:
-    cmake -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DRAVEN_ENABLE_TESTS=OFF
+    cmake -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DRAVEN_ENABLE_TESTS=OFF -DRAVEN_ENABLE_IMGUI=OFF
     cmake --build build-release -j$(nproc)
 
 # Build and run the game

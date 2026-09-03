@@ -17,8 +17,16 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Options
 option(RAVEN_ENABLE_TESTS "Build tests" ON)
 option(RAVEN_ENABLE_ASAN "Enable Address Sanitizer" OFF)
-option(RAVEN_ENABLE_IMGUI "Enable Dear ImGui debug overlay" ON)
+# The debug overlay is a development tool: default it off for optimised
+# (shipping) configurations so F1 does nothing in a release build.
+if(CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel)$")
+    set(RAVEN_IMGUI_DEFAULT OFF)
+else()
+    set(RAVEN_IMGUI_DEFAULT ON)
+endif()
+option(RAVEN_ENABLE_IMGUI "Enable Dear ImGui debug overlay" ${RAVEN_IMGUI_DEFAULT})
 option(RAVEN_ENABLE_STEAM "Enable Steamworks (needs SDK in vendor/steamworks/sdk)" OFF)
+option(RAVEN_PLATFORM_CONSOLE "Fixed-display console target: hides window settings" OFF)
 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -34,6 +42,7 @@ add_executable(raven
     src/main.cpp
 
     # Core
+    src/core/fs.cpp
     src/core/game.cpp
     src/core/input.cpp
     src/core/paths.cpp
@@ -107,6 +116,10 @@ if(RAVEN_ENABLE_IMGUI)
     target_link_libraries(raven PRIVATE imgui::imgui)
     target_compile_definitions(raven PRIVATE RAVEN_ENABLE_IMGUI)
     target_sources(raven PRIVATE src/debug/debug_overlay.cpp)
+endif()
+
+if(RAVEN_PLATFORM_CONSOLE)
+    target_compile_definitions(raven PRIVATE RAVEN_PLATFORM_CONSOLE)
 endif()
 
 if(RAVEN_ENABLE_STEAM)

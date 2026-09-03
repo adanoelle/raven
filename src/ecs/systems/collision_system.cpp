@@ -35,7 +35,7 @@ void update_collision(entt::registry& reg) {
                 push_sfx(reg, Sfx::PlayerHit);
 
                 // Grant invulnerability frames
-                reg.emplace_or_replace<Invulnerable>(p_ent, 2.f);
+                reg.emplace_or_replace<Invulnerable>(p_ent, post_hit_invuln);
                 break; // one hit per frame
             }
         }

@@ -81,7 +81,7 @@ void update_weapon_decay(entt::registry& reg, float dt) {
                 if (auto* hp = reg.try_get<Health>(entity)) {
                     hp->current -= 1.f;
                 }
-                reg.emplace_or_replace<Invulnerable>(entity, 2.f);
+                reg.emplace_or_replace<Invulnerable>(entity, post_hit_invuln);
             }
 
             // Spawn explosion VFX at entity position

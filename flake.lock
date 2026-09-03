@@ -1,23 +1,5 @@
 {
   "nodes": {
-    "claude-code-overlay": {
-      "inputs": {
-        "nixpkgs": "nixpkgs"
-      },
-      "locked": {
-        "lastModified": 1770765099,
-        "narHash": "sha256-PopyCVr5w9ULY/uaZqc4F85YzIbJbyw3hHiOHUfFWeg=",
-        "owner": "ryoppippi",
-        "repo": "claude-code-overlay",
-        "rev": "7203db51cb49293919a65a406d76d498e7b40f6f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ryoppippi",
-        "repo": "claude-code-overlay",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -38,22 +20,6 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1768127708,
-        "narHash": "sha256-1Sm77VfZh3mU0F5OqKABNLWxOuDeHIlcFjsXeeiPazs=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "ffbc9f8cbaacfb331b6017d5a5abb21a492c9a38",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixos-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_2": {
-      "locked": {
         "lastModified": 1770562336,
         "narHash": "sha256-ub1gpAONMFsT/GU2hV6ZWJjur8rJ6kKxdm9IlCT0j84=",
         "owner": "NixOS",
@@ -70,9 +36,8 @@
     },
     "root": {
       "inputs": {
-        "claude-code-overlay": "claude-code-overlay",
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {

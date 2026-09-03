@@ -4,6 +4,7 @@
 #include "ecs/components.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 namespace {
@@ -30,6 +31,15 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
 
     auto view = reg.view<Transform2D, Sprite>();
     for (auto [entity, tf, sprite] : view.each()) {
+        // I-frame blink: hide the sprite on alternating 0.1s phases so
+        // invulnerability is readable on the character itself. The final
+        // phase before expiry is always visible.
+        if (const auto* inv = reg.try_get<Invulnerable>(entity)) {
+            if (inv->remaining > 0.f && std::fmod(inv->remaining, 0.2f) >= 0.1f) {
+                continue;
+            }
+        }
+
         // Interpolate position if previous transform is available
         float render_x = tf.x;
         float render_y = tf.y;

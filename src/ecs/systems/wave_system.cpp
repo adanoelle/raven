@@ -1,5 +1,6 @@
 #include "ecs/systems/wave_system.hpp"
 
+#include "core/fs.hpp"
 #include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "ecs/systems/hitbox_math.hpp"
@@ -8,7 +9,6 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <fstream>
 #include <utility>
 
 namespace raven {
@@ -107,14 +107,14 @@ EnemyVisuals enemy_visuals(Enemy::Type type) {
 // ── StageLoader ────────────────────────────────────────────────────
 
 bool StageLoader::load_manifest(const std::string& manifest_path) {
-    std::ifstream file(manifest_path);
-    if (!file.is_open()) {
+    const auto text = fs::read_text(manifest_path);
+    if (!text) {
         spdlog::warn("Stage manifest '{}' not found", manifest_path);
         return false;
     }
 
     try {
-        auto j = nlohmann::json::parse(file);
+        auto j = nlohmann::json::parse(*text);
         int loaded = 0;
         for (const auto& path : j.at("stages")) {
             // Manifest entries are relative to the install dir, not the CWD
@@ -131,14 +131,14 @@ bool StageLoader::load_manifest(const std::string& manifest_path) {
 }
 
 bool StageLoader::load_file(const std::string& file_path) {
-    std::ifstream file(file_path);
-    if (!file.is_open()) {
+    const auto text = fs::read_text(file_path);
+    if (!text) {
         spdlog::error("Failed to open stage file '{}'", file_path);
         return false;
     }
 
     try {
-        auto j = nlohmann::json::parse(file);
+        auto j = nlohmann::json::parse(*text);
         stages_.push_back(parse_stage(j));
         spdlog::debug("Loaded stage '{}'", stages_.back().name);
         return true;

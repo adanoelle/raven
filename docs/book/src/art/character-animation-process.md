@@ -200,6 +200,10 @@ Each of these has burned someone before; they're cheap to avoid:
 - The concrete route through the steps above — every file path, tool,
   and command in order, with the knight as the example — is the
   [First Character Walkthrough](first-character-walkthrough.md).
+- How squash-and-stretch is split between the body and the weapon in
+  the action rows — and why the slash reads the same standing or
+  dashing — is in
+  [Action Animation: Stretch and Smears](action-animation.md).
 - Sources, sketches, exports, and the notes that accumulate around them
   all have a home — the directory layout and naming conventions are in
   [Art Files and Organization](art-organization.md).

@@ -14,4 +14,9 @@ void apply_brawler(entt::registry& reg, entt::entity entity);
 /// @param entity The player entity (must already have universal components).
 void apply_sharpshooter(entt::registry& reg, entt::entity entity);
 
+/// @brief Apply Knight class stats and components to a player entity.
+/// @param reg The ECS registry.
+/// @param entity The player entity (must already have universal components).
+void apply_knight(entt::registry& reg, entt::entity entity);
+
 } // namespace raven

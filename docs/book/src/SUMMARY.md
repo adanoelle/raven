@@ -11,7 +11,9 @@
 - [Art Specification](art/art-spec.md)
 - [Aseprite Setup Guide](art/art-aseprite-guide.md)
 - [Character Animation Process](art/character-animation-process.md)
+- [Walk Cycle: Blocking Strategy](art/walk-cycle-blocking.md)
 - [First Character: A Walkthrough](art/first-character-walkthrough.md)
+- [Action Animation: Stretch and Smears](art/action-animation.md)
 - [Art Files and Organization](art/art-organization.md)
 - [Color Theory and Palette Design](art/color-theory.md)
 - [Tileset Palette Design](art/tileset-palette.md)
@@ -31,6 +33,7 @@
 
 - [Development Environment](guide/environment.md)
 - [Building and Running](guide/building.md)
+- [Switch Port Plan](guide/switch-port-plan.md)
 - [Project Tour](guide/project-tour.md)
 - [Architecture Overview](architecture/overview.md)
 - [Game Loop and Fixed Timestep](architecture/game-loop.md)
@@ -70,6 +73,7 @@
 - [Windows Builds and Steamworks Scaffolding](devlog/2026-07-06-windows-and-steamworks.md)
 - [Victory Screen and High Scores](devlog/2026-07-07-victory-and-high-scores.md)
 - [Architecture Review and Follow-up Fixes](devlog/2026-07-15-architecture-review-fixes.md)
+- [Switch Port Readiness Pass](devlog/2026-09-02-switch-port-readiness.md)
 
 ---
 

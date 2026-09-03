@@ -140,6 +140,50 @@ TEST_CASE("Melee arc misses enemy behind player", "[melee]") {
     REQUIRE(e_hp.current == Approx(3.f)); // No damage
 }
 
+TEST_CASE("Dash-spin: melee during dash hits enemy behind player", "[melee][dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+
+    auto player = make_player(reg, 100.f, 100.f);
+    auto enemy = make_enemy(reg, 70.f, 100.f); // Behind player (aim is +x)
+    reg.emplace<Dash>(player);                 // Mid-dash with the follow-up
+    reg.emplace<DashFollowUp>(player);         // token: melee widens to 360
+
+    auto input = melee_input();
+    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+
+    REQUIRE(reg.any_of<MeleeAttack>(player));
+    REQUIRE(reg.get<MeleeAttack>(player).half_angle == Approx(3.14159265f));
+
+    // The spin spends the follow-up token
+    REQUIRE_FALSE(reg.any_of<DashFollowUp>(player));
+
+    auto& e_hp = reg.get<Health>(enemy);
+    REQUIRE(e_hp.current < 3.f); // Spin connects behind the player
+    REQUIRE(reg.any_of<Knockback>(enemy));
+}
+
+TEST_CASE("Melee during the follow-up dash is the aimed cone", "[melee][dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+
+    auto player = make_player(reg, 100.f, 100.f);
+    auto enemy = make_enemy(reg, 70.f, 100.f); // Behind player (aim is +x)
+    reg.emplace<Dash>(player);                 // Follow-up dash: token already spent
+
+    auto input = melee_input();
+    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+
+    // No token, no spin: the default aimed cone
+    REQUIRE(reg.any_of<MeleeAttack>(player));
+    REQUIRE(reg.get<MeleeAttack>(player).half_angle == Approx(0.785f));
+
+    auto& e_hp = reg.get<Health>(enemy);
+    REQUIRE(e_hp.current == Approx(3.f)); // Enemy behind is safe
+}
+
 TEST_CASE("Melee arc misses enemy outside range", "[melee]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
@@ -298,26 +342,109 @@ TEST_CASE("Dash expires and is removed", "[dash]") {
     REQUIRE_FALSE(reg.any_of<Dash>(player));
 }
 
-TEST_CASE("Dash cooldown prevents rapid dashing", "[dash]") {
+TEST_CASE("Dash cooldown blocks dashing once the follow-up window expires", "[dash]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
 
     auto player = make_player(reg, 100.f, 100.f);
+    reg.emplace<DashChainTalent>(player);
 
     // First dash
     auto input = dash_input(1.f, 0.f);
     systems::update_dash(reg, input, 1.f / 120.f);
     REQUIRE(reg.any_of<Dash>(player));
 
-    // Expire the dash
+    // Tick past the follow-up window (0.35s) but not the cooldown (0.6s)
+    auto empty = no_input();
+    for (int i = 0; i < 50; ++i) {
+        systems::update_dash(reg, empty, 1.f / 120.f);
+    }
+    REQUIRE_FALSE(reg.any_of<Dash>(player));
+    REQUIRE_FALSE(reg.any_of<DashFollowUp>(player));
+
+    // Follow-up expired unspent, cooldown still running — no dash
+    systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE_FALSE(reg.any_of<Dash>(player));
+}
+
+TEST_CASE("Dash chain: a follow-up dash bypasses the cooldown, once", "[dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+
+    auto player = make_player(reg, 100.f, 100.f);
+    reg.emplace<DashChainTalent>(player);
+
+    // First dash grants the follow-up token
+    auto input = dash_input(1.f, 0.f);
+    systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE(reg.any_of<Dash>(player));
+    REQUIRE(reg.any_of<DashFollowUp>(player));
+
+    // Expire the first dash; the follow-up window (0.35s) is still open
     auto empty = no_input();
     for (int i = 0; i < 20; ++i) {
         systems::update_dash(reg, empty, 1.f / 120.f);
     }
     REQUIRE_FALSE(reg.any_of<Dash>(player));
+    REQUIRE(reg.any_of<DashFollowUp>(player));
 
-    // Try to dash again immediately — cooldown should prevent it
+    // Second dash is allowed despite the cooldown, and spends the token
     systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE(reg.any_of<Dash>(player));
+    REQUIRE_FALSE(reg.any_of<DashFollowUp>(player));
+
+    // Expire the second dash — a third dash is blocked
+    for (int i = 0; i < 20; ++i) {
+        systems::update_dash(reg, empty, 1.f / 120.f);
+    }
+    systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE_FALSE(reg.any_of<Dash>(player));
+}
+
+TEST_CASE("No dash chain without the talent", "[dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+
+    auto player = make_player(reg, 100.f, 100.f);
+
+    // Dash without DashChainTalent: no follow-up token granted
+    auto input = dash_input(1.f, 0.f);
+    systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE(reg.any_of<Dash>(player));
+    REQUIRE_FALSE(reg.any_of<DashFollowUp>(player));
+
+    // Expire the dash — a second dash is blocked by the cooldown
+    auto empty = no_input();
+    for (int i = 0; i < 20; ++i) {
+        systems::update_dash(reg, empty, 1.f / 120.f);
+    }
+    systems::update_dash(reg, input, 1.f / 120.f);
+    REQUIRE_FALSE(reg.any_of<Dash>(player));
+}
+
+TEST_CASE("Dash-spin forfeits the second dash", "[melee][dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+
+    auto player = make_player(reg, 100.f, 100.f);
+    reg.emplace<DashChainTalent>(player);
+
+    // Real dash grants the follow-up token
+    systems::update_dash(reg, dash_input(1.f, 0.f), 1.f / 120.f);
+    REQUIRE(reg.any_of<DashFollowUp>(player));
+
+    // Spin mid-dash: token spent on the 360
+    systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+    REQUIRE(reg.get<MeleeAttack>(player).half_angle == Approx(3.14159265f));
+    REQUIRE_FALSE(reg.any_of<DashFollowUp>(player));
+
+    // Expire the dash — the second dash is gone with the token
+    auto empty = no_input();
+    for (int i = 0; i < 20; ++i) {
+        systems::update_dash(reg, empty, 1.f / 120.f);
+    }
+    systems::update_dash(reg, dash_input(1.f, 0.f), 1.f / 120.f);
     REQUIRE_FALSE(reg.any_of<Dash>(player));
 }
 

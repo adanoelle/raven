@@ -128,6 +128,49 @@ TEST_CASE("Sharpshooter recipe sets correct stats", "[class]") {
     REQUIRE(weapon.fire_rate == Approx(0.3f));
 }
 
+TEST_CASE("Knight recipe sets correct stats", "[class]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+
+    auto player = make_bare_player(reg, 100.f, 100.f);
+    apply_knight(reg, player);
+
+    auto& p = reg.get<Player>(player);
+    REQUIRE(p.speed == Approx(125.f));
+    REQUIRE(p.lives == 3);
+
+    auto& hp = reg.get<Health>(player);
+    REQUIRE(hp.current == Approx(100.f));
+    REQUIRE(hp.max == Approx(100.f));
+
+    REQUIRE(reg.any_of<ClassId>(player));
+    REQUIRE(reg.get<ClassId>(player).id == ClassId::Id::Knight);
+
+    REQUIRE(reg.any_of<MeleeStats>(player));
+    auto& ms = reg.get<MeleeStats>(player);
+    REQUIRE(ms.damage == Approx(2.f));
+    REQUIRE(ms.range == Approx(30.f));
+
+    // Signature talent: the dash chain — and no other class abilities
+    REQUIRE(reg.any_of<DashChainTalent>(player));
+    REQUIRE_FALSE(reg.any_of<GroundSlamCooldown>(player));
+    REQUIRE_FALSE(reg.any_of<ChargedShot>(player));
+    REQUIRE_FALSE(reg.any_of<ConcussionShotCooldown>(player));
+}
+
+TEST_CASE("Only the Knight recipe grants the dash-chain talent", "[class]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+
+    auto brawler = make_bare_player(reg, 100.f, 100.f);
+    apply_brawler(reg, brawler);
+    REQUIRE_FALSE(reg.any_of<DashChainTalent>(brawler));
+
+    auto sharpshooter = make_bare_player(reg, 200.f, 100.f);
+    apply_sharpshooter(reg, sharpshooter);
+    REQUIRE_FALSE(reg.any_of<DashChainTalent>(sharpshooter));
+}
+
 // ── MeleeStats integration tests ────────────────────────────────────
 
 TEST_CASE("MeleeStats overrides default MeleeAttack values", "[class][melee]") {

@@ -56,10 +56,10 @@ TEST_CASE("Collision system integration", "[collision]") {
         auto& hp = reg.get<Health>(player);
         REQUIRE(hp.current == Catch::Approx(0.f));
 
-        // Player should be invulnerable
+        // Player should be invulnerable for the post-hit grace period
         auto* inv = reg.try_get<Invulnerable>(player);
         REQUIRE(inv != nullptr);
-        REQUIRE(inv->remaining == Catch::Approx(2.f));
+        REQUIRE(inv->remaining == Catch::Approx(post_hit_invuln));
     }
 
     SECTION("Separated bullet does not hit player") {
@@ -125,10 +125,10 @@ TEST_CASE("Collision system integration", "[collision]") {
         auto& hp = reg.get<Health>(player);
         REQUIRE(hp.current == Catch::Approx(0.f));
 
-        // Player should be invulnerable
+        // Player should be invulnerable for the post-hit grace period
         auto* inv = reg.try_get<Invulnerable>(player);
         REQUIRE(inv != nullptr);
-        REQUIRE(inv->remaining == Catch::Approx(2.f));
+        REQUIRE(inv->remaining == Catch::Approx(post_hit_invuln));
     }
 
     SECTION("Player bullet does not hit player") {

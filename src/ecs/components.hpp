@@ -125,6 +125,11 @@ struct Invulnerable {
     float remaining = 0.f; ///< Seconds of invulnerability left.
 };
 
+/// @brief Post-hit grace period in seconds, shared by every damage source.
+/// Long enough that one overlapping bullet clump costs one hit; short
+/// enough that tanking through patterns is not viable.
+inline constexpr float post_hit_invuln = 0.5f;
+
 /// @brief Score value awarded when this entity is destroyed.
 struct ScoreValue {
     int points = 100; ///< Points awarded to the player on kill.
@@ -253,8 +258,9 @@ struct Knockback {
 struct ClassId {
     /// @brief Available player classes.
     enum class Id : uint8_t {
-        Brawler,     ///< Melee-focused tank class.
-        Sharpshooter ///< Ranged glass-cannon class.
+        Brawler,      ///< Melee-focused tank class.
+        Sharpshooter, ///< Ranged glass-cannon class.
+        Knight        ///< Mobile melee class with the dash chain.
     };
     Id id = Id::Brawler; ///< This player's class.
 };
@@ -346,6 +352,20 @@ struct DashCooldown {
     float remaining = 0.f; ///< Time until next dash allowed (seconds).
     float rate = 0.6f;     ///< Minimum interval between dashes (seconds).
 };
+
+/// @brief One follow-up granted by a dash from neutral.
+///
+/// The token buys either a second dash (dash_system) or the 360-degree
+/// spin melee (melee_system) — whichever is used first consumes it, so
+/// each dash chain gets mobility or the spin, never both. Expires
+/// unspent when the window runs out.
+struct DashFollowUp {
+    float remaining = 0.35f; ///< Window to spend the follow-up (seconds).
+};
+
+/// @brief Tag: this class earns a DashFollowUp when dashing from neutral
+/// (the Knight's class talent). Without it a dash grants no follow-up.
+struct DashChainTalent {};
 
 // ── Tags (empty structs for filtering) ───────────────────────────
 

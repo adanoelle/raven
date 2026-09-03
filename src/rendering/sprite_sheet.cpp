@@ -48,7 +48,12 @@ void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int des
 
 void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int dest_x, int dest_y,
                        int dest_w, int dest_h, bool flip_x) const {
-    if (!texture_)
+    if (!texture_ || frame_w_ <= 0 || frame_h_ <= 0)
+        return;
+
+    // A frame outside the sheet would sample undefined texels; skip it.
+    if (frame_x < 0 || frame_y < 0 || (frame_x + 1) * frame_w_ > sheet_w_ ||
+        (frame_y + 1) * frame_h_ > sheet_h_)
         return;
 
     SDL_FRect src{static_cast<float>(frame_x * frame_w_), static_cast<float>(frame_y * frame_h_),

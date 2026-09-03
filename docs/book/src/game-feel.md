@@ -85,7 +85,7 @@ the [art spec](art/art-spec.md#4-animation-frame-counts-and-timing).
 | **Enemy hit by bullet** | Damage, plus a 0.1s knockback nudge along the bullet's path | 2 | `enemy_hit.wav` (shipping) | Hit spark (16x16, specced); brief white flash on the enemy |
 | **Enemy knocked back** | Enemy's brain suspends; it slides and — because knockback still collides with walls — visibly **slams into them** | 3 | wall-slam thud (future) | Dust puff on wall impact (future) |
 | **Enemy death** | Score added, drops rolled | 2 | `enemy_down.wav` (shipping) | Death animation per enemy (specced); explosion VFX (specced) |
-| **Player hit** | Damage, then 2 full seconds of invulnerability | 2, then 3 | `player_hit.wav` (shipping) | Hurt flash on impact; **blink/ghost during the entire 2s invulnerability** — the player must be able to *see* they are safe (the HUD health bar already turns white) |
+| **Player hit** | Damage, then 0.5s of invulnerability (`post_hit_invuln` — one bullet clump costs one hit, but tanking through patterns is not viable) | 2, then 3 | `player_hit.wav` (shipping) | **Sprite blinks during any invulnerability** (shipping — render_system hides alternating 0.1s phases); the HUD health bar also turns white. A hurt flash on impact is still wanted |
 | **Player loses a life** | HP refills, a life pip disappears, 3s invulnerability | 2 | needed: `player_death.wav` | Death + respawn animation (specced rows) |
 
 ### Rooms and progression

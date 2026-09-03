@@ -30,6 +30,7 @@
 #include "scenes/title_scene.hpp"
 #include "scenes/victory_scene.hpp"
 
+#include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
 
 #include <random>
@@ -48,7 +49,10 @@ void GameScene::on_enter(Game& game) {
     pattern_lib_.set_interner(interner);
     pattern_lib_.load_manifest(paths::asset("assets/data/patterns/manifest.json"));
 
-    game.registry().ctx().emplace<std::mt19937>(std::random_device{}());
+    // Seed from SDL's clocks rather than std::random_device: some console
+    // standard libraries implement the latter as a constant or throw.
+    const auto seed = static_cast<std::uint32_t>(SDL_GetPerformanceCounter() ^ SDL_GetTicksNS());
+    game.registry().ctx().emplace<std::mt19937>(seed);
     game.registry().ctx().emplace<AudioQueue>();
 
     // Erase any stale GameState first: ctx().emplace is a no-op when the
@@ -118,6 +122,9 @@ void GameScene::spawn_player(Game& game) {
         break;
     case ClassId::Id::Sharpshooter:
         apply_sharpshooter(reg, player);
+        break;
+    case ClassId::Id::Knight:
+        apply_knight(reg, player);
         break;
     }
 
@@ -339,6 +346,14 @@ void GameScene::update(Game& game, float dt) {
     if (input.pause_pressed) {
         game.scenes().push(std::make_unique<PauseScene>(), game);
         return;
+    }
+}
+
+void GameScene::on_suspend(Game& game) {
+    // Only when this scene is live: an overlay (pause/options) on top
+    // already means gameplay is frozen.
+    if (game.scenes().is_top(this)) {
+        game.scenes().push(std::make_unique<PauseScene>(), game);
     }
 }
 

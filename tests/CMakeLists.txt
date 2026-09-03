@@ -22,6 +22,7 @@ add_executable(raven_tests
     test_movement.cpp
 
     # Source files needed by integration tests
+    ${CMAKE_SOURCE_DIR}/src/core/fs.cpp
     ${CMAKE_SOURCE_DIR}/src/core/paths.cpp
     ${CMAKE_SOURCE_DIR}/src/core/save_data.cpp
     ${CMAKE_SOURCE_DIR}/src/core/settings.cpp

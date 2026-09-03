@@ -4,18 +4,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    claude-code-overlay.url = "github:ryoppippi/claude-code-overlay";
   };
 
-  outputs = { self, nixpkgs, flake-utils, claude-code-overlay, ... }:
+  outputs = { self, nixpkgs, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ claude-code-overlay.overlays.default ];
-          config.allowUnfree = true;
-          config.allowUnfreePredicate = pkg: (pkg.pname or "") == "claude-code";
-        };
+        pkgs = import nixpkgs { inherit system; };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -57,8 +51,6 @@
             git
             direnv
             just            # Command runner (like make but nicer)
-
-            claude-code
           ];
 
           buildInputs = with pkgs; [
@@ -116,6 +108,7 @@
           cmakeFlags = [
             "-DCMAKE_BUILD_TYPE=Release"
             "-DRAVEN_ENABLE_TESTS=OFF"
+            "-DRAVEN_ENABLE_IMGUI=OFF"
           ];
         };
       });

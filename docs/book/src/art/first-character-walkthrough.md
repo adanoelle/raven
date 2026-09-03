@@ -83,20 +83,24 @@ dark end.
 - Update the hex values and any resolved Open Questions on the
   character's book page while they're fresh
 
-## 6. Export — replacing the placeholder
+## 6. Export — alongside the placeholder
 
 **File > Export Sprite Sheet**: By Rows, split tags, no border padding →
-`assets/sprites/player.png`. Or headless:
+`assets/sprites/knight.png`. Or headless:
 
 ```bash
 aseprite -b art/characters/knight/knight.aseprite \
-  --sheet assets/sprites/player.png --sheet-type rows --split-tags
+  --sheet assets/sprites/knight.png --sheet-type rows --split-tags
 ```
 
-This **overwrites the placeholder bird**. A two-row sheet (192x64) is
-fine — the engine reads idle from row 0 and walk from row 1, and melee
-and dash temporarily reuse the walk row, so nothing breaks while only
-two rows exist.
+This does **not** overwrite the placeholder bird. The knight is its own
+sheet: register it in `assets/data/config.json` under a new id
+(`knight`) and point the class recipe at it (`apply_knight` sets the
+`Sprite` sheet id — see [Player Classes](../architecture/player-classes.md)).
+`player.png` stays as the sheet for classes without final art. A
+two-row sheet (192x64) is fine — the engine reads idle from row 0 and
+walk from row 1, and melee and dash temporarily reuse the walk row, so
+nothing breaks while only two rows exist.
 
 ## 7. `just run`
 
@@ -119,6 +123,6 @@ flag it when the rows are in).
 
 Source and export travel together, per
 [Art Files and Organization](art-organization.md): `knight.aseprite` +
-`player.png` in the same commit, one line of *why* in the message. The
+`knight.png` in the same commit, one line of *why* in the message. The
 first finished sheet earns a [devlog](../devlog/2026-02-08-project-setup.md)
 entry.

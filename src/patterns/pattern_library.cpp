@@ -1,11 +1,11 @@
 #include "patterns/pattern_library.hpp"
 
+#include "core/fs.hpp"
 #include "core/paths.hpp"
 
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <fstream>
 
 namespace raven {
 
@@ -30,14 +30,14 @@ bool PatternLibrary::load_manifest(const std::string& manifest_path) {
         spdlog::error("PatternLibrary: set_interner() must be called before loading");
         return false;
     }
-    std::ifstream f(manifest_path);
-    if (!f.is_open()) {
+    const auto text = fs::read_text(manifest_path);
+    if (!text) {
         spdlog::warn("Pattern manifest '{}' not found", manifest_path);
         return false;
     }
 
     try {
-        auto j = nlohmann::json::parse(f);
+        auto j = nlohmann::json::parse(*text);
         int count = 0;
         for (const auto& path : j.at("patterns")) {
             // Manifest entries are relative to the install dir, not the CWD
@@ -58,14 +58,14 @@ bool PatternLibrary::load_file(const std::string& file_path) {
         spdlog::error("PatternLibrary: set_interner() must be called before loading");
         return false;
     }
-    std::ifstream f(file_path);
-    if (!f.is_open()) {
+    const auto text = fs::read_text(file_path);
+    if (!text) {
         spdlog::error("Failed to open pattern file '{}'", file_path);
         return false;
     }
 
     try {
-        auto j = nlohmann::json::parse(f);
+        auto j = nlohmann::json::parse(*text);
         auto pattern = parse_pattern(j);
         auto name = pattern.name;
         patterns_[interner_->intern(name).value] = std::move(pattern);

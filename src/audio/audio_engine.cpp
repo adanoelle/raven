@@ -121,6 +121,20 @@ void AudioEngine::update() {
     });
 }
 
+// NOLINTNEXTLINE(readability-make-member-function-const) — mutates device state
+void AudioEngine::pause() {
+    if (device_ != 0) {
+        SDL_PauseAudioDevice(device_);
+    }
+}
+
+// NOLINTNEXTLINE(readability-make-member-function-const) — mutates device state
+void AudioEngine::resume() {
+    if (device_ != 0) {
+        SDL_ResumeAudioDevice(device_);
+    }
+}
+
 void AudioEngine::set_master_gain(float gain) {
     master_gain_ = std::clamp(gain, 0.f, 1.f);
 }

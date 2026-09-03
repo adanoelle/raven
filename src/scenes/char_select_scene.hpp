@@ -22,10 +22,11 @@ class CharacterSelectScene : public Scene {
     void render(Game& game) override;
 
   private:
-    int selected_index_ = 0;     ///< 0 = Brawler, 1 = Sharpshooter.
+    int selected_index_ = 0;     ///< 0 = Brawler, 1 = Knight, 2 = Sharpshooter.
     float blink_timer_ = 0.f;    ///< Timer controlling selection indicator blink.
     bool show_indicator_ = true; ///< Whether the selection indicator is visible.
     bool first_frame_ = true;    ///< Skip input on first frame to consume stale confirm.
+    bool move_latched_ = false;  ///< Held left/right steps once until released.
 };
 
 } // namespace raven

@@ -2,6 +2,7 @@
 
 #include "core/game.hpp"
 #include "ecs/components.hpp"
+#include "platform/platform.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -12,28 +13,38 @@ namespace raven {
 
 namespace {
 
-/// @brief Format a value column string for a menu row.
-std::string value_text(const Settings& s, int item) {
-    switch (item) {
-    case 0:
-        return s.fullscreen ? "ON" : "OFF";
-    case 1:
-        return std::to_string(s.window_scale) + "X";
-    case 2:
-        return s.vsync ? "ON" : "OFF";
-    case 3:
-        return std::to_string(s.music_volume);
-    case 4:
-        return std::to_string(s.sfx_volume);
-    default:
-        return "";
-    }
-}
-
+/// @brief Row labels, indexed by OptionsScene::Item.
 constexpr const char* LABELS[] = {"FULLSCREEN",   "WINDOW SCALE", "VSYNC",
                                   "MUSIC VOLUME", "SFX VOLUME",   "BACK"};
 
 } // anonymous namespace
+
+OptionsScene::OptionsScene() {
+    if constexpr (platform::HAS_WINDOW_SETTINGS) {
+        items_ = {Fullscreen, WindowScale, Vsync, MusicVolume, SfxVolume, Back};
+    } else {
+        items_ = {MusicVolume, SfxVolume, Back};
+    }
+}
+
+/// @brief Format a value column string for a menu row.
+std::string OptionsScene::value_text(const Settings& s, Item item) {
+    switch (item) {
+    case Fullscreen:
+        return s.fullscreen ? "ON" : "OFF";
+    case WindowScale:
+        return std::to_string(s.window_scale) + "X";
+    case Vsync:
+        return s.vsync ? "ON" : "OFF";
+    case MusicVolume:
+        return std::to_string(s.music_volume);
+    case SfxVolume:
+        return std::to_string(s.sfx_volume);
+    case Back:
+        return "";
+    }
+    return "";
+}
 
 void OptionsScene::on_enter(Game& /*game*/) {
     spdlog::info("Entered options scene");
@@ -49,7 +60,7 @@ void OptionsScene::on_exit(Game& game) {
 void OptionsScene::adjust(Game& game, int direction) const {
     auto& s = game.settings_mut();
 
-    switch (selected_) {
+    switch (current()) {
     case Fullscreen:
         s.fullscreen = !s.fullscreen;
         break;
@@ -65,14 +76,14 @@ void OptionsScene::adjust(Game& game, int direction) const {
     case SfxVolume:
         s.sfx_volume = std::clamp(s.sfx_volume + direction * 10, 0, 100);
         break;
-    default:
+    case Back:
         return;
     }
 
     game.apply_settings();
 
     // Audible feedback while tuning the SFX volume
-    if (selected_ == SfxVolume) {
+    if (current() == SfxVolume) {
         game.audio().play(sfx_sound_name(Sfx::Pickup));
     }
 }
@@ -86,10 +97,11 @@ void OptionsScene::update(Game& game, float /*dt*/) {
     }
 
     // Vertical navigation on input edges
+    const int count = static_cast<int>(items_.size());
     if (input.move_y > 0.5f && prev_move_y_ <= 0.5f) {
-        selected_ = (selected_ + 1) % COUNT;
+        selected_ = (selected_ + 1) % count;
     } else if (input.move_y < -0.5f && prev_move_y_ >= -0.5f) {
-        selected_ = (selected_ + COUNT - 1) % COUNT;
+        selected_ = (selected_ + count - 1) % count;
     }
     prev_move_y_ = input.move_y;
 
@@ -102,7 +114,7 @@ void OptionsScene::update(Game& game, float /*dt*/) {
     prev_move_x_ = input.move_x;
 
     if (input.confirm_pressed) {
-        if (selected_ == Back) {
+        if (current() == Back) {
             game.scenes().pop(game);
         } else {
             adjust(game, +1); // confirm toggles/increments the selected item
@@ -135,16 +147,18 @@ void OptionsScene::render(Game& game) {
     constexpr float row_h = 16.f;
     constexpr float first_y = 100.f;
 
-    for (int i = 0; i < COUNT; ++i) {
+    const int count = static_cast<int>(items_.size());
+    for (int i = 0; i < count; ++i) {
+        const Item item = items_[static_cast<size_t>(i)];
         float y = first_y + static_cast<float>(i) * row_h;
         bool is_selected = (i == selected_);
 
         if (is_selected) {
             font.draw(r, ">", label_x - 12.f, y, active, 1);
         }
-        font.draw(r, LABELS[i], label_x, y, is_selected ? active : inactive, 1);
+        font.draw(r, LABELS[item], label_x, y, is_selected ? active : inactive, 1);
 
-        std::string value = value_text(s, i);
+        std::string value = value_text(s, item);
         if (!value.empty()) {
             std::string display = is_selected ? "< " + value + " >" : value;
             float x = is_selected ? value_x - 12.f : value_x;
@@ -153,7 +167,7 @@ void OptionsScene::render(Game& game) {
     }
 
     // VSync may be refused by the driver; surface the real state
-    if (s.vsync && !game.renderer().vsync_enabled()) {
+    if (platform::HAS_WINDOW_SETTINGS && s.vsync && !game.renderer().vsync_enabled()) {
         font.draw_centered(r, "VSYNC UNAVAILABLE - USING FRAME LIMITER", center_x, 220.f,
                            {200, 160, 90, 255}, 1);
     }

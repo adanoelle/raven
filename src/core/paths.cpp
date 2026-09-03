@@ -3,6 +3,8 @@
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
 
+#include <cctype>
+
 namespace raven::paths {
 
 namespace {
@@ -30,8 +32,19 @@ bool is_absolute(const std::string& path) {
     if (path[0] == '/' || path[0] == '\\') {
         return true;
     }
-    // Windows drive letter, e.g. "C:\..." or "C:/..."
-    return path.size() >= 2 && path[1] == ':';
+    // A "scheme:" prefix marks an already-resolved path: a Windows drive
+    // letter ("C:\...") or a console mount such as "romfs:/" or "sdmc:/".
+    // Only alphanumerics may precede the colon.
+    const auto colon = path.find(':');
+    if (colon == std::string::npos || colon == 0) {
+        return false;
+    }
+    for (size_t i = 0; i < colon; ++i) {
+        if (!std::isalnum(static_cast<unsigned char>(path[i]))) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // anonymous namespace

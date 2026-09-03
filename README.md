@@ -34,6 +34,22 @@ just test
 | `just lint`    | Run clang-tidy              |
 | `just clean`   | Remove build directories    |
 
+### Offline / console builds
+
+CPM fetches EnTT, nlohmann_json, spdlog, LDtkLoader, Dear ImGui, and Catch2
+from GitHub at configure time. For an isolated build machine (a console
+devkit, an air-gapped CI runner), populate a source cache once while online:
+
+```bash
+CPM_SOURCE_CACHE=/path/to/cpm-cache cmake -B build -G Ninja
+```
+
+then configure with the same `CPM_SOURCE_CACHE` on the isolated machine; every
+package is served from the cache and nothing is downloaded. CI already does
+this. `-DRAVEN_PLATFORM_CONSOLE=ON` hides desktop-only display options
+(fullscreen, window scale, vsync) from the options menu; `just release` and the
+Nix package build with `-DRAVEN_ENABLE_IMGUI=OFF`.
+
 ## Controls
 
 | Action | Keyboard          | Gamepad            |

@@ -34,6 +34,10 @@ class GameScene : public Scene {
     /// @param game The Game instance.
     void render(Game& game) override;
 
+    /// @brief Push the pause menu when the app is suspended mid-run.
+    /// @param game The Game instance.
+    void on_suspend(Game& game) override;
+
   private:
     /// @brief Create the player entity with all required components.
     /// @param game The Game instance providing registry and sprite access.
