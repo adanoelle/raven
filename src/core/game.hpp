@@ -133,6 +133,10 @@ class Game {
     /// @param dt Fixed timestep delta in seconds (Clock::TICK_RATE).
     void fixed_update(float dt);
 
+    /// @brief React to app lifecycle events (background/foreground).
+    /// @param event The SDL event just polled.
+    void handle_lifecycle_event(const SDL_Event& event);
+
     /// @brief Render the current frame via the active scene and overlay.
     void render();
 

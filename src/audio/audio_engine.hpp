@@ -61,6 +61,12 @@ class AudioEngine {
     /// @return True after a successful init().
     [[nodiscard]] bool is_ready() const { return device_ != 0; }
 
+    /// @brief Stop the device clock while the app is in the background.
+    void pause();
+
+    /// @brief Resume the device after pause().
+    void resume();
+
     /// @brief Number of currently playing (bound) streams.
     /// @return Live stream count; 0 when idle or not initialised.
     [[nodiscard]] int active_streams() const { return static_cast<int>(streams_.size()); }

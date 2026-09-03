@@ -345,6 +345,14 @@ void GameScene::update(Game& game, float dt) {
     }
 }
 
+void GameScene::on_suspend(Game& game) {
+    // Only when this scene is live: an overlay (pause/options) on top
+    // already means gameplay is frozen.
+    if (game.scenes().is_top(this)) {
+        game.scenes().push(std::make_unique<PauseScene>(), game);
+    }
+}
+
 void GameScene::render(Game& game) {
     auto* r = game.renderer().sdl_renderer();
 

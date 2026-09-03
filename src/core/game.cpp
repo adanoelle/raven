@@ -140,6 +140,7 @@ void Game::run() {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             renderer_.handle_event(event);
+            handle_lifecycle_event(event);
 
 #ifdef RAVEN_ENABLE_IMGUI
             bool imgui_consumed = debug_overlay_.process_event(event);
@@ -199,6 +200,23 @@ void Game::run() {
         if (scenes_.empty()) {
             running_ = false;
         }
+    }
+}
+
+void Game::handle_lifecycle_event(const SDL_Event& event) {
+    switch (event.type) {
+    case SDL_EVENT_WILL_ENTER_BACKGROUND:
+        // Console sleep / home menu, mobile backgrounding: freeze gameplay
+        // behind the pause menu and stop the audio clock. The fixed-step
+        // clamp in Clock handles the time jump on the way back.
+        scenes_.suspend(*this);
+        audio_.pause();
+        break;
+    case SDL_EVENT_DID_ENTER_FOREGROUND:
+        audio_.resume();
+        break;
+    default:
+        break;
     }
 }
 

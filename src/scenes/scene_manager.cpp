@@ -65,6 +65,12 @@ void SceneManager::update(Game& game, float dt) {
     }
 }
 
+void SceneManager::suspend(Game& game) {
+    if (!stack_.empty()) {
+        stack_.back()->on_suspend(game);
+    }
+}
+
 void SceneManager::render(Game& game) {
     // Render all scenes bottom-up (for transparency/overlay support)
     for (auto& scene : stack_) {

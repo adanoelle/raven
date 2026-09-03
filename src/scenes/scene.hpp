@@ -29,6 +29,13 @@ class Scene {
     /// @brief Render the scene for the current frame.
     /// @param game The Game instance providing access to subsystems.
     virtual void render(Game& game) = 0;
+
+    /// @brief Called on the top scene when the app is about to lose the
+    /// foreground (console sleep/home menu, mobile backgrounding).
+    ///
+    /// Gameplay scenes should pause themselves here. Default: no-op.
+    /// @param game The Game instance providing access to subsystems.
+    virtual void on_suspend(Game& game) { (void)game; }
 };
 
 /// @brief Stack-based scene manager. The top scene receives updates and renders.
@@ -69,6 +76,10 @@ class SceneManager {
     /// @brief Render the top scene.
     /// @param game The Game instance.
     void render(Game& game);
+
+    /// @brief Forward an app-suspend notification to the top scene.
+    /// @param game The Game instance.
+    void suspend(Game& game);
 
     /// @brief Check whether the scene stack is empty.
     /// @return True if no scenes are on the stack.
