@@ -2,6 +2,11 @@
 
 Date: 2026-08-29 Status: Proposed
 
+> **Proposed means recorded, not scheduled.** This layer is sequenced
+> behind the feel work (disarm audio, music, ability VFX) and launch
+> content (stages, enemies). Revisit the status once that work is in;
+> nothing below is booked until it reads Accepted.
+
 ## Context
 
 Raven currently has no meta-progression. A run ends and nothing carries
@@ -333,7 +338,7 @@ Implementation order (each step builds, tests, and could ship alone):
 The five steps split into a low-variance systems layer and a
 high-variance content bet, and they ship on different schedules:
 
-- **v1 (launch): steps 1, 2, 3, and 5.** Drops, wallet, banking,
+- **If adopted — v1 (launch): steps 1, 2, 3, and 5.** Drops, wallet, banking,
   catalog, ranks, and mods, with the catalog presented as an **upgrade
   overlay** (the `PauseScene` idiom) reachable from the game-over and
   victory scenes and from a title-menu entry — no walkable room
