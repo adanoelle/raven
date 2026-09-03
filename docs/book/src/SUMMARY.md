@@ -33,7 +33,6 @@
 
 - [Development Environment](guide/environment.md)
 - [Building and Running](guide/building.md)
-- [Switch Port Plan](guide/switch-port-plan.md)
 - [Project Tour](guide/project-tour.md)
 - [Architecture Overview](architecture/overview.md)
 - [Game Loop and Fixed Timestep](architecture/game-loop.md)
@@ -51,6 +50,13 @@
 - [Player Classes](architecture/player-classes.md)
 - [Art Integration Guide](art/art-integration.md)
 - [Audio Integration Guide](audio-integration.md)
+
+---
+
+# Planning
+
+- [Production Plan](production-plan.md)
+- [Switch Port Plan](guide/switch-port-plan.md)
 
 ---
 
