@@ -116,6 +116,7 @@
           cmakeFlags = [
             "-DCMAKE_BUILD_TYPE=Release"
             "-DRAVEN_ENABLE_TESTS=OFF"
+            "-DRAVEN_ENABLE_IMGUI=OFF"
           ];
         };
       });

@@ -17,7 +17,14 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Options
 option(RAVEN_ENABLE_TESTS "Build tests" ON)
 option(RAVEN_ENABLE_ASAN "Enable Address Sanitizer" OFF)
-option(RAVEN_ENABLE_IMGUI "Enable Dear ImGui debug overlay" ON)
+# The debug overlay is a development tool: default it off for optimised
+# (shipping) configurations so F1 does nothing in a release build.
+if(CMAKE_BUILD_TYPE MATCHES "^(Release|MinSizeRel)$")
+    set(RAVEN_IMGUI_DEFAULT OFF)
+else()
+    set(RAVEN_IMGUI_DEFAULT ON)
+endif()
+option(RAVEN_ENABLE_IMGUI "Enable Dear ImGui debug overlay" ${RAVEN_IMGUI_DEFAULT})
 option(RAVEN_ENABLE_STEAM "Enable Steamworks (needs SDK in vendor/steamworks/sdk)" OFF)
 
 # CMake modules
