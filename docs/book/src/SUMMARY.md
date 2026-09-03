@@ -33,6 +33,7 @@
 
 - [Development Environment](guide/environment.md)
 - [Building and Running](guide/building.md)
+- [Switch Port Plan](guide/switch-port-plan.md)
 - [Project Tour](guide/project-tour.md)
 - [Architecture Overview](architecture/overview.md)
 - [Game Loop and Fixed Timestep](architecture/game-loop.md)
