@@ -11,6 +11,7 @@
 - [Art Specification](art/art-spec.md)
 - [Aseprite Setup Guide](art/art-aseprite-guide.md)
 - [Character Animation Process](art/character-animation-process.md)
+- [Walk Cycle: Blocking Strategy](art/walk-cycle-blocking.md)
 - [First Character: A Walkthrough](art/first-character-walkthrough.md)
 - [Action Animation: Stretch and Smears](art/action-animation.md)
 - [Art Files and Organization](art/art-organization.md)
