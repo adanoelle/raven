@@ -647,7 +647,7 @@ tags. Each tag becomes one row, frames within the tag become columns.
 
 ```bash
 aseprite -b art/characters/knight/knight.aseprite \
-  --sheet assets/sprites/player.png \
+  --sheet assets/sprites/knight.png \
   --sheet-type rows \
   --split-tags
 ```
@@ -674,15 +674,20 @@ After exporting, register the sprite sheet in `assets/data/config.json`:
 
 ```json
 {
-  "id": "player",
-  "path": "assets/sprites/player.png",
+  "id": "knight",
+  "path": "assets/sprites/knight.png",
   "frame_w": 32,
   "frame_h": 32
 }
 ```
 
-Then wire up the entity's `Sprite` and `Animation` components at spawn time. See
-the [Art Integration Guide](art-integration.md) for the full walkthrough.
+Then wire up the entity's `Sprite` and `Animation` components at spawn time. For
+a playable class, the class recipe sets the sheet id (`apply_knight` in
+`player_class.cpp` points the `Sprite` at `knight`); classes without final art
+keep the placeholder `player` sheet. See
+[Player Classes](../architecture/player-classes.md) /
+[ADR-0011](../decisions/0011-class-as-component-recipe.md) and the
+[Art Integration Guide](art-integration.md) for the full walkthrough.
 
 ---
 

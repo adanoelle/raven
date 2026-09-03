@@ -76,17 +76,20 @@ Conventions:
 | --------------------- | ----------------------------------- | ------------------------------------ |
 | Working file          | `<name>.aseprite` in its own folder | `art/characters/knight/knight.aseprite` |
 | Sketch / exploration  | `YYYY-MM-DD-<topic>.aseprite`       | `2026-08-28-silhouettes.aseprite`    |
-| Exported sheet        | **Exactly** the name registered in `assets/data/config.json` — lowercase, underscores | `assets/sprites/player.png`          |
+| Exported sheet        | **Exactly** the name registered in `assets/data/config.json` — lowercase, underscores | `assets/sprites/knight.png`          |
 | Palette               | `<scope>.gpl` (or `.pal`)           | `art/palettes/raven.gpl`             |
 | Template              | `<tier>_<size>.aseprite`            | `medium_32x32.aseprite`              |
 
 The export name deserves the emphasis: file names do the wiring
 ([Getting Work Into the Game](../getting-work-into-the-game.md#file-names-do-the-wiring)).
-The mapping from source to export is not always one-to-one with the
-character's name — today the knight's working file exports to
-`player.png` because that is the sheet the engine loads for the playable
-character. Each character's book page records which export its source
-feeds, so the mapping is never tribal knowledge.
+Each playable class has its own sheet: the knight's working file
+exports to `knight.png`, registered in `config.json` as sheet id
+`knight`, and the Knight class recipe points the player entity at it
+([Player Classes](../architecture/player-classes.md)). The placeholder
+bird, `player.png` (sheet id `player`), stays in the tree as the sheet
+for classes that don't have final art yet. Each character's book page
+records which export its source feeds, so the mapping is never tribal
+knowledge.
 
 ## Exporting
 
