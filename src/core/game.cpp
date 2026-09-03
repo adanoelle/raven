@@ -1,5 +1,6 @@
 #include "core/game.hpp"
 
+#include "core/fs.hpp"
 #include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "scenes/title_scene.hpp"
@@ -7,8 +8,6 @@
 #include <SDL3/SDL.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
-
-#include <fstream>
 
 namespace raven {
 
@@ -37,11 +36,14 @@ bool Game::init() {
 
     // Load persisted user settings, then write them back: the first run
     // creates the file, and later runs pick up any fields added since.
-    settings_path_ = paths::pref_dir() + "settings.json";
+    // An empty pref dir (SDL_GetPrefPath failed) leaves both paths empty so
+    // load/save become no-ops instead of silently using the working directory.
+    const std::string pref = paths::pref_dir();
+    settings_path_ = pref.empty() ? std::string{} : pref + "settings.json";
     settings_ = Settings::load(settings_path_);
     settings_.save(settings_path_);
 
-    save_path_ = paths::pref_dir() + "save.json";
+    save_path_ = pref.empty() ? std::string{} : pref + "save.json";
     save_data_ = SaveData::load(save_path_);
 
     if (!renderer_.init("Raven", settings_.window_scale, settings_.fullscreen, settings_.vsync)) {
@@ -77,14 +79,14 @@ bool Game::init() {
 
 bool Game::load_assets() {
     const std::string config_path = paths::asset("assets/data/config.json");
-    std::ifstream f(config_path);
-    if (!f.is_open()) {
+    const auto text = fs::read_text(config_path);
+    if (!text) {
         spdlog::warn("Could not open '{}' — running without assets", config_path);
         return true;
     }
 
     try {
-        auto config = nlohmann::json::parse(f);
+        auto config = nlohmann::json::parse(*text);
 
         if (config.contains("font")) {
             const auto& fj = config["font"];

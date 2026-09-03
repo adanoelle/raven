@@ -1,18 +1,35 @@
+#include "core/fs.hpp"
 #include "rendering/tilemap.hpp"
 
 #include <SDL3_image/SDL_image.h>
 #include <spdlog/spdlog.h>
 
 #include <LDtkLoader/Project.hpp>
+#include <memory>
 #include <ranges>
+#include <sstream>
 
 namespace raven {
+
+namespace {
+
+/// @brief LDtkLoader file hook: read project and external level files
+/// through the fs seam instead of the library's own std::ifstream.
+///
+/// A missing file yields an empty stream buffer; the library's JSON parse
+/// then throws, which Tilemap::load already catches and reports.
+std::unique_ptr<std::streambuf> ldtk_file_loader(const std::string& path) {
+    auto text = fs::read_text(path);
+    return std::make_unique<std::stringbuf>(text ? std::move(*text) : std::string{});
+}
+
+} // anonymous namespace
 
 bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
                    const std::string& level_name) {
     ldtk::Project project;
     try {
-        project.loadFromFile(ldtk_path);
+        project.loadFromFile(ldtk_path, ldtk_file_loader);
     } catch (const std::exception& e) {
         spdlog::error("Failed to load LDtk project '{}': {}", ldtk_path, e.what());
         return false;

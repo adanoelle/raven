@@ -1,9 +1,10 @@
 #include "core/settings.hpp"
 
+#include "core/fs.hpp"
+
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <fstream>
 
 namespace raven {
 
@@ -25,14 +26,14 @@ nlohmann::json Settings::to_json() const {
 }
 
 Settings Settings::load(const std::string& file_path) {
-    std::ifstream f(file_path);
-    if (!f.is_open()) {
+    const auto text = fs::read_text(file_path);
+    if (!text) {
         spdlog::info("No settings file at '{}' — using defaults", file_path);
         return Settings{};
     }
 
     try {
-        return from_json(nlohmann::json::parse(f));
+        return from_json(nlohmann::json::parse(*text));
     } catch (const nlohmann::json::exception& e) {
         spdlog::warn("Failed to parse settings '{}': {} — using defaults", file_path, e.what());
         return Settings{};
@@ -40,16 +41,11 @@ Settings Settings::load(const std::string& file_path) {
 }
 
 bool Settings::save(const std::string& file_path) const {
-    if (file_path.empty()) {
-        return false;
-    }
-    std::ofstream f(file_path);
-    if (!f.is_open()) {
+    if (!fs::write_text(file_path, to_json().dump(4) + '\n')) {
         spdlog::warn("Could not write settings to '{}'", file_path);
         return false;
     }
-    f << to_json().dump(4) << '\n';
-    return f.good();
+    return true;
 }
 
 } // namespace raven

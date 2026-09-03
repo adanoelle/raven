@@ -34,6 +34,7 @@ add_executable(raven
     src/main.cpp
 
     # Core
+    src/core/fs.cpp
     src/core/game.cpp
     src/core/input.cpp
     src/core/paths.cpp
