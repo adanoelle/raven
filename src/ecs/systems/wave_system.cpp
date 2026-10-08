@@ -5,6 +5,7 @@
 #include "core/string_id.hpp"
 #include "ecs/systems/hitbox_math.hpp"
 #include "ecs/systems/player_utils.hpp"
+#include "rendering/sheet_ids.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -93,13 +94,13 @@ EnemyVisuals enemy_visuals(Enemy::Type type) {
     switch (type) {
     case Enemy::Type::Grunt:
         //          sheet       sw  sh  cr    rw    rh   oy
-        return {"enemies", 24, 24, 7.f, 12.f, 14.f, -3.f};
+        return {sheets::ENEMIES, 24, 24, 7.f, 12.f, 14.f, -3.f};
     case Enemy::Type::Mid:
-        return {"enemies_mid", 32, 32, 9.f, 16.f, 18.f, -5.f};
+        return {sheets::ENEMIES_MID, 32, 32, 9.f, 16.f, 18.f, -5.f};
     case Enemy::Type::Boss:
-        return {"enemies_boss", 48, 48, 18.f, 32.f, 36.f, -6.f};
+        return {sheets::ENEMIES_BOSS, 48, 48, 18.f, 32.f, 36.f, -6.f};
     }
-    return {"enemies", 24, 24, 7.f, 12.f, 14.f, -3.f};
+    return {sheets::ENEMIES, 24, 24, 7.f, 12.f, 14.f, -3.f};
 }
 
 } // namespace

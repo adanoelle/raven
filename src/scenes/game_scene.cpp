@@ -25,6 +25,7 @@
 #include "ecs/systems/tile_collision_system.hpp"
 #include "ecs/systems/tilemap_render_system.hpp"
 #include "ecs/systems/wave_system.hpp"
+#include "rendering/sheet_ids.hpp"
 #include "scenes/game_over_scene.hpp"
 #include "scenes/pause_scene.hpp"
 #include "scenes/title_scene.hpp"
@@ -105,7 +106,8 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<Health>(player, 1.f, 1.f);
     reg.emplace<CircleHitbox>(player, 6.f, 0.f, 2.f);
     reg.emplace<RectHitbox>(player, 12.f, 14.f, 0.f, 2.f);
-    reg.emplace<Sprite>(player, interner.intern("player"), 0, 0, 32, 32, 10, false, 0.f, -5.f);
+    reg.emplace<Sprite>(player, interner.intern(sheets::PLAYER), 0, 0, 32, 32, 10, false, 0.f,
+                        -5.f);
     reg.emplace<Animation>(player, 0, 3, 0.25f, 0.f, 0, true);
     reg.emplace<AnimationState>(player);
     reg.emplace<AimDirection>(player, 1.f, 0.f);
@@ -113,7 +115,7 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<MeleeCooldown>(player);
     reg.emplace<DashCooldown>(player);
     auto& weapon = reg.emplace<Weapon>(player);
-    weapon.bullet_sheet = interner.intern("projectiles");
+    weapon.bullet_sheet = interner.intern(sheets::PROJECTILES);
 
     // Apply class recipe
     switch (selected_class_) {

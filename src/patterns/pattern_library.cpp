@@ -2,6 +2,7 @@
 
 #include "core/fs.hpp"
 #include "core/paths.hpp"
+#include "rendering/sheet_ids.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -161,7 +162,7 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
     def.fire_rate = clamp_field(pattern_name, "fire_rate", j.value("fire_rate", 0.1f), 0.05f, 60.f);
     def.spread_angle = j.value("spread_angle", 360.f);
     def.start_angle = j.value("start_angle", 0.f);
-    def.bullet_sheet = interner_->intern(j.value("bullet_sheet", "projectiles"));
+    def.bullet_sheet = interner_->intern(j.value("bullet_sheet", sheets::PROJECTILES));
     def.bullet_frame_x = j.value("bullet_frame_x", 0);
     def.bullet_frame_y = j.value("bullet_frame_y", 0);
     def.bullet_width = j.value("bullet_width", 8);

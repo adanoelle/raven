@@ -5,12 +5,19 @@ Creates:
   - assets/sprites/player.png      (32x32 frames, 6 cols x 9 rows)
   - assets/sprites/enemies_mid.png  (32x32 frames, 3 cols x 2 rows)
   - assets/sprites/enemies_boss.png (48x48 frames, 3 cols x 2 rows)
+  - assets/sprites/pickups.png      (16x16 frames: weapon pickup, stabilizer)
+  - assets/sprites/props.png        (16x16 frames: exit closed, exit open)
 
 Run: nix-shell -p python3Packages.pillow --run "python3 tools/gen_placeholder_sprites.py"
+
+Pass sheet names to regenerate only those, so finished art in the other
+sheets is left alone:
+    python3 tools/gen_placeholder_sprites.py pickups props
 """
 
 from PIL import Image, ImageDraw
 import os
+import sys
 
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "assets", "sprites")
 
@@ -244,10 +251,68 @@ def generate_enemies_boss_sheet():
     print(f"  enemies_boss.png: {img.size[0]}x{img.size[1]} ({cols}x{rows} frames @ {fw}x{fh})")
 
 
+def generate_pickups_sheet():
+    """Generate 16x16 pickup sheet: col 0 weapon pickup, col 1 stabilizer."""
+    fw, fh = 16, 16
+    img = Image.new("RGBA", (2 * fw, fh), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # Col 0: weapon pickup, an orange orb with a light core
+    draw.ellipse([2, 2, 13, 13], fill="#e8a020", outline="#1a1a1a")
+    draw.ellipse([5, 5, 10, 10], fill="#fff0b0")
+
+    # Col 1: stabilizer, a teal diamond crystal
+    x = fw
+    draw.polygon(
+        [(x + 8, 1), (x + 14, 8), (x + 8, 14), (x + 2, 8)],
+        fill="#30c0b0",
+        outline="#1a1a1a",
+    )
+    draw.line([(x + 8, 4), (x + 8, 11)], fill="#c0fff4")
+
+    path = os.path.join(ASSETS, "pickups.png")
+    img.save(path)
+    print(f"  pickups.png: {img.size[0]}x{img.size[1]} (2x1 frames @ {fw}x{fh})")
+
+
+def generate_props_sheet():
+    """Generate 16x16 props sheet: col 0 exit closed, col 1 exit open."""
+    fw, fh = 16, 16
+    img = Image.new("RGBA", (2 * fw, fh), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # Col 0: closed exit, a dark hatch with bars
+    draw.rectangle([1, 1, 14, 14], fill="#303040", outline="#1a1a1a")
+    for bx in (4, 7, 10):
+        draw.line([(bx, 2), (bx, 13)], fill="#606078")
+
+    # Col 1: open exit, a glowing green hatch
+    x = fw
+    draw.rectangle([x + 1, 1, x + 14, 14], fill="#204020", outline="#1a1a1a")
+    draw.rectangle([x + 3, 3, x + 12, 12], fill="#40e060")
+    draw.rectangle([x + 6, 6, x + 9, 9], fill="#d0ffd8")
+
+    path = os.path.join(ASSETS, "props.png")
+    img.save(path)
+    print(f"  props.png: {img.size[0]}x{img.size[1]} (2x1 frames @ {fw}x{fh})")
+
+
+GENERATORS = {
+    "player": generate_player_sheet,
+    "enemies_mid": generate_enemies_mid_sheet,
+    "enemies_boss": generate_enemies_boss_sheet,
+    "pickups": generate_pickups_sheet,
+    "props": generate_props_sheet,
+}
+
+
 if __name__ == "__main__":
+    names = sys.argv[1:] or list(GENERATORS)
+    unknown = [n for n in names if n not in GENERATORS]
+    if unknown:
+        sys.exit(f"Unknown sheet(s): {', '.join(unknown)}. Choose from: {', '.join(GENERATORS)}")
     os.makedirs(ASSETS, exist_ok=True)
     print("Generating placeholder sprites...")
-    generate_player_sheet()
-    generate_enemies_mid_sheet()
-    generate_enemies_boss_sheet()
+    for name in names:
+        GENERATORS[name]()
     print("Done.")

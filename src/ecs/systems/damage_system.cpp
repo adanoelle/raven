@@ -2,6 +2,7 @@
 
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
+#include "rendering/sheet_ids.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -71,7 +72,8 @@ void handle_enemy_death(entt::registry& reg, entt::entity entity, raven::StringI
                 reg.emplace<raven::PreviousTransform>(stab_ent, tf->x, tf->y + 12.f);
                 reg.emplace<raven::CircleHitbox>(stab_ent, 8.f);
                 reg.emplace<raven::Lifetime>(stab_ent, 8.f);
-                reg.emplace<raven::Sprite>(stab_ent, interner.intern("pickups"), 1, 0, 16, 16, 5);
+                reg.emplace<raven::Sprite>(stab_ent, interner.intern(raven::sheets::PICKUPS),
+                                           raven::sheets::PICKUP_FRAME_STABILIZER, 0, 16, 16, 5);
                 reg.emplace<raven::StabilizerPickup>(stab_ent);
             }
         }
