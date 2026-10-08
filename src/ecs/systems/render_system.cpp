@@ -3,11 +3,19 @@
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
 #include <vector>
 
 namespace {
+
+/// @brief Sheet ids already reported as unregistered, so each is logged once.
+struct MissingSheetWarnings {
+    std::unordered_set<uint16_t> ids;
+};
 
 struct RenderEntry {
     float x, y;
@@ -50,6 +58,14 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
 
         const auto* sheet = sprites.get(sprite.sheet_id);
         if (!sheet) {
+            auto& warned = reg.ctx().emplace<MissingSheetWarnings>();
+            if (warned.ids.insert(sprite.sheet_id.value).second) {
+                const auto* interner = reg.ctx().find<StringInterner>();
+                spdlog::warn("Sprite sheet '{}' is not registered in config.json; drawing a "
+                             "placeholder rectangle",
+                             interner ? interner->resolve(sprite.sheet_id) : std::string{"?"});
+            }
+
             // No sprite sheet loaded — draw a placeholder colored rect
             SDL_FRect rect{render_x + sprite.offset_x - static_cast<float>(sprite.width) / 2.f,
                            render_y + sprite.offset_y - static_cast<float>(sprite.height) / 2.f,

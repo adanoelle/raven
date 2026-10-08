@@ -59,10 +59,12 @@ class SpriteSheet {
 
   private:
     SDL_Texture* texture_ = nullptr;
+    std::string path_; ///< Image path, for diagnostics.
     int frame_w_ = 0;
     int frame_h_ = 0;
     int sheet_w_ = 0;
     int sheet_h_ = 0;
+    mutable bool warned_bad_frame_ = false; ///< Out-of-range frame already reported.
 };
 
 /// @brief Registry of sprite sheets keyed by interned StringId.

@@ -447,3 +447,26 @@ TEST_CASE("Enemy type strings map to correct enums", "[waves]") {
     REQUIRE(loader.load_from_json(make_stage("grunt", "coward")));
     REQUIRE(loader.get(3)->waves[0].enemies[0].ai == AiBehavior::Archetype::Coward);
 }
+
+TEST_CASE("Enemy type and AI parsers reject unknown strings", "[waves]") {
+    CHECK(parse_enemy_type("grunt") == Enemy::Type::Grunt);
+    CHECK(parse_enemy_type("boss") == Enemy::Type::Boss);
+    CHECK_FALSE(parse_enemy_type("Boss").has_value());
+    CHECK_FALSE(parse_enemy_type("").has_value());
+
+    CHECK(parse_ai_archetype("coward") == AiBehavior::Archetype::Coward);
+    CHECK_FALSE(parse_ai_archetype("stalkr").has_value());
+}
+
+TEST_CASE("StageLoader falls back to grunt and chaser for unknown strings", "[waves]") {
+    StageLoader loader;
+    nlohmann::json j = {
+        {"name", "typo_stage"},
+        {"level", "Room"},
+        {"waves", {{{"enemies", {{{"type", "Boss"}, {"ai", "stalkr"}, {"pattern", ""}}}}}}}};
+
+    REQUIRE(loader.load_from_json(j));
+    const auto& enemy = loader.get(0)->waves[0].enemies[0];
+    CHECK(enemy.type == Enemy::Type::Grunt);
+    CHECK(enemy.ai == AiBehavior::Archetype::Chaser);
+}

@@ -14,27 +14,31 @@
 
 namespace raven {
 
-// ── Helper: map string to Enemy::Type ──────────────────────────────
+// ── String to enum mapping ─────────────────────────────────────────
 
-namespace {
-
-Enemy::Type parse_enemy_type(const std::string& str) {
+std::optional<Enemy::Type> parse_enemy_type(std::string_view str) {
+    if (str == "grunt")
+        return Enemy::Type::Grunt;
     if (str == "mid")
         return Enemy::Type::Mid;
     if (str == "boss")
         return Enemy::Type::Boss;
-    return Enemy::Type::Grunt;
+    return std::nullopt;
 }
 
-AiBehavior::Archetype parse_ai_archetype(const std::string& str) {
+std::optional<AiBehavior::Archetype> parse_ai_archetype(std::string_view str) {
+    if (str == "chaser")
+        return AiBehavior::Archetype::Chaser;
     if (str == "drifter")
         return AiBehavior::Archetype::Drifter;
     if (str == "stalker")
         return AiBehavior::Archetype::Stalker;
     if (str == "coward")
         return AiBehavior::Archetype::Coward;
-    return AiBehavior::Archetype::Chaser;
+    return std::nullopt;
 }
+
+namespace {
 
 /// @brief Build default AiBehavior for a given archetype.
 AiBehavior make_ai(AiBehavior::Archetype archetype) {
@@ -177,28 +181,43 @@ StageDef StageLoader::parse_stage(const nlohmann::json& j) const {
     stage.level = j.at("level").get<std::string>();
 
     for (const auto& wj : j.at("waves")) {
-        stage.waves.push_back(parse_wave(wj));
+        stage.waves.push_back(parse_wave(wj, stage.name));
     }
 
     return stage;
 }
 
-WaveDef StageLoader::parse_wave(const nlohmann::json& j) const {
+WaveDef StageLoader::parse_wave(const nlohmann::json& j, const std::string& stage_name) const {
     WaveDef wave;
     for (const auto& ej : j.at("enemies")) {
-        wave.enemies.push_back(parse_enemy(ej));
+        wave.enemies.push_back(parse_enemy(ej, stage_name));
     }
     return wave;
 }
 
-WaveEnemyDef StageLoader::parse_enemy(const nlohmann::json& j) const {
+WaveEnemyDef StageLoader::parse_enemy(const nlohmann::json& j,
+                                      const std::string& stage_name) const {
     WaveEnemyDef def;
     def.spawn_index = j.value("spawn_index", 0);
-    def.type = parse_enemy_type(j.value("type", "grunt"));
+
+    const auto type_str = j.value("type", std::string{"grunt"});
+    if (auto type = parse_enemy_type(type_str)) {
+        def.type = *type;
+    } else {
+        spdlog::warn("Stage '{}': unknown enemy type '{}', using 'grunt'", stage_name, type_str);
+    }
+
     def.pattern = j.value("pattern", "spiral_3way");
     def.hp = j.value("hp", 1.f);
     def.score = j.value("score", 100);
-    def.ai = parse_ai_archetype(j.value("ai", "chaser"));
+
+    const auto ai_str = j.value("ai", std::string{"chaser"});
+    if (auto ai = parse_ai_archetype(ai_str)) {
+        def.ai = *ai;
+    } else {
+        spdlog::warn("Stage '{}': unknown ai '{}', using 'chaser'", stage_name, ai_str);
+    }
+
     def.contact_damage = j.value("contact_damage", false);
     return def;
 }
@@ -258,9 +277,13 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
                             vis.sprite_w, vis.sprite_h, 10, false, 0.f, vis.offset_y);
         reg.emplace<ScoreValue>(enemy, def.score);
 
-        // Set up bullet emitter if a pattern exists
+        // Set up bullet emitter if a pattern exists. An empty pattern name
+        // means an enemy that deliberately doesn't shoot.
         if (patterns.get(def.pattern)) {
             reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def.pattern), {}, {}});
+        } else if (!def.pattern.empty()) {
+            spdlog::warn("Stage '{}': pattern '{}' not found, so this enemy won't fire", stage.name,
+                         def.pattern);
         }
 
         reg.emplace<AiBehavior>(enemy, make_ai(def.ai));

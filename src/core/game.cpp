@@ -87,28 +87,44 @@ bool Game::load_assets() {
         return true;
     }
 
+    nlohmann::json config;
     try {
-        auto config = nlohmann::json::parse(*text);
+        config = nlohmann::json::parse(*text);
+    } catch (const nlohmann::json::exception& e) {
+        spdlog::error("Failed to parse config.json: {}", e.what());
+        return true;
+    }
 
-        if (config.contains("font")) {
-            const auto& fj = config["font"];
-            auto path = fj.value("path", "assets/fonts/font.png");
-            int gw = fj.value("glyph_w", 6);
-            int gh = fj.value("glyph_h", 8);
+    // Each section and entry loads on its own, so one malformed entry is
+    // reported and skipped instead of silently dropping everything after it.
+    if (auto it = config.find("font"); it != config.end()) {
+        try {
+            auto path = it->value("path", "assets/fonts/font.png");
+            int gw = it->value("glyph_w", 6);
+            int gh = it->value("glyph_h", 8);
             if (!font_.load(renderer_.sdl_renderer(), paths::asset(path), gw, gh)) {
                 spdlog::warn("Failed to load font atlas '{}' — text will not render", path);
             }
+        } catch (const nlohmann::json::exception& e) {
+            spdlog::error("config.json: malformed 'font' entry: {}", e.what());
         }
+    }
 
-        if (config.contains("sounds")) {
-            for (const auto& [id, path] : config["sounds"].items()) {
-                audio_.load_sound(id, paths::asset(path.get<std::string>()));
+    if (auto it = config.find("sounds"); it != config.end() && it->is_object()) {
+        for (const auto& [id, path] : it->items()) {
+            if (!path.is_string()) {
+                spdlog::error("config.json: sound '{}' must be a path string", id);
+                continue;
             }
+            audio_.load_sound(id, paths::asset(path.get<std::string>()));
         }
+    }
 
-        if (config.contains("sprite_sheets")) {
-            auto& interner = registry_.ctx().get<StringInterner>();
-            for (const auto& sheet : config["sprite_sheets"]) {
+    if (auto it = config.find("sprite_sheets"); it != config.end() && it->is_array()) {
+        auto& interner = registry_.ctx().get<StringInterner>();
+        for (std::size_t i = 0; i < it->size(); ++i) {
+            const auto& sheet = (*it)[i];
+            try {
                 auto id = sheet.at("id").get<std::string>();
                 auto path = sheet.at("path").get<std::string>();
                 int fw = sheet.at("frame_w").get<int>();
@@ -117,10 +133,10 @@ bool Game::load_assets() {
                                    paths::asset(path), fw, fh)) {
                     spdlog::warn("Failed to load sprite sheet '{}'", id);
                 }
+            } catch (const nlohmann::json::exception& e) {
+                spdlog::error("config.json: malformed sprite_sheets[{}]: {}", i, e.what());
             }
         }
-    } catch (const nlohmann::json::exception& e) {
-        spdlog::warn("Failed to parse config.json: {}", e.what());
     }
 
     return true;

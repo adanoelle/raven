@@ -20,6 +20,7 @@ add_executable(raven_tests
     test_tile_collision.cpp
     test_input.cpp
     test_movement.cpp
+    test_content.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/core/fs.cpp
@@ -38,6 +39,7 @@ add_executable(raven_tests
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/pickup_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/damage_system.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/tilemap.cpp
+    ${CMAKE_SOURCE_DIR}/src/rendering/tilemap_loader.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/tile_collision_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/ai_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/melee_system.cpp
@@ -51,6 +53,8 @@ add_executable(raven_tests
 )
 
 target_include_directories(raven_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+# test_content.cpp validates the shipped data in the source tree
+target_compile_definitions(raven_tests PRIVATE RAVEN_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 target_link_libraries(raven_tests PRIVATE
     Catch2::Catch2WithMain
     EnTT::EnTT
@@ -58,6 +62,7 @@ target_link_libraries(raven_tests PRIVATE
     spdlog::spdlog
     SDL3::SDL3
     SDL3_image::SDL3_image
+    LDtkLoader::LDtkLoader
 )
 
 # Shared dependencies (SDL3.dll, ...) must sit next to the test binary

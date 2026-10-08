@@ -6,7 +6,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace raven {
@@ -34,7 +36,20 @@ struct StageDef {
     std::vector<WaveDef> waves; ///< Ordered list of waves.
 };
 
+/// @brief Map a stage-file enemy type string to its tier.
+/// @param str Type string from stage JSON ("grunt", "mid" or "boss").
+/// @return The tier, or std::nullopt if the string is not a known type.
+[[nodiscard]] std::optional<Enemy::Type> parse_enemy_type(std::string_view str);
+
+/// @brief Map a stage-file AI string to its archetype.
+/// @param str AI string from stage JSON ("chaser", "drifter", "stalker" or "coward").
+/// @return The archetype, or std::nullopt if the string is not a known archetype.
+[[nodiscard]] std::optional<AiBehavior::Archetype> parse_ai_archetype(std::string_view str);
+
 /// @brief Loads stage definitions from JSON files following a manifest.
+///
+/// Unknown enemy type or AI strings log a warning and fall back to grunt
+/// and chaser, so a typo in stage data is visible in the log.
 class StageLoader {
   public:
     /// @brief Load a manifest JSON listing stage files.
@@ -65,8 +80,9 @@ class StageLoader {
     std::vector<StageDef> stages_;
 
     [[nodiscard]] StageDef parse_stage(const nlohmann::json& j) const;
-    [[nodiscard]] WaveDef parse_wave(const nlohmann::json& j) const;
-    [[nodiscard]] WaveEnemyDef parse_enemy(const nlohmann::json& j) const;
+    [[nodiscard]] WaveDef parse_wave(const nlohmann::json& j, const std::string& stage_name) const;
+    [[nodiscard]] WaveEnemyDef parse_enemy(const nlohmann::json& j,
+                                           const std::string& stage_name) const;
 };
 
 namespace systems {
