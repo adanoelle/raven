@@ -23,8 +23,7 @@ class PauseScene : public Scene {
   private:
     static constexpr int ITEM_COUNT = 3; ///< Resume, Options, Quit to Title.
 
-    int selected_ = 0;        ///< Highlighted menu item index.
-    float prev_move_y_ = 0.f; ///< Previous vertical input, for menu edge detection.
+    int selected_ = 0; ///< Highlighted menu item index.
 };
 
 } // namespace raven

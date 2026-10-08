@@ -124,3 +124,19 @@ TEST_CASE("Input system movement", "[input]") {
         REQUIRE(vel.dx == Catch::Approx(100.f).margin(0.1f));
     }
 }
+
+TEST_CASE("Menu direction edges only fire when an axis crosses half-way", "[input]") {
+    // A fresh push past half-way is a press
+    CHECK(axis_pressed(0.f, 1.f, 1.f));
+    CHECK(axis_pressed(0.f, -1.f, -1.f));
+    CHECK(axis_pressed(0.4f, 0.6f, 1.f));
+
+    // Holding a direction is not a press: a menu opened while the player
+    // is already moving must not move its cursor
+    CHECK_FALSE(axis_pressed(1.f, 1.f, 1.f));
+    CHECK_FALSE(axis_pressed(-1.f, -1.f, -1.f));
+
+    // Wrong direction, or not far enough
+    CHECK_FALSE(axis_pressed(0.f, 1.f, -1.f));
+    CHECK_FALSE(axis_pressed(0.f, 0.5f, 1.f));
+}

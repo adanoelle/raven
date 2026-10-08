@@ -15,13 +15,12 @@ void TitleScene::on_enter(Game& /*game*/) {
 void TitleScene::update(Game& game, float /*dt*/) {
     const auto& input = game.input().state();
 
-    // Menu navigation: vertical input edges
-    if (input.move_y > 0.5f && prev_move_y_ <= 0.5f) {
+    // Menu navigation on press edges
+    if (input.down_pressed) {
         selected_ = (selected_ + 1) % ITEM_COUNT;
-    } else if (input.move_y < -0.5f && prev_move_y_ >= -0.5f) {
+    } else if (input.up_pressed) {
         selected_ = (selected_ + ITEM_COUNT - 1) % ITEM_COUNT;
     }
-    prev_move_y_ = input.move_y;
 
     if (input.confirm_pressed) {
         if (selected_ == 0) {
