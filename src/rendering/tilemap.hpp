@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -10,11 +11,12 @@ namespace raven {
 
 /// @brief Pre-baked tile render data referencing a source rect in a tileset texture.
 struct TileData {
-    SDL_Rect src; ///< Source rect in the tileset texture.
-    int dest_x;   ///< Destination X position in world pixels.
-    int dest_y;   ///< Destination Y position in world pixels.
-    bool flip_x;  ///< Flip tile horizontally.
-    bool flip_y;  ///< Flip tile vertically.
+    SDL_Rect src{};       ///< Source rect in the tileset texture.
+    int dest_x = 0;       ///< Destination X position in world pixels.
+    int dest_y = 0;       ///< Destination Y position in world pixels.
+    bool flip_x = false;  ///< Flip tile horizontally.
+    bool flip_y = false;  ///< Flip tile vertically.
+    uint16_t texture = 0; ///< Index into Tilemap::textures() of this tile's tileset.
 };
 
 /// @brief Named spawn point extracted from an LDtk entity layer.
@@ -27,8 +29,16 @@ struct SpawnPoint {
 
 /// @brief Tilemap loaded from an LDtk project. Holds pre-baked render data,
 /// a collision grid, and spawn points. Owned by GameScene, not an ECS entity.
+///
+/// Only the IntGrid layer named COLLISION_LAYER is solid; other IntGrid
+/// layers contribute their auto-tiles but no collision. LDtk's per-layer
+/// visibility toggle hides a layer's tiles only, never its collision or
+/// entities, since it is an editor convenience.
 class Tilemap {
   public:
+    /// @brief Identifier of the IntGrid layer whose non-zero cells are solid.
+    static constexpr const char* COLLISION_LAYER = "Collision";
+
     Tilemap() = default;
     ~Tilemap();
 
@@ -90,11 +100,11 @@ class Tilemap {
     /// @brief Pre-baked tile render data.
     [[nodiscard]] const std::vector<TileData>& tiles() const { return tiles_; }
 
-    /// @brief Tileset texture (may be nullptr if not loaded via load()).
-    [[nodiscard]] SDL_Texture* texture() const { return texture_; }
+    /// @brief Tileset textures, indexed by TileData::texture (empty unless loaded via load()).
+    [[nodiscard]] const std::vector<SDL_Texture*>& textures() const { return textures_; }
 
   private:
-    SDL_Texture* texture_ = nullptr;
+    std::vector<SDL_Texture*> textures_;
     std::vector<TileData> tiles_;
     std::vector<bool> collision_grid_; ///< Row-major, true = solid.
     std::vector<SpawnPoint> spawns_;

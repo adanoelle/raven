@@ -8,6 +8,7 @@
 #include <memory>
 #include <ranges>
 #include <sstream>
+#include <unordered_map>
 
 namespace raven {
 
@@ -61,103 +62,102 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
         base_dir = ldtk_path.substr(0, last_slash + 1);
     }
 
+    // One texture per tileset, loaded on first use. Maps tileset uid to an
+    // index into textures_, or -1 if it failed to load (so it is reported
+    // once, not once per layer).
+    std::unordered_map<int, int> texture_index;
+    auto texture_for = [&](const ldtk::Tileset& tileset) -> int {
+        if (auto it = texture_index.find(tileset.uid); it != texture_index.end()) {
+            return it->second;
+        }
+        int index = -1;
+        std::string tex_path = base_dir + tileset.path;
+        if (SDL_Surface* surface = IMG_Load(tex_path.c_str())) {
+            SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+            SDL_DestroySurface(surface);
+            if (texture) {
+                SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_PIXELART);
+                index = static_cast<int>(textures_.size());
+                textures_.push_back(texture);
+            } else {
+                spdlog::error("Failed to create tileset texture '{}': {}", tex_path,
+                              SDL_GetError());
+            }
+        } else {
+            spdlog::error("Failed to load tileset '{}': {}", tex_path, SDL_GetError());
+        }
+        texture_index.emplace(tileset.uid, index);
+        return index;
+    };
+
+    auto add_tiles = [&](const ldtk::Layer& layer) {
+        if (!layer.hasTileset()) {
+            return;
+        }
+        if (!layer.isVisible()) {
+            spdlog::info("Layer '{}' is hidden in LDtk, so its tiles are not drawn",
+                         layer.getName());
+            return;
+        }
+        const int texture = texture_for(layer.getTileset());
+        if (texture < 0) {
+            return;
+        }
+        for (const auto& tile : layer.allTiles()) {
+            auto pos = tile.getPosition();
+            auto tex_rect = tile.getTextureRect();
+
+            TileData td{};
+            td.src = {tex_rect.x, tex_rect.y, tex_rect.width, tex_rect.height};
+            td.dest_x = pos.x;
+            td.dest_y = pos.y;
+            td.flip_x = tile.flipX;
+            td.flip_y = tile.flipY;
+            td.texture = static_cast<uint16_t>(texture);
+            tiles_.push_back(td);
+        }
+    };
+
+    bool has_collision = false;
+
     // Iterate layers in reverse (LDtk orders front-to-back; we want back-to-front)
     const auto& layers = level->allLayers();
     for (const auto& layer : std::views::reverse(layers)) {
-        if (!layer.isVisible()) {
-            continue;
+        // Any layer's cell size will do until the collision layer sets it
+        if (cell_size_ == 0) {
+            cell_size_ = layer.getCellSize();
         }
 
-        auto layer_type = layer.getType();
+        switch (layer.getType()) {
+        case ldtk::LayerType::Tiles:
+        case ldtk::LayerType::AutoLayer:
+            add_tiles(layer);
+            break;
 
-        if (layer_type == ldtk::LayerType::Tiles || layer_type == ldtk::LayerType::AutoLayer) {
-            // Load tileset texture (first time only)
-            if (!texture_ && layer.hasTileset()) {
-                const auto& tileset = layer.getTileset();
-                std::string tex_path = base_dir + tileset.path;
+        case ldtk::LayerType::IntGrid:
+            if (layer.getName() == COLLISION_LAYER) {
+                auto grid_size = layer.getGridSize();
+                cell_size_ = layer.getCellSize();
+                grid_w_ = grid_size.x;
+                grid_h_ = grid_size.y;
+                collision_grid_.assign(static_cast<size_t>(grid_w_) * static_cast<size_t>(grid_h_),
+                                       false);
 
-                SDL_Surface* surface = IMG_Load(tex_path.c_str());
-                if (!surface) {
-                    spdlog::error("Failed to load tileset '{}': {}", tex_path, SDL_GetError());
-                    continue;
-                }
-                texture_ = SDL_CreateTextureFromSurface(renderer, surface);
-                SDL_DestroySurface(surface);
-                if (!texture_) {
-                    spdlog::error("Failed to create tileset texture: {}", SDL_GetError());
-                    continue;
-                }
-                SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_PIXELART);
-            }
-
-            int cell = layer.getCellSize();
-            for (const auto& tile : layer.allTiles()) {
-                auto pos = tile.getPosition();
-                auto tex_rect = tile.getTextureRect();
-
-                TileData td{};
-                td.src = {tex_rect.x, tex_rect.y, tex_rect.width, tex_rect.height};
-                td.dest_x = pos.x;
-                td.dest_y = pos.y;
-                td.flip_x = tile.flipX;
-                td.flip_y = tile.flipY;
-                tiles_.push_back(td);
-            }
-
-            // Use this layer's cell size if we haven't set one from IntGrid
-            if (cell_size_ == 0) {
-                cell_size_ = cell;
-            }
-        } else if (layer_type == ldtk::LayerType::IntGrid) {
-            auto grid_size = layer.getGridSize();
-            cell_size_ = layer.getCellSize();
-            grid_w_ = grid_size.x;
-            grid_h_ = grid_size.y;
-            collision_grid_.resize(static_cast<size_t>(grid_w_) * static_cast<size_t>(grid_h_),
-                                   false);
-
-            for (int gy = 0; gy < grid_h_; ++gy) {
-                for (int gx = 0; gx < grid_w_; ++gx) {
-                    const auto& val = layer.getIntGridVal(gx, gy);
-                    if (val.value > 0) {
-                        collision_grid_[static_cast<size_t>(gy) * static_cast<size_t>(grid_w_) +
-                                        static_cast<size_t>(gx)] = true;
-                    }
-                }
-            }
-
-            // IntGrid layers can also have auto-tiles
-            if (layer.hasTileset()) {
-                if (!texture_) {
-                    const auto& tileset = layer.getTileset();
-                    std::string tex_path = base_dir + tileset.path;
-
-                    SDL_Surface* surface = IMG_Load(tex_path.c_str());
-                    if (!surface) {
-                        spdlog::error("Failed to load tileset '{}': {}", tex_path, SDL_GetError());
-                    } else {
-                        texture_ = SDL_CreateTextureFromSurface(renderer, surface);
-                        SDL_DestroySurface(surface);
-                        if (texture_) {
-                            SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_PIXELART);
+                for (int gy = 0; gy < grid_h_; ++gy) {
+                    for (int gx = 0; gx < grid_w_; ++gx) {
+                        if (layer.getIntGridVal(gx, gy).value > 0) {
+                            collision_grid_[static_cast<size_t>(gy) * static_cast<size_t>(grid_w_) +
+                                            static_cast<size_t>(gx)] = true;
                         }
                     }
                 }
-
-                for (const auto& tile : layer.allTiles()) {
-                    auto pos = tile.getPosition();
-                    auto tex_rect = tile.getTextureRect();
-
-                    TileData td{};
-                    td.src = {tex_rect.x, tex_rect.y, tex_rect.width, tex_rect.height};
-                    td.dest_x = pos.x;
-                    td.dest_y = pos.y;
-                    td.flip_x = tile.flipX;
-                    td.flip_y = tile.flipY;
-                    tiles_.push_back(td);
-                }
+                has_collision = true;
             }
-        } else if (layer_type == ldtk::LayerType::Entities) {
+            // IntGrid layers can also have auto-tiles
+            add_tiles(layer);
+            break;
+
+        case ldtk::LayerType::Entities:
             for (const auto& entity : layer.allEntities()) {
                 auto pos = entity.getPosition();
                 SpawnPoint sp{
@@ -181,7 +181,18 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
 
                 spawns_.push_back(std::move(sp));
             }
+            break;
         }
+    }
+
+    if (cell_size_ <= 0) {
+        // Grid queries divide by the cell size
+        spdlog::error("LDtk level '{}' has no layers with a cell size", level_name);
+        return false;
+    }
+    if (!has_collision) {
+        spdlog::warn("LDtk level '{}' has no IntGrid layer named '{}', so nothing is solid",
+                     level_name, COLLISION_LAYER);
     }
 
     loaded_ = true;

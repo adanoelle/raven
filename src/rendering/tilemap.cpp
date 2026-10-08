@@ -5,15 +5,23 @@
 
 namespace raven {
 
-Tilemap::~Tilemap() {
-    if (texture_) {
-        SDL_DestroyTexture(texture_);
-        texture_ = nullptr;
+namespace {
+
+void destroy_textures(std::vector<SDL_Texture*>& textures) {
+    for (SDL_Texture* texture : textures) {
+        SDL_DestroyTexture(texture);
     }
+    textures.clear();
+}
+
+} // namespace
+
+Tilemap::~Tilemap() {
+    destroy_textures(textures_);
 }
 
 Tilemap::Tilemap(Tilemap&& other) noexcept
-    : texture_(std::exchange(other.texture_, nullptr)), tiles_(std::move(other.tiles_)),
+    : textures_(std::exchange(other.textures_, {})), tiles_(std::move(other.tiles_)),
       collision_grid_(std::move(other.collision_grid_)), spawns_(std::move(other.spawns_)),
       width_px_(other.width_px_), height_px_(other.height_px_), cell_size_(other.cell_size_),
       grid_w_(other.grid_w_), grid_h_(other.grid_h_), loaded_(other.loaded_) {
@@ -22,10 +30,8 @@ Tilemap::Tilemap(Tilemap&& other) noexcept
 
 Tilemap& Tilemap::operator=(Tilemap&& other) noexcept {
     if (this != &other) {
-        if (texture_) {
-            SDL_DestroyTexture(texture_);
-        }
-        texture_ = std::exchange(other.texture_, nullptr);
+        destroy_textures(textures_);
+        textures_ = std::exchange(other.textures_, {});
         tiles_ = std::move(other.tiles_);
         collision_grid_ = std::move(other.collision_grid_);
         spawns_ = std::move(other.spawns_);
