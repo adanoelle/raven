@@ -110,6 +110,17 @@ TEST_CASE("Shooting cooldown", "[shooting]") {
     }
 }
 
+TEST_CASE("A fire tap shoots once even if released before the tick", "[shooting]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    make_player(reg, 100.f, 100.f);
+
+    InputState input{};
+    input.shoot_pressed = true; // pressed and released within one frame
+    systems::update_shooting(reg, input, 1.f / 120.f);
+    CHECK(count_bullets(reg) == 1);
+}
+
 TEST_CASE("Aim direction resolution", "[shooting]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
