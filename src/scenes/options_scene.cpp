@@ -96,22 +96,20 @@ void OptionsScene::update(Game& game, float /*dt*/) {
         return;
     }
 
-    // Vertical navigation on input edges
+    // Vertical navigation on press edges
     const int count = static_cast<int>(items_.size());
-    if (input.move_y > 0.5f && prev_move_y_ <= 0.5f) {
+    if (input.down_pressed) {
         selected_ = (selected_ + 1) % count;
-    } else if (input.move_y < -0.5f && prev_move_y_ >= -0.5f) {
+    } else if (input.up_pressed) {
         selected_ = (selected_ + count - 1) % count;
     }
-    prev_move_y_ = input.move_y;
 
-    // Horizontal adjustment on input edges
-    if (input.move_x > 0.5f && prev_move_x_ <= 0.5f) {
+    // Horizontal adjustment on press edges
+    if (input.right_pressed) {
         adjust(game, +1);
-    } else if (input.move_x < -0.5f && prev_move_x_ >= -0.5f) {
+    } else if (input.left_pressed) {
         adjust(game, -1);
     }
-    prev_move_x_ = input.move_x;
 
     if (input.confirm_pressed) {
         if (current() == Back) {

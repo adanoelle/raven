@@ -41,8 +41,6 @@ class OptionsScene : public Scene {
 
     std::vector<Item> items_; ///< Entries shown on this platform, in display order.
     int selected_ = 0;        ///< Index into items_ of the highlighted row.
-    float prev_move_x_ = 0.f; ///< Previous horizontal input, for adjust edges.
-    float prev_move_y_ = 0.f; ///< Previous vertical input, for navigation edges.
 
     /// @brief Format the value column for a menu row.
     /// @param s The settings to read.

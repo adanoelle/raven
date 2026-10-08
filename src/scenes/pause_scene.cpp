@@ -21,14 +21,13 @@ void PauseScene::update(Game& game, float /*dt*/) {
         return;
     }
 
-    // Menu navigation: vertical input edges (movement axes are held state,
-    // not edge-detected, so track the previous value ourselves)
-    if (input.move_y > 0.5f && prev_move_y_ <= 0.5f) {
+    // Menu navigation on press edges, so a direction held while pausing
+    // doesn't move the cursor onto QUIT TO TITLE
+    if (input.down_pressed) {
         selected_ = (selected_ + 1) % ITEM_COUNT;
-    } else if (input.move_y < -0.5f && prev_move_y_ >= -0.5f) {
+    } else if (input.up_pressed) {
         selected_ = (selected_ + ITEM_COUNT - 1) % ITEM_COUNT;
     }
-    prev_move_y_ = input.move_y;
 
     if (input.confirm_pressed) {
         switch (selected_) {

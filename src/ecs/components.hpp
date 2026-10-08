@@ -40,22 +40,25 @@ struct Sprite {
     StringId sheet_id;    ///< Interned identifier of the SpriteSheet to draw from.
     int frame_x = 0;      ///< Frame column index in the sheet.
     int frame_y = 0;      ///< Frame row index in the sheet.
-    int width = 32;       ///< Rendered width in pixels.
-    int height = 32;      ///< Rendered height in pixels.
+    int width = 32;       ///< Rendered width in pixels; 0 uses the sheet's frame width.
+    int height = 32;      ///< Rendered height in pixels; 0 uses the sheet's frame height.
     int layer = 0;        ///< Render order (higher values draw on top).
     bool flip_x = false;  ///< Flip the sprite horizontally when drawing.
     float offset_x = 0.f; ///< Horizontal render offset from entity center in pixels.
     float offset_y = 0.f; ///< Vertical render offset from entity center in pixels.
 };
 
-/// @brief Frame-based animation state for cycling through sprite frames.
+/// @brief Plays a named clip from the sprite's sheet (see AnimationLibrary).
+///
+/// update_animation advances it and writes the current frame into the
+/// entity's Sprite. If the sheet has no clip by this name, the Sprite keeps
+/// its frame. Change clips with systems::play_clip.
 struct Animation {
-    int start_frame = 0;         ///< First frame index in the animation.
-    int end_frame = 0;           ///< Last frame index in the animation.
-    float frame_duration = 0.1f; ///< Seconds per frame.
-    float elapsed = 0.f;         ///< Time elapsed in the current frame.
-    int current_frame = 0;       ///< Currently displayed frame index.
-    bool looping = true;         ///< Whether the animation loops or stops at end.
+    StringId clip;         ///< Interned clip name (the Aseprite tag).
+    int frame = 0;         ///< Index into the clip's frames.
+    float elapsed = 0.f;   ///< Seconds spent on the current frame.
+    int passes = 0;        ///< Completed passes through the clip.
+    bool finished = false; ///< A repeat-limited clip has shown its last frame in full.
 };
 
 // ── Collision ────────────────────────────────────────────────────
@@ -92,6 +95,28 @@ struct Enemy {
         Boss   ///< Boss enemy.
     };
     Type type = Type::Grunt; ///< This enemy's type.
+};
+
+/// @brief Default chance that an enemy of a tier drops a weapon stabilizer
+/// on death: bosses always, mids sometimes, grunts never.
+/// @param tier The enemy tier.
+/// @return Probability from 0 to 1.
+[[nodiscard]] constexpr float default_stabilizer_drop(Enemy::Type tier) {
+    switch (tier) {
+    case Enemy::Type::Boss:
+        return 1.f;
+    case Enemy::Type::Mid:
+        return 0.15f;
+    case Enemy::Type::Grunt:
+        return 0.f;
+    }
+    return 0.f;
+}
+
+/// @brief Chance this enemy drops a weapon stabilizer on death, from its
+/// enemy definition. Enemies without it use default_stabilizer_drop().
+struct StabilizerDrop {
+    float chance = 0.f; ///< Probability from 0 to 1.
 };
 
 /// @brief Hit points for damageable entities.
@@ -133,20 +158,6 @@ inline constexpr float post_hit_invuln = 0.5f;
 /// @brief Score value awarded when this entity is destroyed.
 struct ScoreValue {
     int points = 100; ///< Points awarded to the player on kill.
-};
-
-// ── Animation State ─────────────────────────────────────────────
-
-/// @brief Tracks the current animation state to avoid redundant transitions.
-struct AnimationState {
-    /// @brief Animation state for state-switching logic.
-    enum class State : uint8_t {
-        Idle,  ///< Standing still / idle animation.
-        Walk,  ///< Moving / walk animation.
-        Melee, ///< Melee attack animation.
-        Dash   ///< Dash animation.
-    };
-    State current = State::Idle; ///< The active animation state.
 };
 
 // ── Aiming / Shooting ───────────────────────────────────────────

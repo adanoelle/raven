@@ -47,6 +47,10 @@ void Input::consume_pressed() {
     current_.pause_pressed = false;
     current_.confirm_pressed = false;
     current_.cancel_pressed = false;
+    current_.up_pressed = false;
+    current_.down_pressed = false;
+    current_.left_pressed = false;
+    current_.right_pressed = false;
 }
 
 void Input::set_renderer(SDL_Renderer* renderer) {
@@ -216,6 +220,10 @@ void Input::update_from_gamepad() {
 }
 
 void Input::compute_edges() {
+    // Clamp movement first so axis edges compare like with like
+    current_.move_x = std::clamp(current_.move_x, -1.f, 1.f);
+    current_.move_y = std::clamp(current_.move_y, -1.f, 1.f);
+
     // Latch new edges; latches persist across frames until a fixed tick
     // consumes them (see consume_pressed), so a press on a frame that runs
     // zero fixed ticks is not lost.
@@ -226,6 +234,10 @@ void Input::compute_edges() {
     latched_.pause = latched_.pause || (current_.pause && !previous_.pause);
     latched_.confirm = latched_.confirm || (current_.confirm && !previous_.confirm);
     latched_.cancel = latched_.cancel || (current_.cancel && !previous_.cancel);
+    latched_.up = latched_.up || axis_pressed(previous_.move_y, current_.move_y, -1.f);
+    latched_.down = latched_.down || axis_pressed(previous_.move_y, current_.move_y, 1.f);
+    latched_.left = latched_.left || axis_pressed(previous_.move_x, current_.move_x, -1.f);
+    latched_.right = latched_.right || axis_pressed(previous_.move_x, current_.move_x, 1.f);
 
     current_.shoot_pressed = latched_.shoot;
     current_.bomb_pressed = latched_.bomb;
@@ -234,10 +246,10 @@ void Input::compute_edges() {
     current_.pause_pressed = latched_.pause;
     current_.confirm_pressed = latched_.confirm;
     current_.cancel_pressed = latched_.cancel;
-
-    // Clamp movement
-    current_.move_x = std::clamp(current_.move_x, -1.f, 1.f);
-    current_.move_y = std::clamp(current_.move_y, -1.f, 1.f);
+    current_.up_pressed = latched_.up;
+    current_.down_pressed = latched_.down;
+    current_.left_pressed = latched_.left;
+    current_.right_pressed = latched_.right;
 
     // Resolve mouse_active: mouse movement activates, right stick deactivates
     if (mouse_moved_) {

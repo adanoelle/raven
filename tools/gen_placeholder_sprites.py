@@ -3,14 +3,23 @@
 
 Creates:
   - assets/sprites/player.png      (32x32 frames, 6 cols x 9 rows)
+    and player.json (animation tags, in Aseprite's export format)
   - assets/sprites/enemies_mid.png  (32x32 frames, 3 cols x 2 rows)
   - assets/sprites/enemies_boss.png (48x48 frames, 3 cols x 2 rows)
+  - assets/sprites/pickups.png      (16x16 frames: weapon pickup, stabilizer)
+  - assets/sprites/props.png        (16x16 frames: exit closed, exit open)
 
 Run: nix-shell -p python3Packages.pillow --run "python3 tools/gen_placeholder_sprites.py"
+
+Pass sheet names to regenerate only those, so finished art in the other
+sheets is left alone:
+    python3 tools/gen_placeholder_sprites.py pickups props
 """
 
 from PIL import Image, ImageDraw
+import json
 import os
+import sys
 
 ASSETS = os.path.join(os.path.dirname(__file__), "..", "assets", "sprites")
 
@@ -167,6 +176,46 @@ def draw_boss_enemy(draw, x, y, w, h, body_color):
         )
 
 
+def write_animation_data(name, sheet_size, frame_size, tags):
+    """Write animation tags for a placeholder sheet in Aseprite's json-array format.
+
+    Real art gets this file from `just export-art`; placeholders get the same
+    shape so the engine reads both the same way.
+
+    tags: list of (name, [(col, row), ...], duration_ms, repeat), where
+    repeat 0 loops and 1 plays once.
+    """
+    fw, fh = frame_size
+    frames, frame_tags = [], []
+    for tag, cells, duration, repeat in tags:
+        start = len(frames)
+        for col, row in cells:
+            frames.append({
+                "filename": f"{name} {len(frames)}",
+                "frame": {"x": col * fw, "y": row * fh, "w": fw, "h": fh},
+                "duration": duration,
+            })
+        entry = {"name": tag, "from": start, "to": len(frames) - 1, "direction": "forward"}
+        if repeat:
+            entry["repeat"] = str(repeat)
+        frame_tags.append(entry)
+
+    data = {
+        "frames": frames,
+        "meta": {
+            "app": "tools/gen_placeholder_sprites.py",
+            "image": f"{name}.png",
+            "size": {"w": sheet_size[0], "h": sheet_size[1]},
+            "frameTags": frame_tags,
+        },
+    }
+    path = os.path.join(ASSETS, f"{name}.json")
+    with open(path, "w") as f:
+        json.dump(data, f, indent=1)
+        f.write("\n")
+    print(f"  {name}.json: {len(frame_tags)} tags")
+
+
 def generate_player_sheet():
     """Generate 32x32 player sprite sheet (6 cols x 9 rows)."""
     cols, rows = 6, 9
@@ -204,6 +253,15 @@ def generate_player_sheet():
     path = os.path.join(ASSETS, "player.png")
     img.save(path)
     print(f"  player.png: {img.size[0]}x{img.size[1]} ({cols}x{rows} frames @ {fw}x{fh})")
+
+    # Attack and dash reuse the start of the walk row at faster timings
+    # until the real action rows are drawn
+    write_animation_data("player", img.size, (fw, fh), [
+        ("idle", [(c, 0) for c in range(4)], 250, 0),
+        ("walk", [(c, 1) for c in range(6)], 100, 0),
+        ("attack", [(c, 1) for c in range(3)], 50, 1),
+        ("dash", [(c, 1) for c in range(3)], 40, 1),
+    ])
 
 
 def generate_enemies_mid_sheet():
@@ -244,10 +302,68 @@ def generate_enemies_boss_sheet():
     print(f"  enemies_boss.png: {img.size[0]}x{img.size[1]} ({cols}x{rows} frames @ {fw}x{fh})")
 
 
+def generate_pickups_sheet():
+    """Generate 16x16 pickup sheet: col 0 weapon pickup, col 1 stabilizer."""
+    fw, fh = 16, 16
+    img = Image.new("RGBA", (2 * fw, fh), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # Col 0: weapon pickup, an orange orb with a light core
+    draw.ellipse([2, 2, 13, 13], fill="#e8a020", outline="#1a1a1a")
+    draw.ellipse([5, 5, 10, 10], fill="#fff0b0")
+
+    # Col 1: stabilizer, a teal diamond crystal
+    x = fw
+    draw.polygon(
+        [(x + 8, 1), (x + 14, 8), (x + 8, 14), (x + 2, 8)],
+        fill="#30c0b0",
+        outline="#1a1a1a",
+    )
+    draw.line([(x + 8, 4), (x + 8, 11)], fill="#c0fff4")
+
+    path = os.path.join(ASSETS, "pickups.png")
+    img.save(path)
+    print(f"  pickups.png: {img.size[0]}x{img.size[1]} (2x1 frames @ {fw}x{fh})")
+
+
+def generate_props_sheet():
+    """Generate 16x16 props sheet: col 0 exit closed, col 1 exit open."""
+    fw, fh = 16, 16
+    img = Image.new("RGBA", (2 * fw, fh), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    # Col 0: closed exit, a dark hatch with bars
+    draw.rectangle([1, 1, 14, 14], fill="#303040", outline="#1a1a1a")
+    for bx in (4, 7, 10):
+        draw.line([(bx, 2), (bx, 13)], fill="#606078")
+
+    # Col 1: open exit, a glowing green hatch
+    x = fw
+    draw.rectangle([x + 1, 1, x + 14, 14], fill="#204020", outline="#1a1a1a")
+    draw.rectangle([x + 3, 3, x + 12, 12], fill="#40e060")
+    draw.rectangle([x + 6, 6, x + 9, 9], fill="#d0ffd8")
+
+    path = os.path.join(ASSETS, "props.png")
+    img.save(path)
+    print(f"  props.png: {img.size[0]}x{img.size[1]} (2x1 frames @ {fw}x{fh})")
+
+
+GENERATORS = {
+    "player": generate_player_sheet,
+    "enemies_mid": generate_enemies_mid_sheet,
+    "enemies_boss": generate_enemies_boss_sheet,
+    "pickups": generate_pickups_sheet,
+    "props": generate_props_sheet,
+}
+
+
 if __name__ == "__main__":
+    names = sys.argv[1:] or list(GENERATORS)
+    unknown = [n for n in names if n not in GENERATORS]
+    if unknown:
+        sys.exit(f"Unknown sheet(s): {', '.join(unknown)}. Choose from: {', '.join(GENERATORS)}")
     os.makedirs(ASSETS, exist_ok=True)
     print("Generating placeholder sprites...")
-    generate_player_sheet()
-    generate_enemies_mid_sheet()
-    generate_enemies_boss_sheet()
+    for name in names:
+        GENERATORS[name]()
     print("Done.")

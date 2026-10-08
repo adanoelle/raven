@@ -1,0 +1,45 @@
+{
+    "enemies": {
+        "grunt_chaser": {
+            "tier": "grunt",
+            "sheet": "enemies",
+            "offset_y": -3,
+            "hitbox": { "radius": 7, "rect": [12, 14] },
+            "hp": 1,
+            "score": 100,
+            "ai": { "archetype": "chaser", "move_speed": 70, "activation_range": 160, "attack_range": 80 },
+            "pattern": "spiral_3way",
+            "contact_damage": 15
+        },
+        "grunt_drifter": {
+            "tier": "grunt",
+            "sheet": "enemies",
+            "offset_y": -3,
+            "hitbox": { "radius": 7, "rect": [12, 14] },
+            "hp": 1,
+            "score": 100,
+            "ai": { "archetype": "drifter", "move_speed": 40, "activation_range": 200, "attack_range": 100 },
+            "pattern": "spiral_3way"
+        },
+        "mid_stalker": {
+            "tier": "mid",
+            "sheet": "enemies_mid",
+            "offset_y": -5,
+            "hitbox": { "radius": 9, "rect": [16, 18] },
+            "hp": 3,
+            "score": 300,
+            "ai": { "archetype": "stalker", "move_speed": 90, "activation_range": 160, "preferred_range": 90, "attack_range": 120 },
+            "pattern": "aimed_burst"
+        },
+        "boss_coward": {
+            "tier": "boss",
+            "sheet": "enemies_boss",
+            "offset_y": -6,
+            "hitbox": { "radius": 18, "rect": [32, 36] },
+            "hp": 10,
+            "score": 1000,
+            "ai": { "archetype": "coward", "move_speed": 110, "activation_range": 200, "attack_range": 999 },
+            "pattern": "nova_legendary"
+        }
+    }
+}

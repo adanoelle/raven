@@ -74,6 +74,7 @@
 - [Victory Screen and High Scores](devlog/2026-07-07-victory-and-high-scores.md)
 - [Architecture Review and Follow-up Fixes](devlog/2026-07-15-architecture-review-fixes.md)
 - [Switch Port Readiness Pass](devlog/2026-09-02-switch-port-readiness.md)
+- [Full Code Review Before the Content Phase](devlog/2026-10-08-pre-content-review.md)
 
 ---
 
@@ -102,3 +103,5 @@
 - [ADR-0021: Optional Steamworks Integration](decisions/0021-optional-steamworks.md)
 - [ADR-0022: Ability Hits via Component Latch, with Feedback Anchors](decisions/0022-ability-latch-and-feedback-anchors.md)
 - [ADR-0023: Salvage Materials and Engineer Weapon Upgrades](decisions/0023-salvage-materials-engineer-upgrades.md)
+- [ADR-0024: Animation Clips from Aseprite Tag Data](decisions/0024-animation-clips-from-aseprite.md)
+- [ADR-0025: Named Enemy Definitions](decisions/0025-named-enemy-definitions.md)

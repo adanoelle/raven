@@ -87,9 +87,11 @@ Two subtleties:
   covered by an overlay. Positions stop changing while paused, but the clock's
   accumulator keeps cycling; a varying alpha would make sprites shimmer between
   their previous and current tick positions.
-- **Menu navigation** — movement axes are held state (not edge-detected), so
-  the scene tracks the previous `move_y` value itself and moves the selection
-  on threshold crossings.
+- **Menu navigation** — menus move their cursor on `InputState`'s
+  `up_pressed`/`down_pressed` (and `left_pressed`/`right_pressed` in options)
+  press edges. A direction that was already held when the menu opened is not a
+  press, so holding up while pausing doesn't land the cursor on QUIT TO
+  TITLE.
 
 Resume pops the overlay; quit-to-title pops and then swaps the `GameScene`
 beneath to `TitleScene` (two queued operations, applied in order).

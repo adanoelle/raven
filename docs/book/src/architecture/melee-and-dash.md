@@ -170,9 +170,10 @@ after disarming.
 
 ## Animation states
 
-`AnimationState::State` is extended with `Melee` and `Dash` values. Priority
-order: Melee > Dash > Walk > Idle. Both currently use placeholder frame values
-pending an art pass.
+`update_player_animation` plays the `attack` clip during a melee attack or
+ground slam and the `dash` clip during a dash. Priority order: attack > dash
+> walk > idle. The clips are Aseprite tags; a sheet without them falls back
+to walk (see [Sprite Animation](sprite-animation.md)).
 
 ## System pipeline order
 
@@ -186,7 +187,7 @@ update_concussion_shot   <- AoE knockback (Sharpshooter)
 update_shooting          (skip ChargedShot entities)
 update_emitters
 update_ai                (disarmed -> Chaser override)
-animation state logic    (extended with Melee/Dash/GroundSlam states)
+update_player_animation  (attack/dash/walk/idle clip choice)
 update_animation
 update_movement
 update_tile_collision

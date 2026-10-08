@@ -3,11 +3,19 @@
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
 #include <vector>
 
 namespace {
+
+/// @brief Sheet ids already reported as unregistered, so each is logged once.
+struct MissingSheetWarnings {
+    std::unordered_set<uint16_t> ids;
+};
 
 struct RenderEntry {
     float x, y;
@@ -49,11 +57,31 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
         }
 
         const auto* sheet = sprites.get(sprite.sheet_id);
+
+        // A size of 0 means "draw the frame at its own size"
+        int width = sprite.width;
+        int height = sprite.height;
+        if (sheet) {
+            width = width > 0 ? width : sheet->frame_width();
+            height = height > 0 ? height : sheet->frame_height();
+        } else {
+            width = width > 0 ? width : 16;
+            height = height > 0 ? height : 16;
+        }
+
         if (!sheet) {
+            auto& warned = reg.ctx().emplace<MissingSheetWarnings>();
+            if (warned.ids.insert(sprite.sheet_id.value).second) {
+                const auto* interner = reg.ctx().find<StringInterner>();
+                spdlog::warn("Sprite sheet '{}' is not registered in config.json; drawing a "
+                             "placeholder rectangle",
+                             interner ? interner->resolve(sprite.sheet_id) : std::string{"?"});
+            }
+
             // No sprite sheet loaded — draw a placeholder colored rect
-            SDL_FRect rect{render_x + sprite.offset_x - static_cast<float>(sprite.width) / 2.f,
-                           render_y + sprite.offset_y - static_cast<float>(sprite.height) / 2.f,
-                           static_cast<float>(sprite.width), static_cast<float>(sprite.height)};
+            SDL_FRect rect{render_x + sprite.offset_x - static_cast<float>(width) / 2.f,
+                           render_y + sprite.offset_y - static_cast<float>(height) / 2.f,
+                           static_cast<float>(width), static_cast<float>(height)};
 
             // Color by entity type for debugging
             if (reg.any_of<Player>(entity)) {
@@ -70,9 +98,8 @@ void render_sprites(entt::registry& reg, SDL_Renderer* renderer, const SpriteShe
             continue;
         }
 
-        entries.push_back({render_x, render_y, sprite.frame_x, sprite.frame_y, sprite.width,
-                           sprite.height, sprite.layer, sprite.flip_x, sprite.offset_x,
-                           sprite.offset_y, sheet});
+        entries.push_back({render_x, render_y, sprite.frame_x, sprite.frame_y, width, height,
+                           sprite.layer, sprite.flip_x, sprite.offset_x, sprite.offset_y, sheet});
     }
 
     // Sort by layer, then y for top-down depth within a layer. Stable so

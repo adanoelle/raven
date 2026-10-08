@@ -37,7 +37,25 @@ struct InputState {
     bool pause_pressed = false;   ///< Pause button press edge.
     bool confirm_pressed = false; ///< Confirm button press edge.
     bool cancel_pressed = false;  ///< Cancel button press edge.
+
+    // Menu navigation edges: a movement axis pushed past half-way. Latched
+    // and consumed like the button edges, so a direction that was already
+    // held when a menu opened does not move its cursor.
+    bool up_pressed = false;    ///< Move-up press edge.
+    bool down_pressed = false;  ///< Move-down press edge.
+    bool left_pressed = false;  ///< Move-left press edge.
+    bool right_pressed = false; ///< Move-right press edge.
 };
+
+/// @brief Whether a movement axis was pushed past the menu threshold this frame.
+/// @param previous Axis value on the previous frame.
+/// @param current Axis value on this frame.
+/// @param direction +1 to test the positive direction, -1 for the negative one.
+/// @return True if the axis is past half-way in that direction now, but was not before.
+[[nodiscard]] constexpr bool axis_pressed(float previous, float current, float direction) {
+    constexpr float THRESHOLD = 0.5f;
+    return current * direction > THRESHOLD && previous * direction <= THRESHOLD;
+}
 
 /// @brief Manages keyboard and gamepad input with per-frame edge detection.
 class Input {
@@ -111,6 +129,10 @@ class Input {
         bool pause = false;
         bool confirm = false;
         bool cancel = false;
+        bool up = false;
+        bool down = false;
+        bool left = false;
+        bool right = false;
     };
 
     InputState current_;

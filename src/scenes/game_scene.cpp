@@ -25,6 +25,8 @@
 #include "ecs/systems/tile_collision_system.hpp"
 #include "ecs/systems/tilemap_render_system.hpp"
 #include "ecs/systems/wave_system.hpp"
+#include "rendering/animation_library.hpp"
+#include "rendering/sheet_ids.hpp"
 #include "scenes/game_over_scene.hpp"
 #include "scenes/pause_scene.hpp"
 #include "scenes/title_scene.hpp"
@@ -48,6 +50,10 @@ void GameScene::on_enter(Game& game) {
     auto& interner = game.registry().ctx().get<StringInterner>();
     pattern_lib_.set_interner(interner);
     pattern_lib_.load_manifest(paths::asset("assets/data/patterns/manifest.json"));
+
+    // Rebuilt every run, so edits to enemies.json apply from the next run
+    enemy_lib_ = EnemyLibrary{};
+    enemy_lib_.load_file(paths::asset("assets/data/enemies.json"));
 
     // Seed from SDL's clocks rather than std::random_device: some console
     // standard libraries implement the latter as a constant or throw.
@@ -105,15 +111,15 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<Health>(player, 1.f, 1.f);
     reg.emplace<CircleHitbox>(player, 6.f, 0.f, 2.f);
     reg.emplace<RectHitbox>(player, 12.f, 14.f, 0.f, 2.f);
-    reg.emplace<Sprite>(player, interner.intern("player"), 0, 0, 32, 32, 10, false, 0.f, -5.f);
-    reg.emplace<Animation>(player, 0, 3, 0.25f, 0.f, 0, true);
-    reg.emplace<AnimationState>(player);
+    reg.emplace<Sprite>(player, interner.intern(sheets::PLAYER), 0, 0, 32, 32, 10, false, 0.f,
+                        -5.f);
+    reg.emplace<Animation>(player, Animation{interner.intern(clips::IDLE)});
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
     reg.emplace<MeleeCooldown>(player);
     reg.emplace<DashCooldown>(player);
     auto& weapon = reg.emplace<Weapon>(player);
-    weapon.bullet_sheet = interner.intern("projectiles");
+    weapon.bullet_sheet = interner.intern(sheets::PROJECTILES);
 
     // Apply class recipe
     switch (selected_class_) {
@@ -136,7 +142,10 @@ void GameScene::enter_room(Game& game, const std::string& level) {
 
     // Reload tilemap
     tilemap_ = Tilemap{};
-    tilemap_.load(game.renderer().sdl_renderer(), paths::asset("assets/maps/raven.ldtk"), level);
+    if (!tilemap_.load(game.renderer().sdl_renderer(), paths::asset("assets/maps/raven.ldtk"),
+                       level)) {
+        spdlog::error("Room '{}' failed to load; check that the level exists in raven.ldtk", level);
+    }
 
     // Reposition player to PlayerStart
     auto& reg = game.registry();
@@ -155,6 +164,7 @@ void GameScene::enter_room(Game& game, const std::string& level) {
     }
 
     // Spawn Exit entities from tilemap
+    auto& interner = reg.ctx().get<StringInterner>();
     auto exit_spawns = tilemap_.find_all_spawns("Exit");
     for (const auto* sp : exit_spawns) {
         std::string target;
@@ -166,7 +176,12 @@ void GameScene::enter_room(Game& game, const std::string& level) {
         auto exit_entity = reg.create();
         reg.emplace<Transform2D>(exit_entity, sp->x, sp->y);
         reg.emplace<CircleHitbox>(exit_entity, 12.f);
+        reg.emplace<Sprite>(exit_entity, interner.intern(sheets::PROPS),
+                            sheets::PROP_FRAME_EXIT_CLOSED, 0, 16, 16, 1);
         reg.emplace<Exit>(exit_entity, Exit{std::move(target), false});
+    }
+    if (exit_spawns.empty()) {
+        spdlog::error("Room '{}' has no Exit entity, so the run can't continue past it", level);
     }
 
     // Reset wave state
@@ -178,7 +193,7 @@ void GameScene::enter_room(Game& game, const std::string& level) {
 
     // Spawn wave 0
     if (stage && !stage->waves.empty()) {
-        systems::spawn_wave(reg, tilemap_, *stage, 0, pattern_lib_);
+        systems::spawn_wave(reg, tilemap_, *stage, 0, pattern_lib_, enemy_lib_);
     }
 
     spdlog::info("Entered room '{}'", level);
@@ -217,79 +232,11 @@ void GameScene::update(Game& game, float dt) {
     systems::update_emitters(reg, pattern_lib_, dt);
     systems::update_ai(reg, tilemap_, dt);
 
-    // Animation state switching (priority: Melee > Dash > Walk > Idle)
-    auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();
-    for (auto [entity, player, vel, anim, sprite, state] : anim_view.each()) {
-        AnimationState::State desired = AnimationState::State::Idle;
-        if (reg.any_of<MeleeAttack>(entity) || reg.any_of<GroundSlam>(entity)) {
-            desired = AnimationState::State::Melee;
-        } else if (reg.any_of<Dash>(entity)) {
-            desired = AnimationState::State::Dash;
-        } else if ((vel.dx * vel.dx + vel.dy * vel.dy) > 1.f) {
-            desired = AnimationState::State::Walk;
-        } else {
-            desired = AnimationState::State::Idle;
-        }
-
-        // Hold a non-looping action animation until its last frame so the
-        // full attack/dash art plays even after the ability component
-        // expires. A new action (melee during a dash tail) still interrupts.
-        const bool action_playing = (state.current == AnimationState::State::Melee ||
-                                     state.current == AnimationState::State::Dash) &&
-                                    !anim.looping && anim.current_frame < anim.end_frame;
-        if (action_playing &&
-            (desired == AnimationState::State::Walk || desired == AnimationState::State::Idle)) {
-            desired = state.current;
-        }
-
-        if (state.current != desired) {
-            state.current = desired;
-            switch (desired) {
-            case AnimationState::State::Melee:
-                sprite.frame_y = 1;
-                anim.start_frame = 0;
-                anim.end_frame = 2;
-                anim.frame_duration = 0.05f;
-                anim.looping = false;
-                break;
-            case AnimationState::State::Dash:
-                sprite.frame_y = 1;
-                anim.start_frame = 0;
-                anim.end_frame = 2;
-                anim.frame_duration = 0.04f;
-                anim.looping = false;
-                break;
-            case AnimationState::State::Walk:
-                sprite.frame_y = 1;
-                anim.start_frame = 0;
-                anim.end_frame = 5;
-                anim.frame_duration = 0.1f;
-                anim.looping = true;
-                break;
-            case AnimationState::State::Idle:
-                sprite.frame_y = 0;
-                anim.start_frame = 0;
-                anim.end_frame = 3;
-                anim.frame_duration = 0.25f;
-                anim.looping = true;
-                break;
-            }
-            anim.current_frame = anim.start_frame;
-            anim.elapsed = 0.f;
-        }
-
-        // Flip sprite to face aim direction
-        if (auto* aim = reg.try_get<AimDirection>(entity)) {
-            if (aim->x > 0.f)
-                sprite.flip_x = false;
-            else if (aim->x < 0.f)
-                sprite.flip_x = true;
-        }
-    }
-
+    systems::update_player_animation(reg);
     systems::update_animation(reg, dt);
     systems::update_movement(reg, dt);
     systems::update_tile_collision(reg, tilemap_);
+    systems::update_bullet_walls(reg, tilemap_);
     systems::update_collision(reg);
     systems::update_pickups(reg);
     systems::update_weapon_decay(reg, dt);
@@ -299,7 +246,7 @@ void GameScene::update(Game& game, float dt) {
     // Wave clear check + next wave spawn
     const auto* stage = stage_loader_.get(current_stage_);
     if (stage) {
-        systems::update_waves(reg, tilemap_, *stage, pattern_lib_);
+        systems::update_waves(reg, tilemap_, *stage, pattern_lib_, enemy_lib_);
     }
 
     // Forward sound requests pushed by the systems above to the engine.
@@ -321,24 +268,33 @@ void GameScene::update(Game& game, float dt) {
         audio_queue->events.clear();
     }
 
-    // Exit overlap check — room transition
-    auto target = systems::check_exit_overlap(reg);
-    if (!target.empty()) {
+    // Game over check. Runs before the exit check: the player entity
+    // outlives its final death, and touching an exit on that same tick must
+    // not count as clearing the stage.
+    auto* game_state = reg.ctx().find<GameState>();
+    if (game_state && game_state->game_over) {
+        game.scenes().swap(std::make_unique<GameOverScene>(), game);
+        return;
+    }
+
+    // Exit overlap check — room transition. Rooms follow the stage list;
+    // an exit's target_level is only checked against it.
+    if (const auto* exit = systems::check_exit_overlap(reg)) {
+        const auto* next = stage_loader_.get(current_stage_ + 1);
+        const std::string expected = next ? next->level : std::string{};
+        if (!exit->target_level.empty() && exit->target_level != expected) {
+            spdlog::warn("Exit targets level '{}' but the next stage uses '{}'; following the "
+                         "stage list",
+                         exit->target_level, next ? expected : "(none: final stage)");
+        }
+
         current_stage_++;
-        const auto* next = stage_loader_.get(current_stage_);
         if (next) {
             enter_room(game, next->level);
         } else {
             // Final stage cleared
             game.scenes().swap(std::make_unique<VictoryScene>(), game);
         }
-        return;
-    }
-
-    // Game over check
-    auto* game_state = reg.ctx().find<GameState>();
-    if (game_state && game_state->game_over) {
-        game.scenes().swap(std::make_unique<GameOverScene>(), game);
         return;
     }
 

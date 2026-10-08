@@ -617,7 +617,12 @@ playtesting, and tune until it feels fair.
    skinning (View > Onion Skinning) to keep the feet anchored.
 5. **Add a frame tag** for "idle" covering those frames.
 6. **Repeat** for each animation state (walk, attack, dash, hurt, death), adding
-   tagged frame ranges.
+   tagged frame ranges. The tag names are what the game looks for: `idle`,
+   `walk`, `attack` and `dash` are used today. Set each frame's duration in
+   the timeline; the game uses those exact timings.
+7. **One-shot animations** (attack, dash, hurt, death): open the tag's
+   properties and set **Repeat** to 1. The game plays it once and holds the
+   last frame. Tags left on the default repeat loop forever.
 
 ### 7.2 Using onion skinning for anchoring
 
@@ -638,21 +643,35 @@ File > Export Sprite Sheet with these settings:
 | Constraints | Fixed # of Columns (match your widest anim)  |
 | Borders     | None (no padding between frames)             |
 | Output File | `assets/sprites/<name>.png`                  |
-| JSON Data   | Optional — useful for verifying frame counts |
+| JSON Data   | Required: `assets/sprites/<name>.json`, Array format, with tags |
 
 The export arranges frame tags into rows automatically when using "By Rows" with
-tags. Each tag becomes one row, frames within the tag become columns.
+tags. Each tag becomes one row, frames within the tag become columns. The JSON
+carries each frame's duration and the tags; the game reads its animations from
+it.
 
-**Batch export command** (for scripting or a `justfile` recipe):
+**The usual way is `just export-art`**, which exports every `.aseprite` under
+`art/` (skipping templates and sketches) with the right settings. Give it files
+to export only those:
+
+```bash
+just export-art                                         # everything
+just export-art art/characters/knight/knight.aseprite   # one file
+```
+
+It runs `tools/export_art.sh`, which uses:
 
 ```bash
 aseprite -b art/characters/knight/knight.aseprite \
+  --ignore-layer guides \
   --sheet assets/sprites/knight.png \
-  --sheet-type rows \
-  --split-tags
+  --sheet-type rows --split-tags \
+  --list-tags --format json-array \
+  --data assets/sprites/knight.json
 ```
 
-The `-b` flag runs headless. `--split-tags` assigns each tag to its own row.
+The `-b` flag runs headless. `--split-tags` assigns each tag to its own row, and
+`--list-tags` writes the tags into the JSON.
 
 ### 7.4 Verifying the export
 
@@ -677,11 +696,13 @@ After exporting, register the sprite sheet in `assets/data/config.json`:
   "id": "knight",
   "path": "assets/sprites/knight.png",
   "frame_w": 32,
-  "frame_h": 32
+  "frame_h": 32,
+  "animations": "assets/sprites/knight.json"
 }
 ```
 
-Then wire up the entity's `Sprite` and `Animation` components at spawn time. For
+Then wire up the entity's `Sprite` and `Animation` components at spawn time.
+`just test` checks that the JSON matches the PNG. For
 a playable class, the class recipe sets the sheet id (`apply_knight` in
 `player_class.cpp` points the `Sprite` at `knight`); classes without final art
 keep the placeholder `player` sheet. See
@@ -699,10 +720,13 @@ keep the placeholder `player` sheet. See
 - [ ] Eyes centered on the EY guide line
 - [ ] Idle silhouette reads clearly at 1x zoom
 - [ ] Feet (or center) anchored consistently on FT guide across all frames
-- [ ] Frame tags added for every animation state
+- [ ] Frame tags added for every animation state, named `idle`, `walk`,
+      `attack`, `dash`, ...
+- [ ] One-shot tags (attack, dash, hurt, death) set to Repeat 1
 - [ ] Onion skinning used to verify frame-to-frame stability
-- [ ] Exported as sprite sheet (By Rows, no border padding)
+- [ ] Exported with `just export-art` (PNG plus JSON)
 - [ ] PNG dimensions divide evenly by frame size
-- [ ] Registered in `config.json` with correct `frame_w` / `frame_h`
+- [ ] Registered in `config.json` with correct `frame_w` / `frame_h` and
+      `animations`
 - [ ] `Sprite` and `Animation` components wired up at spawn
 - [ ] Tested in-game at 1x and 4x scale

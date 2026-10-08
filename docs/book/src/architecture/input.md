@@ -30,6 +30,9 @@ struct InputState {
     // Edge flags (true only on the frame the button was first pressed)
     bool shoot_pressed, bomb_pressed, pause_pressed;
     bool confirm_pressed, cancel_pressed;
+
+    // Menu navigation edges: a movement axis pushed past half-way
+    bool up_pressed, down_pressed, left_pressed, right_pressed;
 };
 ```
 
