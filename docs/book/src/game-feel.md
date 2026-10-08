@@ -94,7 +94,7 @@ the [art spec](art/art-spec.md#4-animation-frame-counts-and-timing).
 | ----- | ------------------------- | ------ | ----- | ------ |
 | **Enemy wakes** | Enemies idle until the player is in range *and* in line of sight, then activate | 1 | — (subtle, optional) | A wake-up tell: eyes lighting, a twitch — gives the player a fair warning |
 | **Wave spawns** | Next wave appears when the previous one is cleared | 1 | — | Spawn-in effect so enemies don't pop from nothing |
-| **Room cleared** | Final wave down — exits open | 2 | needed: `wave_clear.wav` | Exit visibly opening/glowing; currently exits are invisible logic |
+| **Room cleared** | Final wave down — exits open | 2 | needed: `wave_clear.wav` | Exit visibly opening/glowing; currently a placeholder `props` sprite swaps from closed to open, with no sound |
 | **Boss appears** | Stage 3's final wave: a fleeing boss that fires a Legendary nova pattern constantly | 1 | needed: `boss_entrance.wav` | Entrance animation (specced); see [Enemy Archetypes](enemy-archetypes.md) |
 | **Game over / victory** | Scene transitions | — | `mus_game_over.ogg` / `mus_victory.ogg` ([track list](music-track-list.md)) | Scene art |
 

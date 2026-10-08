@@ -19,9 +19,16 @@ struct Exit {
 };
 ```
 
-Created from LDtk `Exit` entities during `enter_room`. Starts closed; opened by
-`update_waves` when all waves are exhausted. `check_exit_overlap` detects player
-collision with open exits to trigger room transitions.
+Created from LDtk `Exit` entities during `enter_room`, with a placeholder
+sprite from the `props` sheet. Starts closed; opened by `update_waves` when all
+waves are exhausted, which also switches the sprite to its open frame.
+`check_exit_overlap` detects player collision with open exits to trigger room
+transitions.
+
+Rooms follow the stage list, not `target_level`. When the player takes an
+exit whose `target_level` doesn't match the next stage's level, the game logs
+a warning and follows the stage list; `tests/test_content.cpp` checks the
+shipped map for this.
 
 ### GameState
 
@@ -37,7 +44,8 @@ struct GameState {
 ```
 
 Stored in registry context (`reg.ctx()`) as a singleton. Persists across rooms
-for the entire session. Reset only when exiting `GameOverScene`.
+for the entire session. `GameScene::on_enter` erases and recreates it, so every
+run starts fresh.
 
 ## Stage data format
 
@@ -133,11 +141,15 @@ spawn_wave(reg, tilemap, stage, wave_index, patterns)
 Creates enemy entities for the given wave index. For each `WaveEnemyDef`:
 
 1. Resolve spawn position from tilemap `EnemySpawn` list (clamped to bounds;
-   falls back to center if no spawns loaded)
+   falls back to the room centre if the level has none). A missing spawn list
+   or an out-of-range `spawn_index` logs a warning.
 2. Create entity with `Transform2D`, `Velocity`, `Enemy`, `Health`,
    `CircleHitbox`, `RectHitbox`, `Sprite`, `ScoreValue`, `AiBehavior`
-3. If the pattern exists in `PatternLibrary`, add `BulletEmitter`
-4. If `contact_damage` is true, add `ContactDamage`
+3. If the pattern exists in `PatternLibrary`, add `BulletEmitter`. An unknown
+   pattern name logs a warning; an empty one means the enemy doesn't shoot.
+4. If `contact_damage` is true, add `ContactDamage` with its cooldown already
+   running for `SPAWN_CONTACT_GRACE` (1 s), so an enemy that appears on top of
+   the player can't hit them before they can react.
 
 ### update_waves
 
@@ -156,13 +168,13 @@ room isn't already cleared or game over:
 ### check_exit_overlap
 
 ```
-check_exit_overlap(reg) -> std::string
+check_exit_overlap(reg) -> const Exit*
 ```
 
 Finds the player position, then iterates all `Exit` entities. Returns the
-`target_level` of the first open exit whose position overlaps the player
-(circle-circle check with 12 px exit radius and 6 px player radius). Returns an
-empty string if no transition should occur.
+first open exit whose position overlaps the player (circle-circle check with
+12 px exit radius and 6 px player radius), or `nullptr` if no transition
+should occur. An exit with an empty `target_level` still counts.
 
 ## Room transitions
 
@@ -184,6 +196,13 @@ empty string if no transition should occur.
 When the player clears the final stage and steps on an exit, `GameScene::update`
 increments `current_stage_` and checks for a next stage. If none exists, it
 swaps to `VictoryScene`, which shows the final score and the high-score table.
+
+The game-over check runs before the exit check. The player entity outlives its
+final death, so dying on the same tick as touching an exit ends the run
+instead of counting as clearing the stage.
+
+`enter_room` logs an error when the level fails to load or has no `Exit`,
+since either one leaves the run stuck in that room.
 
 ## Score and game over
 
@@ -260,13 +279,17 @@ of all gameplay sprites.
 | `update_waves` advances to next wave when all enemies dead            | `current_wave` incremented, new enemies spawned                    |
 | `update_waves` sets `room_cleared` when all waves exhausted           | `room_cleared = true` after last wave cleared                      |
 | Exit entities marked open when room cleared                           | `Exit::open` set to true                                           |
-| `check_exit_overlap` returns empty when exit closed                   | No transition from closed exit                                     |
-| `check_exit_overlap` returns `target_level` when open and overlapping | Correct level string returned                                      |
-| `check_exit_overlap` returns empty when player far from exit          | Distance check works                                               |
+| `spawn_wave` starts contact damage on a grace cooldown                | `ContactDamage::timer` starts at `SPAWN_CONTACT_GRACE`             |
+| `check_exit_overlap` returns nullptr when exit closed                 | No transition from closed exit                                     |
+| `check_exit_overlap` returns the exit when open and overlapping       | The overlapped exit is returned                                    |
+| `check_exit_overlap` triggers for an exit with no `target_level`      | The final room's exit still works                                  |
+| `check_exit_overlap` returns nullptr when player far from exit        | Distance check works                                               |
 | Score accumulates on enemy death via `update_damage`                  | `GameState::score` incremented                                     |
 | Game over flag set when player loses all lives                        | `GameState::game_over = true`                                      |
 | `StageLoader` parses stage JSON correctly                             | All fields round-trip through JSON parsing                         |
 | Enemy type strings map to correct enums                               | `"grunt"/"mid"/"boss"` and `"chaser"/"drifter"/"stalker"/"coward"` |
+| Enemy type and AI parsers reject unknown strings                      | Typos such as `"Boss"` are not silently accepted                   |
+| `StageLoader` falls back to grunt and chaser for unknown strings      | A typo logs a warning and uses the defaults                        |
 
 ## Key files
 

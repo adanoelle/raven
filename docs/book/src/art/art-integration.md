@@ -69,6 +69,12 @@ Add an entry to the `sprite_sheets` array:
 | `frame_w` | int    | Width of one frame in pixels                                 |
 | `frame_h` | int    | Height of one frame in pixels                                |
 
+If C++ refers to the sheet by id, add the id to `src/rendering/sheet_ids.hpp`
+too. `tests/test_content.cpp` fails if any id there is missing from
+`config.json`, if a registered file doesn't exist, or if a frame the code
+addresses by index is outside the image. A sheet that is used but not
+registered draws as a grey rectangle and logs a warning once.
+
 ### Step 3: Optionally add sprite definitions
 
 Named sprite definitions map a human-readable name to a specific frame:
@@ -87,7 +93,9 @@ index in the `Sprite` component.
 `Game::load_assets()` reads `config.json` at startup and calls
 `SpriteSheetManager::load()` for each entry. Loading is non-fatal: if a sheet
 fails to load, the engine logs a warning and continues with placeholder
-rendering.
+rendering. Each entry loads on its own, so a malformed entry (a missing
+`frame_h`, say) is reported by its index and skipped without affecting the
+others.
 
 Each loaded texture automatically gets
 `SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_PIXELART)` applied during
