@@ -99,8 +99,9 @@ beneath to `TitleScene` (two queued operations, applied in order).
 ## GameOverScene
 
 Displays "GAME OVER", the final score, and a blinking restart prompt on a dark
-red background. Captures the score from `GameState` in `on_enter`. On confirm,
-swaps to `TitleScene`. On exit, clears the registry and erases `GameState` from
+red background. Captures the score from `GameState` in `on_enter`. On confirm
+or Start, swaps to `TitleScene`. Input is ignored for the first 0.75 s, so a
+press from the last instant of play doesn't skip the score. On exit, clears the registry and erases `GameState` from
 context. (`GameScene::on_enter` also erases any stale `GameState`, because the
 victory path bypasses this scene entirely.)
 

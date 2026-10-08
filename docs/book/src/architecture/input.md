@@ -24,12 +24,12 @@ struct InputState {
     float mouse_y = 0.f;
     bool mouse_active = false;
 
-    // Held buttons (true while held)
-    bool shoot, focus, bomb, pause, confirm, cancel;
+    // Held buttons (true while held); bomb is the class ability
+    bool shoot, melee, dash, bomb, pause, confirm, cancel;
 
-    // Edge flags (true only on the frame the button was first pressed)
-    bool shoot_pressed, bomb_pressed, pause_pressed;
-    bool confirm_pressed, cancel_pressed;
+    // Press edges, latched until a fixed tick consumes them
+    bool shoot_pressed, melee_pressed, dash_pressed, bomb_pressed;
+    bool pause_pressed, confirm_pressed, cancel_pressed;
 
     // Menu navigation edges: a movement axis pushed past half-way
     bool up_pressed, down_pressed, left_pressed, right_pressed;
@@ -46,7 +46,7 @@ handle. Each frame follows a three-step sequence:
 
 ```
 begin_frame()     Reset edge flags, preserve mouse state
-process_event()   Handle SDL_QUIT, controller hot-plug  (called per event)
+process_event()   Quit, hot-plug, mouse use, press latching  (called per event)
 update()          Poll keyboard + gamepad + mouse, compute edges
 ```
 
@@ -58,22 +58,27 @@ across frames without mouse movement.
 
 ### process_event
 
-Handles three event types:
+- `SDL_EVENT_QUIT` sets the quit flag.
+- `SDL_EVENT_GAMEPAD_ADDED` / `_REMOVED` open the first gamepad, or close the
+  active one.
+- `SDL_EVENT_MOUSE_MOTION` and `SDL_EVENT_MOUSE_BUTTON_DOWN` mark the mouse as
+  the aiming device. Only real mouse use does this; a window resize no
+  longer counts as movement.
+- Key-down (not repeats), gamepad button-down, mouse button-down, and a
+  trigger pulled past its press threshold all **latch a press** for every
+  action bound to that control.
 
-- `SDL_QUIT` — sets the quit flag.
-- `SDL_CONTROLLERDEVICEADDED` — opens the first available gamepad.
-- `SDL_CONTROLLERDEVICEREMOVED` — closes the gamepad if it was the active one.
-
-All other events are ignored. Keyboard and gamepad button state is read via
-polling in `update()`, not from events.
+Held state is still read by polling in `update()`. Latching from events as
+well catches a tap that goes down and up between two polls, which polling
+alone misses at low frame rates.
 
 ### update
 
 Calls four private methods in sequence:
 
 1. `update_from_keyboard()` — read `SDL_GetKeyboardState` array.
-2. `update_from_gamepad()` — read `SDL_GameControllerGetAxis` and
-   `SDL_GameControllerGetButton`.
+2. `update_from_gamepad()` — read the sticks and every control in the
+   gamepad layout, triggers included.
 3. `update_mouse()` — read `SDL_GetMouseState`, convert to virtual coordinates,
    merge left-click into `shoot`.
 4. `compute_edges()` — compare `current_` against `previous_` to set `_pressed`
@@ -88,8 +93,9 @@ Calls four private methods in sequence:
 | Move up    | `W` / `Up`     |
 | Move down  | `S` / `Down`   |
 | Shoot      | `Z`            |
-| Focus      | `Left Shift`   |
-| Bomb       | `X`            |
+| Melee      | `C`            |
+| Dash       | `Space`        |
+| Ability    | `X`            |
 | Pause      | `Escape`       |
 | Confirm    | `Z` / `Return` |
 | Cancel     | `X` / `Escape` |
@@ -99,25 +105,42 @@ gamepad can be used simultaneously.
 
 ## Gamepad mapping
 
-| Action         | Gamepad                    |
-| -------------- | -------------------------- |
-| Move           | Left stick (deadzone 0.2)  |
-| Move (digital) | D-pad                      |
-| Aim            | Right stick (deadzone 0.2) |
-| Shoot          | A button                   |
-| Bomb           | B button                   |
-| Focus          | Right shoulder             |
-| Pause          | Start                      |
-| Confirm        | A button                   |
-| Cancel         | B button                   |
+The layout is decided in [ADR-0027](../decisions/0027-gamepad-layout.md).
+Combat actions sit on the shoulders and triggers, so the right thumb never
+leaves the aim stick, and the face buttons repeat them:
 
-Stick axes are divided by `32767` to normalise to `[-1, 1]`. Values below the
-deadzone threshold (`0.2`) are ignored. D-pad buttons add `-1` or `+1` to the
-movement axes, stacking with the left stick.
+| Action           | Gamepad                          |
+| ---------------- | -------------------------------- |
+| Move             | Left stick (round deadzone 0.2), D-pad |
+| Aim              | Right stick (round deadzone 0.2) |
+| Shoot            | RT                               |
+| Melee            | RB, or X                         |
+| Dash             | LB, or A                         |
+| Ability          | LT, or B                         |
+| Pause            | Start                            |
+| Confirm / Cancel | A / B                            |
 
-When the right stick exceeds the deadzone, `mouse_moved_` is set to `false`,
-causing `mouse_active` to become `false` after edge computation. This gives the
-right stick priority over stale mouse coordinates.
+Back/Select is left free for the playtest marker
+([ADR-0026](../decisions/0026-record-and-replay-playtests.md)).
+
+**Bindings are tables.** `GamepadLayout` and `KeyboardLayout` in
+`core/input.hpp` list up to two controls per action. Polling, event latching
+and edge detection all loop over them, so a preset or a remapped layout is a
+different table, not different code.
+
+**Triggers** are read as buttons with hysteresis (`trigger_pressed`): a pull
+past 0.5 presses, and coming back below 0.3 releases, so a trigger resting
+near one threshold doesn't flicker.
+
+**Sticks** use one round deadzone (`apply_radial_deadzone`). On the left stick
+the remaining travel is rescaled, so movement starts from zero at the edge
+and diagonals keep both components. The right stick only needs a direction,
+so it passes through raw once it is outside the deadzone. D-pad buttons add
+`-1` or `+1` to the movement axes, stacking with the left stick.
+
+When the right stick is outside its deadzone, `mouse_moved_` is set to
+`false`, so `mouse_active` becomes `false` after edge computation and the
+stick takes priority over the mouse.
 
 ## Mouse handling
 
@@ -128,7 +151,7 @@ can aim and fire with the mouse alone.
 
 The `mouse_active` flag is resolved in `compute_edges()`:
 
-- Mouse movement sets `mouse_active = true`.
+- Mouse motion or a click (an SDL event) sets `mouse_active = true`.
 - Right stick magnitude > 0.04 (squared deadzone) sets `mouse_active = false`.
 
 This lets the shooting system choose between mouse aim and stick aim without
