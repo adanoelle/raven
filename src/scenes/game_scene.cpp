@@ -290,6 +290,7 @@ void GameScene::update(Game& game, float dt) {
     systems::update_animation(reg, dt);
     systems::update_movement(reg, dt);
     systems::update_tile_collision(reg, tilemap_);
+    systems::update_bullet_walls(reg, tilemap_);
     systems::update_collision(reg);
     systems::update_pickups(reg);
     systems::update_weapon_decay(reg, dt);
