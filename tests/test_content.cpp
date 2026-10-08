@@ -6,6 +6,7 @@
 #include "core/fs.hpp"
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
+#include "ecs/enemy_library.hpp"
 #include "ecs/systems/wave_system.hpp"
 #include "patterns/pattern_library.hpp"
 #include "rendering/animation_library.hpp"
@@ -130,9 +131,27 @@ bool in_solid_cell(const Tilemap& map, const SpawnPoint& sp) {
 
 } // namespace
 
-TEST_CASE("Every stage loads and uses known enemy types and patterns", "[content]") {
+TEST_CASE("Every enemy definition loads and uses a known pattern", "[content]") {
+    const auto data = read_json("assets/data/enemies.json");
+    EnemyLibrary enemies;
+    REQUIRE(enemies.load_json(data, "enemies.json"));
+    // A definition with a bad tier, archetype or value is skipped at load
+    CHECK(enemies.count() == static_cast<int>(data.at("enemies").size()));
+
     StringInterner interner;
     const auto patterns = load_patterns(interner);
+    for (const auto& name : enemies.names()) {
+        const EnemyDef& def = *enemies.get(name);
+        INFO("enemy: " << name);
+        if (!def.pattern.empty()) {
+            CHECK(patterns.get(def.pattern) != nullptr);
+        }
+    }
+}
+
+TEST_CASE("Every stage loads and places defined enemies", "[content]") {
+    EnemyLibrary enemies;
+    REQUIRE(enemies.load_json(read_json("assets/data/enemies.json"), "enemies.json"));
 
     const auto paths = stage_paths();
     REQUIRE_FALSE(paths.empty());
@@ -143,17 +162,17 @@ TEST_CASE("Every stage loads and uses known enemy types and patterns", "[content
 
         StageLoader loader;
         REQUIRE(loader.load_file(SOURCE_DIR + path));
+        const StageDef& loaded = *loader.get(0);
 
-        for (const auto& wave : stage.at("waves")) {
-            REQUIRE_FALSE(wave.at("enemies").empty());
-            for (const auto& enemy : wave.at("enemies")) {
-                INFO("enemy: " << enemy.dump());
-                CHECK(parse_enemy_type(enemy.value("type", "grunt")).has_value());
-                CHECK(parse_ai_archetype(enemy.value("ai", "chaser")).has_value());
-                const auto pattern = enemy.value("pattern", "spiral_3way");
-                if (!pattern.empty()) {
-                    CHECK(patterns.get(pattern) != nullptr);
-                }
+        // Entries without an enemy name are dropped at load
+        REQUIRE(loaded.waves.size() == stage.at("waves").size());
+        for (size_t w = 0; w < loaded.waves.size(); ++w) {
+            INFO("wave: " << w);
+            CHECK(loaded.waves[w].enemies.size() == stage.at("waves")[w].at("enemies").size());
+            CHECK_FALSE(loaded.waves[w].enemies.empty());
+            for (const auto& entry : loaded.waves[w].enemies) {
+                INFO("enemy: " << entry.enemy);
+                CHECK(enemies.get(entry.enemy) != nullptr);
             }
         }
     }
@@ -232,6 +251,14 @@ TEST_CASE("Every sprite sheet the code uses is registered and has its frames", "
     for (const char* id : sheets::ALL) {
         INFO("sheet id used in code: " << id);
         CHECK(registered.count(id) == 1);
+    }
+
+    // Enemy definitions name their sheets in data
+    EnemyLibrary enemies;
+    REQUIRE(enemies.load_json(read_json("assets/data/enemies.json"), "enemies.json"));
+    for (const auto& name : enemies.names()) {
+        INFO("enemy: " << name << ", sheet: " << enemies.get(name)->sheet);
+        CHECK(registered.count(enemies.get(name)->sheet) == 1);
     }
 
     // Pattern bullets reference sheets from data

@@ -51,6 +51,10 @@ void GameScene::on_enter(Game& game) {
     pattern_lib_.set_interner(interner);
     pattern_lib_.load_manifest(paths::asset("assets/data/patterns/manifest.json"));
 
+    // Rebuilt every run, so edits to enemies.json apply from the next run
+    enemy_lib_ = EnemyLibrary{};
+    enemy_lib_.load_file(paths::asset("assets/data/enemies.json"));
+
     // Seed from SDL's clocks rather than std::random_device: some console
     // standard libraries implement the latter as a constant or throw.
     const auto seed = static_cast<std::uint32_t>(SDL_GetPerformanceCounter() ^ SDL_GetTicksNS());
@@ -189,7 +193,7 @@ void GameScene::enter_room(Game& game, const std::string& level) {
 
     // Spawn wave 0
     if (stage && !stage->waves.empty()) {
-        systems::spawn_wave(reg, tilemap_, *stage, 0, pattern_lib_);
+        systems::spawn_wave(reg, tilemap_, *stage, 0, pattern_lib_, enemy_lib_);
     }
 
     spdlog::info("Entered room '{}'", level);
@@ -242,7 +246,7 @@ void GameScene::update(Game& game, float dt) {
     // Wave clear check + next wave spawn
     const auto* stage = stage_loader_.get(current_stage_);
     if (stage) {
-        systems::update_waves(reg, tilemap_, *stage, pattern_lib_);
+        systems::update_waves(reg, tilemap_, *stage, pattern_lib_, enemy_lib_);
     }
 
     // Forward sound requests pushed by the systems above to the engine.

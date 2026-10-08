@@ -15,101 +15,6 @@
 
 namespace raven {
 
-// ── String to enum mapping ─────────────────────────────────────────
-
-std::optional<Enemy::Type> parse_enemy_type(std::string_view str) {
-    if (str == "grunt")
-        return Enemy::Type::Grunt;
-    if (str == "mid")
-        return Enemy::Type::Mid;
-    if (str == "boss")
-        return Enemy::Type::Boss;
-    return std::nullopt;
-}
-
-std::optional<AiBehavior::Archetype> parse_ai_archetype(std::string_view str) {
-    if (str == "chaser")
-        return AiBehavior::Archetype::Chaser;
-    if (str == "drifter")
-        return AiBehavior::Archetype::Drifter;
-    if (str == "stalker")
-        return AiBehavior::Archetype::Stalker;
-    if (str == "coward")
-        return AiBehavior::Archetype::Coward;
-    return std::nullopt;
-}
-
-namespace {
-
-/// @brief Build default AiBehavior for a given archetype.
-AiBehavior make_ai(AiBehavior::Archetype archetype) {
-    AiBehavior ai{};
-    ai.archetype = archetype;
-    ai.phase = AiBehavior::Phase::Idle;
-
-    switch (archetype) {
-    case AiBehavior::Archetype::Chaser:
-        ai.move_speed = 70.f;
-        ai.activation_range = 160.f;
-        ai.preferred_range = 0.f;
-        ai.attack_range = 80.f;
-        break;
-    case AiBehavior::Archetype::Drifter:
-        ai.move_speed = 40.f;
-        ai.activation_range = 200.f;
-        ai.preferred_range = 0.f;
-        ai.attack_range = 100.f;
-        break;
-    case AiBehavior::Archetype::Stalker:
-        ai.move_speed = 90.f;
-        ai.activation_range = 160.f;
-        ai.preferred_range = 90.f;
-        ai.attack_range = 120.f;
-        break;
-    case AiBehavior::Archetype::Coward:
-        ai.move_speed = 110.f;
-        ai.activation_range = 200.f;
-        ai.preferred_range = 0.f;
-        ai.attack_range = 999.f;
-        break;
-    }
-
-    return ai;
-}
-
-/// @brief Get sprite frame_y for an enemy type.
-int enemy_frame(Enemy::Type /*type*/) {
-    // All enemy types currently share frame row 0; per-type rows come with final art.
-    return 0;
-}
-
-/// @brief Per-tier sprite sizing and hitbox configuration.
-struct EnemyVisuals {
-    const char* sheet; ///< Sprite sheet id.
-    int sprite_w;      ///< Rendered sprite width.
-    int sprite_h;      ///< Rendered sprite height.
-    float circle_r;    ///< Circle hitbox radius.
-    float rect_w;      ///< Rect hitbox width.
-    float rect_h;      ///< Rect hitbox height.
-    float offset_y;    ///< Sprite render offset Y (shift up for feet alignment).
-};
-
-/// @brief Return visual configuration for an enemy tier.
-EnemyVisuals enemy_visuals(Enemy::Type type) {
-    switch (type) {
-    case Enemy::Type::Grunt:
-        //          sheet       sw  sh  cr    rw    rh   oy
-        return {sheets::ENEMIES, 24, 24, 7.f, 12.f, 14.f, -3.f};
-    case Enemy::Type::Mid:
-        return {sheets::ENEMIES_MID, 32, 32, 9.f, 16.f, 18.f, -5.f};
-    case Enemy::Type::Boss:
-        return {sheets::ENEMIES_BOSS, 48, 48, 18.f, 32.f, 36.f, -6.f};
-    }
-    return {sheets::ENEMIES, 24, 24, 7.f, 12.f, 14.f, -3.f};
-}
-
-} // namespace
-
 // ── StageLoader ────────────────────────────────────────────────────
 
 bool StageLoader::load_manifest(const std::string& manifest_path) {
@@ -191,36 +96,32 @@ StageDef StageLoader::parse_stage(const nlohmann::json& j) const {
 WaveDef StageLoader::parse_wave(const nlohmann::json& j, const std::string& stage_name) const {
     WaveDef wave;
     for (const auto& ej : j.at("enemies")) {
-        wave.enemies.push_back(parse_enemy(ej, stage_name));
+        if (auto entry = parse_enemy(ej, stage_name)) {
+            wave.enemies.push_back(std::move(*entry));
+        }
     }
     return wave;
 }
 
-WaveEnemyDef StageLoader::parse_enemy(const nlohmann::json& j,
-                                      const std::string& stage_name) const {
-    WaveEnemyDef def;
-    def.spawn_index = j.value("spawn_index", 0);
-
-    const auto type_str = j.value("type", std::string{"grunt"});
-    if (auto type = parse_enemy_type(type_str)) {
-        def.type = *type;
-    } else {
-        spdlog::warn("Stage '{}': unknown enemy type '{}', using 'grunt'", stage_name, type_str);
+std::optional<WaveEnemyDef> StageLoader::parse_enemy(const nlohmann::json& j,
+                                                     const std::string& stage_name) const {
+    WaveEnemyDef entry;
+    entry.spawn_index = j.value("spawn_index", 0);
+    entry.enemy = j.value("enemy", std::string{});
+    if (entry.enemy.empty()) {
+        spdlog::error("Stage '{}': wave entry {} names no 'enemy'; enemies are defined in "
+                      "assets/data/enemies.json and placed by name",
+                      stage_name, j.dump());
+        return std::nullopt;
     }
-
-    def.pattern = j.value("pattern", "spiral_3way");
-    def.hp = j.value("hp", 1.f);
-    def.score = j.value("score", 100);
-
-    const auto ai_str = j.value("ai", std::string{"chaser"});
-    if (auto ai = parse_ai_archetype(ai_str)) {
-        def.ai = *ai;
-    } else {
-        spdlog::warn("Stage '{}': unknown ai '{}', using 'chaser'", stage_name, ai_str);
+    for (const auto& [key, value] : j.items()) {
+        if (key != "spawn_index" && key != "enemy") {
+            spdlog::warn("Stage '{}': wave entry for '{}' has unknown key '{}'; set it in "
+                         "enemies.json instead",
+                         stage_name, entry.enemy, key);
+        }
     }
-
-    def.contact_damage = j.value("contact_damage", false);
-    return def;
+    return entry;
 }
 
 // ── System functions ───────────────────────────────────────────────
@@ -228,7 +129,7 @@ WaveEnemyDef StageLoader::parse_enemy(const nlohmann::json& j,
 namespace systems {
 
 void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& stage, int wave_index,
-                const PatternLibrary& patterns) {
+                const PatternLibrary& patterns, const EnemyLibrary& enemies) {
     if (wave_index < 0 || std::cmp_greater_equal(wave_index, stage.waves.size())) {
         return;
     }
@@ -243,7 +144,13 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
                      stage.name, stage.level, wave_index + 1);
     }
 
-    for (const auto& def : wave.enemies) {
+    for (const auto& entry : wave.enemies) {
+        const EnemyDef* def = enemies.get(entry.enemy);
+        if (!def) {
+            spdlog::warn("Stage '{}': unknown enemy '{}'; skipped", stage.name, entry.enemy);
+            continue;
+        }
+
         // Pick spawn position from the spawn point list (clamp to bounds)
         float spawn_x = 240.f;
         float spawn_y = 135.f;
@@ -252,14 +159,14 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
             spawn_y = static_cast<float>(tilemap.height_px()) / 2.f;
         }
         if (!spawn_points.empty()) {
-            if (def.spawn_index < 0 ||
-                std::cmp_greater_equal(def.spawn_index, spawn_points.size())) {
+            if (entry.spawn_index < 0 ||
+                std::cmp_greater_equal(entry.spawn_index, spawn_points.size())) {
                 spdlog::warn("Stage '{}': spawn_index {} is out of range for level '{}' ({} "
                              "EnemySpawn entities)",
-                             stage.name, def.spawn_index, stage.level, spawn_points.size());
+                             stage.name, entry.spawn_index, stage.level, spawn_points.size());
             }
             size_t idx = static_cast<size_t>(
-                std::clamp(def.spawn_index, 0, static_cast<int>(spawn_points.size()) - 1));
+                std::clamp(entry.spawn_index, 0, static_cast<int>(spawn_points.size()) - 1));
             spawn_x = spawn_points[idx]->x;
             spawn_y = spawn_points[idx]->y;
         }
@@ -268,31 +175,32 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
         reg.emplace<Transform2D>(enemy, spawn_x, spawn_y);
         reg.emplace<PreviousTransform>(enemy, spawn_x, spawn_y);
         reg.emplace<Velocity>(enemy);
-        reg.emplace<Enemy>(enemy, def.type);
-        reg.emplace<Health>(enemy, def.hp, def.hp);
-
-        const auto vis = enemy_visuals(def.type);
-        reg.emplace<CircleHitbox>(enemy, vis.circle_r);
-        reg.emplace<RectHitbox>(enemy, vis.rect_w, vis.rect_h, 0.f, 0.f);
-        reg.emplace<Sprite>(enemy, interner.intern(vis.sheet), enemy_frame(def.type), 0,
-                            vis.sprite_w, vis.sprite_h, 10, false, 0.f, vis.offset_y);
-        reg.emplace<ScoreValue>(enemy, def.score);
+        reg.emplace<Enemy>(enemy, def->tier);
+        reg.emplace<StabilizerDrop>(enemy, def->stabilizer_drop);
+        reg.emplace<Health>(enemy, def->hp, def->hp);
+        reg.emplace<CircleHitbox>(enemy, def->radius);
+        reg.emplace<RectHitbox>(enemy, def->rect_w, def->rect_h, 0.f, 0.f);
+        // A size of 0 draws the sheet's frame size
+        reg.emplace<Sprite>(enemy, interner.intern(def->sheet), 0, 0, def->width, def->height, 10,
+                            false, 0.f, def->offset_y);
+        reg.emplace<ScoreValue>(enemy, def->score);
         // Animates once the enemy's sheet has an exported "idle" tag
         reg.emplace<Animation>(enemy, Animation{interner.intern(clips::IDLE)});
 
         // Set up bullet emitter if a pattern exists. An empty pattern name
         // means an enemy that deliberately doesn't shoot.
-        if (patterns.get(def.pattern)) {
-            reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def.pattern), {}, {}});
-        } else if (!def.pattern.empty()) {
-            spdlog::warn("Stage '{}': pattern '{}' not found, so this enemy won't fire", stage.name,
-                         def.pattern);
+        if (patterns.get(def->pattern)) {
+            reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def->pattern), {}, {}});
+        } else if (!def->pattern.empty()) {
+            spdlog::warn("Enemy '{}': pattern '{}' not found, so it won't fire", def->id,
+                         def->pattern);
         }
 
-        reg.emplace<AiBehavior>(enemy, make_ai(def.ai));
+        reg.emplace<AiBehavior>(enemy, def->ai);
 
-        if (def.contact_damage) {
+        if (def->contact_damage > 0.f) {
             auto& contact = reg.emplace<ContactDamage>(enemy);
+            contact.damage = def->contact_damage;
             contact.timer = SPAWN_CONTACT_GRACE;
         }
     }
@@ -302,7 +210,7 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
 }
 
 void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& stage,
-                  const PatternLibrary& patterns) {
+                  const PatternLibrary& patterns, const EnemyLibrary& enemies) {
     auto* state = reg.ctx().find<GameState>();
     if (!state || state->room_cleared || state->game_over) {
         return;
@@ -317,7 +225,7 @@ void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& s
     // Current wave is clear — advance to next
     state->current_wave++;
     if (state->current_wave < state->total_waves) {
-        spawn_wave(reg, tilemap, stage, state->current_wave, patterns);
+        spawn_wave(reg, tilemap, stage, state->current_wave, patterns, enemies);
     } else {
         // All waves exhausted — room cleared
         state->room_cleared = true;

@@ -40,8 +40,8 @@ struct Sprite {
     StringId sheet_id;    ///< Interned identifier of the SpriteSheet to draw from.
     int frame_x = 0;      ///< Frame column index in the sheet.
     int frame_y = 0;      ///< Frame row index in the sheet.
-    int width = 32;       ///< Rendered width in pixels.
-    int height = 32;      ///< Rendered height in pixels.
+    int width = 32;       ///< Rendered width in pixels; 0 uses the sheet's frame width.
+    int height = 32;      ///< Rendered height in pixels; 0 uses the sheet's frame height.
     int layer = 0;        ///< Render order (higher values draw on top).
     bool flip_x = false;  ///< Flip the sprite horizontally when drawing.
     float offset_x = 0.f; ///< Horizontal render offset from entity center in pixels.
@@ -95,6 +95,28 @@ struct Enemy {
         Boss   ///< Boss enemy.
     };
     Type type = Type::Grunt; ///< This enemy's type.
+};
+
+/// @brief Default chance that an enemy of a tier drops a weapon stabilizer
+/// on death: bosses always, mids sometimes, grunts never.
+/// @param tier The enemy tier.
+/// @return Probability from 0 to 1.
+[[nodiscard]] constexpr float default_stabilizer_drop(Enemy::Type tier) {
+    switch (tier) {
+    case Enemy::Type::Boss:
+        return 1.f;
+    case Enemy::Type::Mid:
+        return 0.15f;
+    case Enemy::Type::Grunt:
+        return 0.f;
+    }
+    return 0.f;
+}
+
+/// @brief Chance this enemy drops a weapon stabilizer on death, from its
+/// enemy definition. Enemies without it use default_stabilizer_drop().
+struct StabilizerDrop {
+    float chance = 0.f; ///< Probability from 0 to 1.
 };
 
 /// @brief Hit points for damageable entities.

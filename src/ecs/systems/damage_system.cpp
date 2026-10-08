@@ -54,17 +54,19 @@ void handle_enemy_death(entt::registry& reg, entt::entity entity, raven::StringI
     if (auto* enemy_comp = reg.try_get<raven::Enemy>(entity)) {
         auto* tf = reg.try_get<raven::Transform2D>(entity);
         if (tf) {
-            bool spawn_stabilizer = false;
-            if (enemy_comp->type == raven::Enemy::Type::Boss) {
-                spawn_stabilizer = true;
-            } else if (enemy_comp->type == raven::Enemy::Type::Mid) {
-                auto* rng = reg.ctx().find<std::mt19937>();
-                if (rng) {
+            float chance = raven::default_stabilizer_drop(enemy_comp->type);
+            if (const auto* drop = reg.try_get<raven::StabilizerDrop>(entity)) {
+                chance = drop->chance;
+            }
+
+            // A certain drop needs no RNG; a chance roll is skipped without one
+            bool spawn_stabilizer = chance >= 1.f;
+            if (!spawn_stabilizer && chance > 0.f) {
+                if (auto* rng = reg.ctx().find<std::mt19937>()) {
                     std::uniform_real_distribution<float> dist(0.f, 1.f);
-                    spawn_stabilizer = dist(*rng) < 0.15f;
+                    spawn_stabilizer = dist(*rng) < chance;
                 }
             }
-            // Grunt: never drops stabilizer
 
             if (spawn_stabilizer) {
                 auto stab_ent = reg.create();

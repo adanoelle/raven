@@ -29,67 +29,59 @@ entt::entity make_player(entt::registry& reg, float x, float y) {
     return player;
 }
 
-/// @brief Create a tilemap with test spawn points via init_collision + manual spawns.
-/// Note: We can't call find_all_spawns on a tilemap without loading from LDtk,
-/// so wave tests construct spawn points differently — by using a StageDef with
-/// spawn_index = 0 and providing EnemySpawn positions via a loaded tilemap.
-/// For unit tests, we'll test the StageLoader parsing directly, and test
-/// wave/room logic with a minimal tilemap.
+/// @brief Enemy definitions for the wave tests: a grunt with and without
+/// contact damage, a grunt that doesn't shoot, and a mid.
+EnemyLibrary make_enemies() {
+    const nlohmann::json j = {
+        {"enemies",
+         {{"grunt",
+           {{"tier", "grunt"},
+            {"sheet", "enemies"},
+            {"ai", {{"archetype", "chaser"}}},
+            {"pattern", "spiral_3way"}}},
+          {"grunt_contact",
+           {{"tier", "grunt"},
+            {"sheet", "enemies"},
+            {"ai", {{"archetype", "chaser"}}},
+            {"pattern", "spiral_3way"},
+            {"contact_damage", 15}}},
+          {"silent", {{"tier", "grunt"}, {"sheet", "enemies"}, {"ai", {{"archetype", "drifter"}}}}},
+          {"mid",
+           {{"tier", "mid"},
+            {"sheet", "enemies_mid"},
+            {"hp", 3},
+            {"score", 300},
+            {"ai", {{"archetype", "stalker"}}},
+            {"pattern", "spiral_3way"}}}}}};
+    EnemyLibrary enemies;
+    REQUIRE(enemies.load_json(j));
+    REQUIRE(enemies.count() == 4);
+    return enemies;
+}
 
-/// @brief Build a test StageDef with one wave containing specified enemy count.
-StageDef make_test_stage(int num_enemies, const std::string& pattern = "spiral_3way") {
+/// @brief Build a test StageDef with one wave; only the first enemy has
+/// contact damage. With no LDtk level loaded, enemies spawn at the fallback
+/// position.
+StageDef make_test_stage(int num_enemies) {
     StageDef stage;
     stage.name = "test_stage";
     stage.level = "Test_Room";
 
     WaveDef wave;
     for (int i = 0; i < num_enemies; ++i) {
-        WaveEnemyDef def;
-        def.spawn_index = i;
-        def.type = Enemy::Type::Grunt;
-        def.pattern = pattern;
-        def.hp = 1.f;
-        def.score = 100;
-        def.ai = AiBehavior::Archetype::Chaser;
-        def.contact_damage = (i == 0); // First enemy gets contact damage
-        wave.enemies.push_back(def);
+        wave.enemies.push_back({i, i == 0 ? "grunt_contact" : "grunt"});
     }
     stage.waves.push_back(wave);
     return stage;
 }
 
-/// @brief Build a two-wave test stage.
+/// @brief Build a two-wave test stage: a grunt, then a mid.
 StageDef make_two_wave_stage() {
     StageDef stage;
     stage.name = "two_wave_stage";
     stage.level = "Test_Room";
-
-    WaveDef wave1;
-    {
-        WaveEnemyDef def;
-        def.spawn_index = 0;
-        def.type = Enemy::Type::Grunt;
-        def.pattern = "spiral_3way";
-        def.hp = 1.f;
-        def.score = 100;
-        def.ai = AiBehavior::Archetype::Chaser;
-        wave1.enemies.push_back(def);
-    }
-    stage.waves.push_back(wave1);
-
-    WaveDef wave2;
-    {
-        WaveEnemyDef def;
-        def.spawn_index = 0;
-        def.type = Enemy::Type::Mid;
-        def.pattern = "spiral_3way";
-        def.hp = 3.f;
-        def.score = 300;
-        def.ai = AiBehavior::Archetype::Stalker;
-        wave2.enemies.push_back(def);
-    }
-    stage.waves.push_back(wave2);
-
+    stage.waves.push_back(WaveDef{{{0, "grunt"}}});
+    stage.waves.push_back(WaveDef{{{0, "mid"}}});
     return stage;
 }
 
@@ -109,12 +101,13 @@ TEST_CASE("spawn_wave creates correct enemy count", "[waves]") {
     patterns.load_from_json(pj);
 
     Tilemap tilemap;
+    const auto enemies = make_enemies();
     // No LDtk loaded — enemies will use fallback center position
 
     auto stage = make_test_stage(3);
     reg.ctx().emplace<GameState>();
 
-    systems::spawn_wave(reg, tilemap, stage, 0, patterns);
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
 
     auto enemy_view = reg.view<Enemy>();
     REQUIRE(enemy_view.size() == 3);
@@ -132,10 +125,11 @@ TEST_CASE("spawn_wave assigns contact damage to first enemy only", "[waves]") {
     patterns.load_from_json(pj);
 
     Tilemap tilemap;
+    const auto enemies = make_enemies();
     auto stage = make_test_stage(2);
     reg.ctx().emplace<GameState>();
 
-    systems::spawn_wave(reg, tilemap, stage, 0, patterns);
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
 
     auto cd_view = reg.view<ContactDamage>();
     REQUIRE(cd_view.size() == 1); // Only first enemy has contact_damage=true
@@ -146,23 +140,78 @@ TEST_CASE("spawn_wave starts contact damage on a grace cooldown", "[waves]") {
     auto& interner = reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
     patterns.set_interner(interner);
+    patterns.load_from_json(
+        {{"name", "spiral_3way"},
+         {"emitters",
+          {{{"type", "radial"}, {"count", 3}, {"speed", 100.f}, {"fire_rate", 0.5f}}}}});
 
     Tilemap tilemap;
-    auto stage = make_test_stage(1, "");
+    const auto enemies = make_enemies();
+    StageDef stage{"grace", "Test_Room", {WaveDef{{{0, "grunt_contact"}, {1, "silent"}}}}};
     reg.ctx().emplace<GameState>();
 
-    systems::spawn_wave(reg, tilemap, stage, 0, patterns);
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
 
     // An enemy spawned on top of the player can't hit them straight away
     auto cd_view = reg.view<ContactDamage>();
     REQUIRE(cd_view.size() == 1);
     for (auto [entity, contact] : cd_view.each()) {
         CHECK(contact.timer == Approx(systems::SPAWN_CONTACT_GRACE));
-        CHECK(contact.timer > 0.f);
+        CHECK(contact.damage == Approx(15.f));
     }
 
-    // An empty pattern name means the enemy deliberately doesn't shoot
-    CHECK(reg.view<BulletEmitter>().empty());
+    // An enemy defined without a pattern doesn't shoot
+    CHECK(reg.view<BulletEmitter>().size() == 1);
+}
+
+TEST_CASE("spawn_wave builds enemies from their definitions", "[waves]") {
+    entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+    patterns.set_interner(interner);
+
+    Tilemap tilemap;
+    const auto enemies = make_enemies();
+    StageDef stage{"defs", "Test_Room", {WaveDef{{{0, "mid"}}}}};
+    reg.ctx().emplace<GameState>();
+
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
+
+    auto view = reg.view<Enemy>();
+    REQUIRE(view.size() == 1);
+    const auto e = view.front();
+    const EnemyDef& def = *enemies.get("mid");
+
+    CHECK(reg.get<Enemy>(e).type == Enemy::Type::Mid);
+    CHECK(reg.get<Health>(e).max == Approx(3.f));
+    CHECK(reg.get<ScoreValue>(e).points == 300);
+    CHECK(reg.get<CircleHitbox>(e).radius == Approx(def.radius));
+    CHECK(reg.get<RectHitbox>(e).width == Approx(def.rect_w));
+    CHECK(reg.get<AiBehavior>(e).archetype == AiBehavior::Archetype::Stalker);
+    CHECK(reg.get<AiBehavior>(e).move_speed == Approx(def.ai.move_speed));
+    CHECK(reg.get<StabilizerDrop>(e).chance == Approx(default_stabilizer_drop(Enemy::Type::Mid)));
+
+    // No size in the definition: drawn at the sheet's frame size
+    const auto& sprite = reg.get<Sprite>(e);
+    CHECK(sprite.sheet_id == interner.intern("enemies_mid"));
+    CHECK(sprite.width == 0);
+    CHECK(sprite.height == 0);
+    CHECK(reg.all_of<Animation>(e));
+}
+
+TEST_CASE("spawn_wave skips enemies with no definition", "[waves]") {
+    entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+    patterns.set_interner(interner);
+
+    Tilemap tilemap;
+    const auto enemies = make_enemies();
+    StageDef stage{"typo", "Test_Room", {WaveDef{{{0, "grunt"}, {1, "gruntt"}}}}};
+    reg.ctx().emplace<GameState>();
+
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
+    CHECK(reg.view<Enemy>().size() == 1);
 }
 
 // ── Wave progression tests ──────────────────────────────────────────
@@ -179,6 +228,7 @@ TEST_CASE("update_waves advances to next wave when all enemies dead", "[waves]")
     patterns.load_from_json(pj);
 
     Tilemap tilemap;
+    const auto enemies = make_enemies();
     auto stage = make_two_wave_stage();
 
     auto& state = reg.ctx().emplace<GameState>();
@@ -186,7 +236,7 @@ TEST_CASE("update_waves advances to next wave when all enemies dead", "[waves]")
     state.total_waves = 2;
 
     // Spawn wave 0
-    systems::spawn_wave(reg, tilemap, stage, 0, patterns);
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
     REQUIRE(reg.view<Enemy>().size() == 1);
 
     // Kill all enemies
@@ -197,7 +247,7 @@ TEST_CASE("update_waves advances to next wave when all enemies dead", "[waves]")
     REQUIRE(reg.view<Enemy>().size() == 0);
 
     // update_waves should advance to wave 1
-    systems::update_waves(reg, tilemap, stage, patterns);
+    systems::update_waves(reg, tilemap, stage, patterns, enemies);
     REQUIRE(state.current_wave == 1);
     REQUIRE(reg.view<Enemy>().size() == 1); // Wave 2 has 1 enemy
 }
@@ -214,13 +264,14 @@ TEST_CASE("update_waves sets room_cleared when all waves exhausted", "[waves]") 
     patterns.load_from_json(pj);
 
     Tilemap tilemap;
+    const auto enemies = make_enemies();
     auto stage = make_test_stage(1); // Single wave with 1 enemy
 
     auto& state = reg.ctx().emplace<GameState>();
     state.current_wave = 0;
     state.total_waves = 1;
 
-    systems::spawn_wave(reg, tilemap, stage, 0, patterns);
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
 
     // Kill the enemy
     auto enemy_view = reg.view<Enemy>();
@@ -229,7 +280,7 @@ TEST_CASE("update_waves sets room_cleared when all waves exhausted", "[waves]") 
     }
 
     // update_waves should mark room cleared
-    systems::update_waves(reg, tilemap, stage, patterns);
+    systems::update_waves(reg, tilemap, stage, patterns, enemies);
     REQUIRE(state.room_cleared);
 }
 
@@ -245,6 +296,7 @@ TEST_CASE("Exit entities marked open when room cleared", "[waves]") {
     patterns.load_from_json(pj);
 
     Tilemap tilemap;
+    const auto enemies = make_enemies();
     auto stage = make_test_stage(1);
 
     auto& state = reg.ctx().emplace<GameState>();
@@ -257,13 +309,13 @@ TEST_CASE("Exit entities marked open when room cleared", "[waves]") {
     reg.emplace<Exit>(exit_ent, Exit{"Room_02", false});
 
     // Spawn and kill enemies
-    systems::spawn_wave(reg, tilemap, stage, 0, patterns);
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns, enemies);
     auto enemy_view = reg.view<Enemy>();
     for (auto [entity, enemy] : enemy_view.each()) {
         reg.destroy(entity);
     }
 
-    systems::update_waves(reg, tilemap, stage, patterns);
+    systems::update_waves(reg, tilemap, stage, patterns, enemies);
     REQUIRE(state.room_cleared);
 
     auto& exit = reg.get<Exit>(exit_ent);
@@ -382,19 +434,9 @@ TEST_CASE("StageLoader parses stage JSON correctly", "[waves]") {
                         {"level", "Test_Room"},
                         {"waves",
                          {{{"enemies",
-                            {{{"spawn_index", 0},
-                              {"type", "grunt"},
-                              {"pattern", "spiral_3way"},
-                              {"hp", 1.0},
-                              {"score", 100},
-                              {"ai", "chaser"},
-                              {"contact_damage", true}},
-                             {{"spawn_index", 1},
-                              {"type", "mid"},
-                              {"pattern", "aimed_burst"},
-                              {"hp", 3.0},
-                              {"score", 300},
-                              {"ai", "stalker"}}}}}}}};
+                            {{{"spawn_index", 0}, {"enemy", "grunt_chaser"}},
+                             {{"spawn_index", 1}, {"enemy", "mid_stalker"}}}}},
+                          {{"enemies", {{{"spawn_index", 2}, {"enemy", "boss_coward"}}}}}}}};
 
     REQUIRE(loader.load_from_json(j));
     REQUIRE(loader.count() == 1);
@@ -403,70 +445,43 @@ TEST_CASE("StageLoader parses stage JSON correctly", "[waves]") {
     REQUIRE(stage != nullptr);
     REQUIRE(stage->name == "test_stage");
     REQUIRE(stage->level == "Test_Room");
-    REQUIRE(stage->waves.size() == 1);
+    REQUIRE(stage->waves.size() == 2);
     REQUIRE(stage->waves[0].enemies.size() == 2);
 
-    const auto& e0 = stage->waves[0].enemies[0];
-    REQUIRE(e0.type == Enemy::Type::Grunt);
-    REQUIRE(e0.hp == Approx(1.f));
-    REQUIRE(e0.score == 100);
-    REQUIRE(e0.ai == AiBehavior::Archetype::Chaser);
-    REQUIRE(e0.contact_damage);
-
-    const auto& e1 = stage->waves[0].enemies[1];
-    REQUIRE(e1.type == Enemy::Type::Mid);
-    REQUIRE(e1.hp == Approx(3.f));
-    REQUIRE(e1.score == 300);
-    REQUIRE(e1.ai == AiBehavior::Archetype::Stalker);
-    REQUIRE_FALSE(e1.contact_damage);
+    CHECK(stage->waves[0].enemies[0].spawn_index == 0);
+    CHECK(stage->waves[0].enemies[0].enemy == "grunt_chaser");
+    CHECK(stage->waves[0].enemies[1].enemy == "mid_stalker");
+    CHECK(stage->waves[1].enemies[0].spawn_index == 2);
+    CHECK(stage->waves[1].enemies[0].enemy == "boss_coward");
 }
 
-TEST_CASE("Enemy type strings map to correct enums", "[waves]") {
+TEST_CASE("StageLoader skips wave entries that name no enemy", "[waves]") {
     StageLoader loader;
 
-    auto make_stage = [](const std::string& type, const std::string& ai) {
-        return nlohmann::json{
-            {"name", "test"},
-            {"level", "Room"},
-            {"waves", {{{"enemies", {{{"type", type}, {"ai", ai}, {"pattern", "spiral_3way"}}}}}}}};
-    };
+    // The old inline format: type, ai and stats in the stage file
+    nlohmann::json j = {{"name", "old_format"},
+                        {"level", "Room"},
+                        {"waves",
+                         {{{"enemies",
+                            {{{"spawn_index", 0}, {"type", "grunt"}, {"ai", "chaser"}},
+                             {{"spawn_index", 1}, {"enemy", "grunt_chaser"}}}}}}}};
 
-    // Test all enemy types
-    REQUIRE(loader.load_from_json(make_stage("grunt", "chaser")));
-    REQUIRE(loader.get(0)->waves[0].enemies[0].type == Enemy::Type::Grunt);
-    REQUIRE(loader.get(0)->waves[0].enemies[0].ai == AiBehavior::Archetype::Chaser);
-
-    REQUIRE(loader.load_from_json(make_stage("mid", "drifter")));
-    REQUIRE(loader.get(1)->waves[0].enemies[0].type == Enemy::Type::Mid);
-    REQUIRE(loader.get(1)->waves[0].enemies[0].ai == AiBehavior::Archetype::Drifter);
-
-    REQUIRE(loader.load_from_json(make_stage("boss", "stalker")));
-    REQUIRE(loader.get(2)->waves[0].enemies[0].type == Enemy::Type::Boss);
-    REQUIRE(loader.get(2)->waves[0].enemies[0].ai == AiBehavior::Archetype::Stalker);
-
-    REQUIRE(loader.load_from_json(make_stage("grunt", "coward")));
-    REQUIRE(loader.get(3)->waves[0].enemies[0].ai == AiBehavior::Archetype::Coward);
+    REQUIRE(loader.load_from_json(j));
+    const auto& wave = loader.get(0)->waves[0];
+    REQUIRE(wave.enemies.size() == 1);
+    CHECK(wave.enemies[0].enemy == "grunt_chaser");
 }
 
 TEST_CASE("Enemy type and AI parsers reject unknown strings", "[waves]") {
     CHECK(parse_enemy_type("grunt") == Enemy::Type::Grunt);
+    CHECK(parse_enemy_type("mid") == Enemy::Type::Mid);
     CHECK(parse_enemy_type("boss") == Enemy::Type::Boss);
     CHECK_FALSE(parse_enemy_type("Boss").has_value());
     CHECK_FALSE(parse_enemy_type("").has_value());
 
+    CHECK(parse_ai_archetype("chaser") == AiBehavior::Archetype::Chaser);
+    CHECK(parse_ai_archetype("drifter") == AiBehavior::Archetype::Drifter);
+    CHECK(parse_ai_archetype("stalker") == AiBehavior::Archetype::Stalker);
     CHECK(parse_ai_archetype("coward") == AiBehavior::Archetype::Coward);
     CHECK_FALSE(parse_ai_archetype("stalkr").has_value());
-}
-
-TEST_CASE("StageLoader falls back to grunt and chaser for unknown strings", "[waves]") {
-    StageLoader loader;
-    nlohmann::json j = {
-        {"name", "typo_stage"},
-        {"level", "Room"},
-        {"waves", {{{"enemies", {{{"type", "Boss"}, {"ai", "stalkr"}, {"pattern", ""}}}}}}}};
-
-    REQUIRE(loader.load_from_json(j));
-    const auto& enemy = loader.get(0)->waves[0].enemies[0];
-    CHECK(enemy.type == Enemy::Type::Grunt);
-    CHECK(enemy.ai == AiBehavior::Archetype::Chaser);
 }
