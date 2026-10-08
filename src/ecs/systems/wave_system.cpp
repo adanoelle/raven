@@ -217,11 +217,27 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
     auto spawn_points = tilemap.find_all_spawns("EnemySpawn");
     const auto& wave = stage.waves[static_cast<size_t>(wave_index)];
 
+    if (spawn_points.empty() && tilemap.is_loaded()) {
+        spdlog::warn("Stage '{}': level '{}' has no EnemySpawn entities, so wave {} spawns at "
+                     "the room centre",
+                     stage.name, stage.level, wave_index + 1);
+    }
+
     for (const auto& def : wave.enemies) {
         // Pick spawn position from the spawn point list (clamp to bounds)
         float spawn_x = 240.f;
         float spawn_y = 135.f;
+        if (tilemap.width_px() > 0 && tilemap.height_px() > 0) {
+            spawn_x = static_cast<float>(tilemap.width_px()) / 2.f;
+            spawn_y = static_cast<float>(tilemap.height_px()) / 2.f;
+        }
         if (!spawn_points.empty()) {
+            if (def.spawn_index < 0 ||
+                std::cmp_greater_equal(def.spawn_index, spawn_points.size())) {
+                spdlog::warn("Stage '{}': spawn_index {} is out of range for level '{}' ({} "
+                             "EnemySpawn entities)",
+                             stage.name, def.spawn_index, stage.level, spawn_points.size());
+            }
             size_t idx = static_cast<size_t>(
                 std::clamp(def.spawn_index, 0, static_cast<int>(spawn_points.size()) - 1));
             spawn_x = spawn_points[idx]->x;
@@ -250,7 +266,8 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
         reg.emplace<AiBehavior>(enemy, make_ai(def.ai));
 
         if (def.contact_damage) {
-            reg.emplace<ContactDamage>(enemy);
+            auto& contact = reg.emplace<ContactDamage>(enemy);
+            contact.timer = SPAWN_CONTACT_GRACE;
         }
     }
 
@@ -283,17 +300,20 @@ void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& s
         auto exit_view = reg.view<Exit>();
         for (auto [entity, exit] : exit_view.each()) {
             exit.open = true;
+            if (auto* sprite = reg.try_get<Sprite>(entity)) {
+                sprite->frame_x = sheets::PROP_FRAME_EXIT_OPEN;
+            }
         }
 
         spdlog::info("Room cleared!");
     }
 }
 
-std::string check_exit_overlap(entt::registry& reg) {
+const Exit* check_exit_overlap(entt::registry& reg) {
     float player_x = 0.f;
     float player_y = 0.f;
     if (!find_player_position(reg, player_x, player_y)) {
-        return {};
+        return nullptr;
     }
 
     constexpr float exit_radius = 12.f;
@@ -305,11 +325,11 @@ std::string check_exit_overlap(entt::registry& reg) {
             continue;
         }
         if (circles_overlap(player_x, player_y, player_radius, tf.x, tf.y, exit_radius)) {
-            return exit.target_level;
+            return &exit;
         }
     }
 
-    return {};
+    return nullptr;
 }
 
 } // namespace systems

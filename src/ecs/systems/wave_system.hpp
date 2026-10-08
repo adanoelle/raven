@@ -71,7 +71,16 @@ class StageLoader {
 
 namespace systems {
 
+/// @brief Seconds after spawning before an enemy's contact damage can hit.
+///
+/// Keeps an enemy that appears on top of the player from hurting them
+/// before they can react.
+inline constexpr float SPAWN_CONTACT_GRACE = 1.f;
+
 /// @brief Spawn enemies for a wave at EnemySpawn positions from the tilemap.
+///
+/// Enemies with contact damage start with SPAWN_CONTACT_GRACE on their
+/// contact cooldown.
 /// @param reg The ECS registry.
 /// @param tilemap Tilemap with spawn point positions.
 /// @param stage The current stage definition.
@@ -81,6 +90,9 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
                 const PatternLibrary& patterns);
 
 /// @brief Check if current wave is cleared; advance wave or mark room cleared.
+///
+/// Clearing the room opens every Exit and switches any exit Sprite to its
+/// open frame.
 /// @param reg The ECS registry.
 /// @param tilemap Tilemap with spawn point positions.
 /// @param stage The current stage definition.
@@ -90,8 +102,9 @@ void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& s
 
 /// @brief Check player overlap with open Exit entities.
 /// @param reg The ECS registry.
-/// @return Target level name on overlap, or empty string if no transition.
-[[nodiscard]] std::string check_exit_overlap(entt::registry& reg);
+/// @return The open exit the player is touching, or nullptr if none. Valid
+///         until the registry is next modified.
+[[nodiscard]] const Exit* check_exit_overlap(entt::registry& reg);
 
 } // namespace systems
 } // namespace raven

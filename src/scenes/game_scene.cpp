@@ -138,7 +138,10 @@ void GameScene::enter_room(Game& game, const std::string& level) {
 
     // Reload tilemap
     tilemap_ = Tilemap{};
-    tilemap_.load(game.renderer().sdl_renderer(), paths::asset("assets/maps/raven.ldtk"), level);
+    if (!tilemap_.load(game.renderer().sdl_renderer(), paths::asset("assets/maps/raven.ldtk"),
+                       level)) {
+        spdlog::error("Room '{}' failed to load; check that the level exists in raven.ldtk", level);
+    }
 
     // Reposition player to PlayerStart
     auto& reg = game.registry();
@@ -157,6 +160,7 @@ void GameScene::enter_room(Game& game, const std::string& level) {
     }
 
     // Spawn Exit entities from tilemap
+    auto& interner = reg.ctx().get<StringInterner>();
     auto exit_spawns = tilemap_.find_all_spawns("Exit");
     for (const auto* sp : exit_spawns) {
         std::string target;
@@ -168,7 +172,12 @@ void GameScene::enter_room(Game& game, const std::string& level) {
         auto exit_entity = reg.create();
         reg.emplace<Transform2D>(exit_entity, sp->x, sp->y);
         reg.emplace<CircleHitbox>(exit_entity, 12.f);
+        reg.emplace<Sprite>(exit_entity, interner.intern(sheets::PROPS),
+                            sheets::PROP_FRAME_EXIT_CLOSED, 0, 16, 16, 1);
         reg.emplace<Exit>(exit_entity, Exit{std::move(target), false});
+    }
+    if (exit_spawns.empty()) {
+        spdlog::error("Room '{}' has no Exit entity, so the run can't continue past it", level);
     }
 
     // Reset wave state
@@ -324,24 +333,33 @@ void GameScene::update(Game& game, float dt) {
         audio_queue->events.clear();
     }
 
-    // Exit overlap check — room transition
-    auto target = systems::check_exit_overlap(reg);
-    if (!target.empty()) {
+    // Game over check. Runs before the exit check: the player entity
+    // outlives its final death, and touching an exit on that same tick must
+    // not count as clearing the stage.
+    auto* game_state = reg.ctx().find<GameState>();
+    if (game_state && game_state->game_over) {
+        game.scenes().swap(std::make_unique<GameOverScene>(), game);
+        return;
+    }
+
+    // Exit overlap check — room transition. Rooms follow the stage list;
+    // an exit's target_level is only checked against it.
+    if (const auto* exit = systems::check_exit_overlap(reg)) {
+        const auto* next = stage_loader_.get(current_stage_ + 1);
+        const std::string expected = next ? next->level : std::string{};
+        if (!exit->target_level.empty() && exit->target_level != expected) {
+            spdlog::warn("Exit targets level '{}' but the next stage uses '{}'; following the "
+                         "stage list",
+                         exit->target_level, next ? expected : "(none: final stage)");
+        }
+
         current_stage_++;
-        const auto* next = stage_loader_.get(current_stage_);
         if (next) {
             enter_room(game, next->level);
         } else {
             // Final stage cleared
             game.scenes().swap(std::make_unique<VictoryScene>(), game);
         }
-        return;
-    }
-
-    // Game over check
-    auto* game_state = reg.ctx().find<GameState>();
-    if (game_state && game_state->game_over) {
-        game.scenes().swap(std::make_unique<GameOverScene>(), game);
         return;
     }
 

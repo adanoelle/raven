@@ -141,6 +141,30 @@ TEST_CASE("spawn_wave assigns contact damage to first enemy only", "[waves]") {
     REQUIRE(cd_view.size() == 1); // Only first enemy has contact_damage=true
 }
 
+TEST_CASE("spawn_wave starts contact damage on a grace cooldown", "[waves]") {
+    entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+    patterns.set_interner(interner);
+
+    Tilemap tilemap;
+    auto stage = make_test_stage(1, "");
+    reg.ctx().emplace<GameState>();
+
+    systems::spawn_wave(reg, tilemap, stage, 0, patterns);
+
+    // An enemy spawned on top of the player can't hit them straight away
+    auto cd_view = reg.view<ContactDamage>();
+    REQUIRE(cd_view.size() == 1);
+    for (auto [entity, contact] : cd_view.each()) {
+        CHECK(contact.timer == Approx(systems::SPAWN_CONTACT_GRACE));
+        CHECK(contact.timer > 0.f);
+    }
+
+    // An empty pattern name means the enemy deliberately doesn't shoot
+    CHECK(reg.view<BulletEmitter>().empty());
+}
+
 // ── Wave progression tests ──────────────────────────────────────────
 
 TEST_CASE("update_waves advances to next wave when all enemies dead", "[waves]") {
@@ -248,7 +272,7 @@ TEST_CASE("Exit entities marked open when room cleared", "[waves]") {
 
 // ── Exit overlap tests ─────────────────────────────────────────────
 
-TEST_CASE("check_exit_overlap returns empty when exit closed", "[waves]") {
+TEST_CASE("check_exit_overlap returns nullptr when exit closed", "[waves]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
 
@@ -258,11 +282,11 @@ TEST_CASE("check_exit_overlap returns empty when exit closed", "[waves]") {
     reg.emplace<Transform2D>(exit_ent, 100.f, 100.f);    // Same position as player
     reg.emplace<Exit>(exit_ent, Exit{"Room_02", false}); // Closed
 
-    auto result = systems::check_exit_overlap(reg);
-    REQUIRE(result.empty());
+    const auto* result = systems::check_exit_overlap(reg);
+    REQUIRE(result == nullptr);
 }
 
-TEST_CASE("check_exit_overlap returns target_level when open and overlapping", "[waves]") {
+TEST_CASE("check_exit_overlap returns the exit when open and overlapping", "[waves]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
 
@@ -272,11 +296,26 @@ TEST_CASE("check_exit_overlap returns target_level when open and overlapping", "
     reg.emplace<Transform2D>(exit_ent, 105.f, 100.f);   // Close to player
     reg.emplace<Exit>(exit_ent, Exit{"Room_02", true}); // Open
 
-    auto result = systems::check_exit_overlap(reg);
-    REQUIRE(result == "Room_02");
+    const auto* result = systems::check_exit_overlap(reg);
+    REQUIRE(result != nullptr);
+    REQUIRE(result->target_level == "Room_02");
 }
 
-TEST_CASE("check_exit_overlap returns empty when player far from exit", "[waves]") {
+TEST_CASE("check_exit_overlap triggers for an exit with no target_level", "[waves]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+
+    make_player(reg, 100.f, 100.f);
+
+    // The final room's exit has no target; touching it must still count
+    auto exit_ent = reg.create();
+    reg.emplace<Transform2D>(exit_ent, 100.f, 100.f);
+    reg.emplace<Exit>(exit_ent, Exit{"", true});
+
+    REQUIRE(systems::check_exit_overlap(reg) != nullptr);
+}
+
+TEST_CASE("check_exit_overlap returns nullptr when player far from exit", "[waves]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
 
@@ -286,8 +325,8 @@ TEST_CASE("check_exit_overlap returns empty when player far from exit", "[waves]
     reg.emplace<Transform2D>(exit_ent, 400.f, 400.f);   // Far away
     reg.emplace<Exit>(exit_ent, Exit{"Room_02", true}); // Open but distant
 
-    auto result = systems::check_exit_overlap(reg);
-    REQUIRE(result.empty());
+    const auto* result = systems::check_exit_overlap(reg);
+    REQUIRE(result == nullptr);
 }
 
 // ── Score tracking tests ───────────────────────────────────────────
