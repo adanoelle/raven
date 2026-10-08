@@ -512,6 +512,18 @@ registry view, reached from `find_player_position` in `player_utils.hpp`
 (seen in `emitter_system.cpp`, `ai_system.cpp` and `wave_system.cpp`). It
 predates this change.
 
+## Follow-up: Animation Clips
+
+The first item on the content-phase list is done, as
+[ADR-0024](../decisions/0024-animation-clips-from-aseprite.md). Animation
+timing now comes from Aseprite's JSON export: `just export-art` writes each
+sheet's PNG and tag data, and the game plays clips by tag name instead of
+the frame table that was in `GameScene`. Enemies get an `idle` clip, so they
+animate once their sheets have one. This also fixes G15: a one-shot clip's
+last frame shows for its full duration, and a zero-length frame can no longer
+hang the loop. The knight has only `idle` and `walk` tags so far, so its
+attack and dash play the walk clip until those tags exist.
+
 ## Status
 
 | Item | Status |
@@ -523,9 +535,11 @@ predates this change.
 | B5. Pause can quit the run | Fixed |
 | B6. Bullets through walls | Fixed |
 | G3. Dying can count as winning | Fixed |
+| G15. Animation timing | Fixed with the animation clips |
 | G20. Level with no cell size divides by zero | Fixed (with B3) |
 | Rest of G1-G16 and smaller issues | Open |
-| Content-phase infrastructure | Open; next up is data-driven animation clips, then enemy definitions in JSON |
+| 1. Data-driven animation clips | Done ([ADR-0024](../decisions/0024-animation-clips-from-aseprite.md)) |
+| Rest of content-phase infrastructure | Open; next up is enemy definitions in JSON |
 | Tests | Shipped-data validation added; the rest open |
 | ADR-0023 revisions | Open |
-| Out-of-date docs | `room-progression.md`'s `GameState` note fixed; the rest open |
+| Out-of-date docs | `room-progression.md`'s `GameState` note and ARCHITECTURE's export script fixed; the rest open |

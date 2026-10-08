@@ -11,13 +11,17 @@ Data flows from PNG files on disk through the config and rendering systems to
 the screen:
 
 ```
-assets/sprites/*.png
+art/**/*.aseprite
+        │  just export-art
+        ▼
+assets/sprites/*.png + *.json  sheet (one row per tag) + frame tags and durations
         │
         ▼
-assets/data/config.json       sprite_sheets array defines id, path, frame size
+assets/data/config.json       sprite_sheets array defines id, path, frame size, animations
         │
         ▼
 SpriteSheetManager::load()    loads texture + frame grid at startup (Game::load_assets)
+AnimationLibrary::load_file() loads the sheet's tags as clips
         │
         ▼
 Sprite component               attached to an entity, references sheet_id + frame coords
@@ -35,6 +39,7 @@ SDL_Renderer → screen          480×270 virtual resolution, SDL_SCALEMODE_PIXE
 | ----------------------------------- | ----------------------------------------------------- |
 | `assets/data/config.json`           | Sprite sheet and sprite definition registry           |
 | `src/rendering/sprite_sheet.hpp`    | `SpriteSheet` and `SpriteSheetManager` classes        |
+| `src/rendering/animation_library.hpp` | `AnimationLibrary`: clips from Aseprite JSON        |
 | `src/ecs/components.hpp`            | `Sprite`, `Animation`, and all other components       |
 | `src/ecs/systems/render_system.cpp` | `render_sprites()` system                             |
 | `src/core/game.cpp`                 | `Game::load_assets()` — reads config and loads sheets |
@@ -43,11 +48,12 @@ SDL_Renderer → screen          480×270 virtual resolution, SDL_SCALEMODE_PIXE
 
 ## 2. Adding a Sprite Sheet
 
-### Step 1: Place the PNG
+### Step 1: Export the PNG
 
-Add the exported sprite sheet to `assets/sprites/`. Follow the art-spec format:
-32-bit RGBA PNG, no padding between frames, uniform frame grid, lowercase
-underscore filename.
+Run `just export-art` to export Aseprite sources to `assets/sprites/` (a PNG
+plus its animation JSON). A PNG made another way can be added there directly,
+but has no animations. Follow the art-spec format: 32-bit RGBA PNG, no
+padding between frames, uniform frame grid, lowercase underscore filename.
 
 ### Step 2: Register in config.json
 
@@ -68,6 +74,7 @@ Add an entry to the `sprite_sheets` array:
 | `path`    | string | Path to the PNG, resolved via `paths::asset()` (relative to the executable, never the CWD) |
 | `frame_w` | int    | Width of one frame in pixels                                 |
 | `frame_h` | int    | Height of one frame in pixels                                |
+| `animations` | string | Optional. Aseprite JSON export with the sheet's frame tags (see [Animation Clips](#6-animation-clips)) |
 
 If C++ refers to the sheet by id, add the id to `src/rendering/sheet_ids.hpp`
 too. `tests/test_content.cpp` fails if any id there is missing from
@@ -265,124 +272,60 @@ This allows development and testing without final art assets.
 
 ---
 
-## 6. The Animation Component
+## 6. Animation Clips
 
-Defined in `src/ecs/components.hpp`:
+Animations come from Aseprite. Each frame tag in a sheet's export is a clip
+named after the tag, with Aseprite's own frame durations. Export with
+`just export-art`, which writes `assets/sprites/<name>.png` and
+`<name>.json`, then add the data to the sheet's `config.json` entry:
+
+```json
+{ "id": "goblin", "path": "assets/sprites/goblin.png", "frame_w": 24, "frame_h": 24,
+  "animations": "assets/sprites/goblin.json" }
+```
+
+| In Aseprite                 | In the game                                        |
+| --------------------------- | -------------------------------------------------- |
+| Frame tag name              | Clip name (`idle`, `walk`, `attack`, `dash`)       |
+| Frame duration              | How long that frame shows                          |
+| Tag direction               | Play order (forward, reverse, pingpong)            |
+| Tag repeat: none            | Loops forever                                      |
+| Tag repeat: 1               | Plays once and holds the last frame                |
+
+The `Animation` component names the clip it is playing:
 
 ```cpp
 struct Animation {
-    int start_frame = 0;         // First frame index in the animation.
-    int end_frame = 0;           // Last frame index in the animation.
-    float frame_duration = 0.1f; // Seconds per frame.
-    float elapsed = 0.f;         // Time elapsed in the current frame.
-    int current_frame = 0;       // Currently displayed frame index.
-    bool looping = true;         // Whether the animation loops or stops at end.
+    StringId clip;         // Interned clip name (the Aseprite tag).
+    int frame = 0;         // Index into the clip's frames.
+    float elapsed = 0.f;   // Seconds spent on the current frame.
+    int passes = 0;        // Completed passes through the clip.
+    bool finished = false; // A repeat-limited clip has shown its last frame in full.
 };
 ```
 
-### How it's driven
-
-`update_animation()` (`src/ecs/systems/animation_system.cpp`) ticks `elapsed`
-forward each update. When `elapsed >= frame_duration`, it advances
-`current_frame` and writes it back to `Sprite::frame_x`. This drives the
-visual frame displayed by the render system. See
+`update_animation()` advances it and writes the frame's column and row into
+`Sprite::frame_x` and `frame_y`. See
 [Sprite Animation](../architecture/sprite-animation.md) for the full design.
-
-### Field mapping
-
-| Animation field  | Sprite field | Meaning                                   |
-| ---------------- | ------------ | ----------------------------------------- |
-| `current_frame`  | `frame_x`    | Column index — which frame within the row |
-| (set externally) | `frame_y`    | Row index — which animation state row     |
-
-`frame_y` is not driven by the Animation component. It is set when switching
-animation states (e.g., from idle to walk).
-
-### Converting art-spec timing
-
-The art spec defines animation speed in FPS. Convert to `frame_duration`:
-
-```
-frame_duration = 1.0 / anim_fps
-```
-
-| Anim FPS | frame_duration |
-| -------- | -------------- |
-| 4        | 0.250s         |
-| 8        | 0.125s         |
-| 10       | 0.100s         |
-| 12       | 0.083s         |
-| 15       | 0.067s         |
 
 ---
 
-## 7. Animation State Management
+## 7. Switching Clips
 
-This section describes the pattern for switching animation states. The
-player's state switching lives in `game_scene.cpp` (see
-[Sprite Animation](../architecture/sprite-animation.md)).
-
-### Switching states
-
-When an entity changes animation state (e.g., idle → walk), update these fields:
+Use `systems::play_clip`. It restarts the animation only when the clip
+changes, so it is safe to call every tick:
 
 ```cpp
-auto& anim = reg.get<Animation>(entity);
-auto& sprite = reg.get<Sprite>(entity);
-
-// Switch to walk state (row 1, 6 frames, 10 fps, looping)
-sprite.frame_y = 1;           // Walk row
-anim.start_frame = 0;
-anim.end_frame = 5;           // 6 frames: 0..5
-anim.frame_duration = 0.1f;   // 10 fps
-anim.looping = true;
-anim.current_frame = 0;
-anim.elapsed = 0.f;
+auto& interner = reg.ctx().get<StringInterner>();
+systems::play_clip(reg.get<Animation>(entity), interner.intern(clips::WALK));
 ```
 
-### One-shot animations
+A one-shot clip sets `Animation::finished` once its last frame has shown for
+its full duration; game logic can wait on that.
 
-For non-looping animations (attack, hurt, death), set `looping = false`. The
-animation system should stop advancing when `current_frame == end_frame`.
-
-Game logic can detect completion by checking:
-
-```cpp
-bool finished = !anim.looping && anim.current_frame == anim.end_frame;
-```
-
-### Avoiding magic numbers
-
-Rather than scattering row indices and frame counts through the code, consider a
-helper function or enum approach:
-
-```cpp
-enum class AnimState { Idle, Walk, Run, Attack, Dodge, Hurt, Death };
-
-void set_anim_state(entt::registry& reg, entt::entity e, AnimState state) {
-    auto& anim = reg.get<Animation>(e);
-    auto& sprite = reg.get<Sprite>(e);
-
-    switch (state) {
-        case AnimState::Idle:
-            sprite.frame_y = 0;
-            anim.start_frame = 0;  anim.end_frame = 3;
-            anim.frame_duration = 0.25f;  anim.looping = true;
-            break;
-        case AnimState::Walk:
-            sprite.frame_y = 1;
-            anim.start_frame = 0;  anim.end_frame = 5;
-            anim.frame_duration = 0.1f;   anim.looping = true;
-            break;
-        // ... etc
-    }
-
-    anim.current_frame = anim.start_frame;
-    anim.elapsed = 0.f;
-}
-```
-
-This centralizes animation data and makes state transitions readable.
+The player's clip is chosen by `update_player_animation`: attack (melee or
+ground slam), then dash, walk, idle. When a sheet lacks a tag, it falls back
+to walk, then idle, and logs the missing tag once.
 
 ---
 
@@ -390,9 +333,12 @@ This centralizes animation data and makes state transitions readable.
 
 Complete walkthrough from receiving art to seeing it animate in-game.
 
-### 1. Receive and place the sprite sheet
+### 1. Export the sprite sheet
 
-Save the PNG to `assets/sprites/`. Verify it follows the art-spec:
+Save the source as `art/enemies/goblin.aseprite` with a frame tag per
+animation (`idle`, `walk`, ...), then run `just export-art`. That writes
+`assets/sprites/goblin.png` (one row per tag) and `goblin.json`. Verify the
+sheet follows the art-spec:
 
 - Uniform frame grid, no padding
 - Rows = animation states, columns = frames
@@ -406,7 +352,8 @@ Save the PNG to `assets/sprites/`. Verify it follows the art-spec:
   "id": "goblin",
   "path": "assets/sprites/goblin.png",
   "frame_w": 24,
-  "frame_h": 24
+  "frame_h": 24,
+  "animations": "assets/sprites/goblin.json"
 }
 ```
 
@@ -432,20 +379,12 @@ reg.emplace<Sprite>(goblin, interner.intern("goblin"),
     -3.f    // offset_y: feet alignment (bottom-center anchor)
 );
 
-reg.emplace<Animation>(goblin,
-    0,      // start_frame
-    3,      // end_frame (4 idle frames: 0..3)
-    0.25f,  // frame_duration (4 fps idle)
-    0.f,    // elapsed
-    0,      // current_frame
-    true    // looping
-);
+reg.emplace<Animation>(goblin, Animation{interner.intern(clips::IDLE)});
 ```
 
-### 4. Set initial animation state
+### 4. Initial animation
 
-The entity starts in idle (row 0). The animation system will cycle `frame_x`
-through 0..3 at 4 fps.
+The entity starts on its `idle` clip, at the timing set in Aseprite.
 
 ### 5. Verify in-game
 
@@ -453,16 +392,8 @@ Run the game. The goblin should appear at the spawn position with its idle
 animation playing. If the sprite sheet is not found, you will see a colored
 placeholder rectangle instead — check the console for loading warnings.
 
-To switch to walk animation when the goblin starts moving:
+To switch to the walk clip when the goblin starts moving:
 
 ```cpp
-auto& anim = reg.get<Animation>(goblin);
-auto& sprite = reg.get<Sprite>(goblin);
-sprite.frame_y = 1;          // Walk row
-anim.start_frame = 0;
-anim.end_frame = 3;          // 4 walk frames
-anim.frame_duration = 0.125f; // 8 fps
-anim.looping = true;
-anim.current_frame = 0;
-anim.elapsed = 0.f;
+systems::play_clip(reg.get<Animation>(goblin), interner.intern(clips::WALK));
 ```
