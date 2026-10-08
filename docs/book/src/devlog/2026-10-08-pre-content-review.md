@@ -524,6 +524,17 @@ last frame shows for its full duration, and a zero-length frame can no longer
 hang the loop. The knight has only `idle` and `walk` tags so far, so its
 attack and dash play the walk clip until those tags exist.
 
+## Follow-up: Enemy Definitions
+
+The second item is done too, as
+[ADR-0025](../decisions/0025-named-enemy-definitions.md). Enemies are
+defined once by name in `assets/data/enemies.json`, with their sheet, size,
+hitboxes, HP, score, AI tuning, pattern, contact damage and stabilizer drop.
+Stages place them by name. The four shipped definitions reproduce the old
+stage entries exactly, except that grunts now draw at their sheet's 16 px
+frame size instead of being stretched to 24 px (the "Grunts are drawn at
+1.5x" item above).
+
 ## Status
 
 | Item | Status |
@@ -539,7 +550,9 @@ attack and dash play the walk clip until those tags exist.
 | G20. Level with no cell size divides by zero | Fixed (with B3) |
 | Rest of G1-G16 and smaller issues | Open |
 | 1. Data-driven animation clips | Done ([ADR-0024](../decisions/0024-animation-clips-from-aseprite.md)) |
-| Rest of content-phase infrastructure | Open; next up is enemy definitions in JSON |
+| 2. Enemy definitions in JSON | Done ([ADR-0025](../decisions/0025-named-enemy-definitions.md)) |
+| Grunts drawn at 1.5x | Fixed with the enemy definitions |
+| Rest of content-phase infrastructure (renderer basics, hot reload, tuning overlay, new sounds without C++) | Open |
 | Tests | Shipped-data validation added; the rest open |
 | ADR-0023 revisions | Open |
 | Out-of-date docs | `room-progression.md`'s `GameState` note and ARCHITECTURE's export script fixed; the rest open |

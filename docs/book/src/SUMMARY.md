@@ -104,3 +104,4 @@
 - [ADR-0022: Ability Hits via Component Latch, with Feedback Anchors](decisions/0022-ability-latch-and-feedback-anchors.md)
 - [ADR-0023: Salvage Materials and Engineer Weapon Upgrades](decisions/0023-salvage-materials-engineer-upgrades.md)
 - [ADR-0024: Animation Clips from Aseprite Tag Data](decisions/0024-animation-clips-from-aseprite.md)
+- [ADR-0025: Named Enemy Definitions](decisions/0025-named-enemy-definitions.md)

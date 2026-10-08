@@ -120,7 +120,7 @@ struct Sprite {
     StringId sheet_id;    // Interned identifier of the SpriteSheet to draw from.
     int frame_x = 0;      // Frame column index in the sheet.
     int frame_y = 0;      // Frame row index in the sheet.
-    int width = 32;       // Rendered width in pixels.
+    int width = 32;       // Rendered width in pixels; 0 uses the frame width.
     int height = 32;      // Rendered height in pixels.
     int layer = 0;        // Render order (higher values draw on top).
     bool flip_x = false;  // Flip the sprite horizontally when drawing.
@@ -149,8 +149,8 @@ reg.emplace<Sprite>(entity, interner.intern("player"), 0, 0, 32, 32, 10, false, 
 | `sheet_id` | Interned `StringId` of an `id` in config.json's `sprite_sheets` |
 | `frame_x`  | Column index — which frame within the current animation row     |
 | `frame_y`  | Row index — which animation state                               |
-| `width`    | Rendered width in pixels — normally equal to `frame_w`          |
-| `height`   | Rendered height in pixels — normally equal to `frame_h`         |
+| `width`    | Rendered width in pixels — normally equal to `frame_w`; 0 uses `frame_w` |
+| `height`   | Rendered height in pixels — normally equal to `frame_h`; 0 uses `frame_h` |
 | `layer`    | Drawing order. Higher values render on top of lower values      |
 | `flip_x`   | `true` draws the sprite mirrored horizontally (leftward facing) |
 | `offset_x` | Horizontal draw offset from the entity center                   |
@@ -361,6 +361,12 @@ The goblin is a grunt, so it uses the small tier (24x24 frame, 20x20 body)
 from the [Art Specification](art-spec.md).
 
 ### 3. Create the entity with components
+
+For an enemy, skip this step: add a definition to
+`assets/data/enemies.json` with `"sheet": "goblin"` and place it in a stage
+by name ([ADR-0025](../decisions/0025-named-enemy-definitions.md)).
+`spawn_wave` builds the components below from the definition. For anything
+else, create them yourself:
 
 ```cpp
 auto& interner = reg.ctx().get<StringInterner>();

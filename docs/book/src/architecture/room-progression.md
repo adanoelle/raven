@@ -61,7 +61,8 @@ A `stage_manifest.json` lists stage files in play order:
 }
 ```
 
-Each stage file names an LDtk level and defines ordered waves:
+Each stage file names an LDtk level and defines ordered waves. A wave entry
+places an enemy by name at a spawn point:
 
 ```json
 {
@@ -70,45 +71,49 @@ Each stage file names an LDtk level and defines ordered waves:
   "waves": [
     {
       "enemies": [
-        {
-          "spawn_index": 0,
-          "type": "grunt",
-          "pattern": "spiral_3way",
-          "hp": 1.0,
-          "score": 100,
-          "ai": "chaser",
-          "contact_damage": true
-        },
-        {
-          "spawn_index": 1,
-          "type": "grunt",
-          "pattern": "spiral_3way",
-          "hp": 1.0,
-          "score": 100,
-          "ai": "drifter"
-        }
+        { "spawn_index": 0, "enemy": "grunt_chaser" },
+        { "spawn_index": 1, "enemy": "grunt_drifter" }
       ]
     },
     {
-      "enemies": [
-        {
-          "spawn_index": 0,
-          "type": "mid",
-          "pattern": "aimed_burst",
-          "hp": 3.0,
-          "score": 300,
-          "ai": "stalker"
-        }
-      ]
+      "enemies": [{ "spawn_index": 0, "enemy": "mid_stalker" }]
     }
   ]
 }
 ```
 
-Enemy fields map to components: `type` becomes `Enemy::Type`, `ai` becomes
-`AiBehavior::Archetype`, `pattern` resolves to a `BulletEmitter` via the
-`PatternLibrary`, and `spawn_index` selects the Nth `EnemySpawn` position from
-the tilemap.
+`spawn_index` selects the Nth `EnemySpawn` position from the tilemap.
+`enemy` names a definition in `assets/data/enemies.json`
+([ADR-0025](../decisions/0025-named-enemy-definitions.md)), which holds
+everything about that kind of enemy:
+
+```json
+"grunt_chaser": {
+    "tier": "grunt",
+    "sheet": "enemies",
+    "offset_y": -3,
+    "hitbox": { "radius": 7, "rect": [12, 14] },
+    "hp": 1,
+    "score": 100,
+    "ai": { "archetype": "chaser", "move_speed": 70, "activation_range": 160, "attack_range": 80 },
+    "pattern": "spiral_3way",
+    "contact_damage": 15
+}
+```
+
+| Key               | Required | Default / meaning                                                   |
+| ----------------- | -------- | ------------------------------------------------------------------- |
+| `tier`            | yes      | `grunt`, `mid` or `boss`                                            |
+| `sheet`           | yes      | Sprite sheet id from `config.json`                                  |
+| `ai.archetype`    | yes      | `chaser`, `drifter`, `stalker` or `coward`                          |
+| `ai.move_speed`, `ai.activation_range`, `ai.preferred_range`, `ai.attack_range` | no | The archetype's defaults (`default_ai()`) |
+| `size`            | no       | `[w, h]` drawn size; omitted draws the sheet's frame size           |
+| `offset_y`        | no       | 0; negative moves the sprite up to line up the feet                 |
+| `hitbox`          | no       | `radius` 7, `rect` [12, 14]                                         |
+| `hp`, `score`     | no       | 1 and 100                                                           |
+| `pattern`         | no       | None: the enemy doesn't shoot                                       |
+| `contact_damage`  | no       | 0: no body damage. Otherwise damage per hit                         |
+| `stabilizer_drop` | no       | Tier default: boss 1, mid 0.15, grunt 0                             |
 
 ## StageLoader
 
@@ -123,10 +128,11 @@ pattern as `PatternLibrary`:
   range
 - `count()` — returns the number of loaded stages
 
-Parsing maps JSON strings to enums via helper functions: `"grunt"/"mid"/"boss"`
-to `Enemy::Type`, `"chaser"/"drifter"/"stalker"/"coward"` to
-`AiBehavior::Archetype`. Default AI stats (speed, ranges) are assigned per
-archetype by `make_ai()`.
+A wave entry with no `enemy` name (such as one still in the old inline
+format) is reported and skipped. `EnemyLibrary` (`src/ecs/enemy_library.hpp`)
+loads `enemies.json`: a definition with an unknown tier or archetype, or a
+value out of range, is reported and skipped, and an unknown key gets a
+"typo?" warning. `GameScene` reloads both at the start of every run.
 
 ## Wave system functions
 
@@ -135,26 +141,30 @@ Three free functions in `raven::systems`:
 ### spawn_wave
 
 ```
-spawn_wave(reg, tilemap, stage, wave_index, patterns)
+spawn_wave(reg, tilemap, stage, wave_index, patterns, enemies)
 ```
 
-Creates enemy entities for the given wave index. For each `WaveEnemyDef`:
+Creates enemy entities for the given wave index. For each `WaveEnemyDef`,
+it looks up the named `EnemyDef` (skipping, with a warning, a name that isn't
+defined), then:
 
 1. Resolve spawn position from tilemap `EnemySpawn` list (clamped to bounds;
    falls back to the room centre if the level has none). A missing spawn list
    or an out-of-range `spawn_index` logs a warning.
-2. Create entity with `Transform2D`, `Velocity`, `Enemy`, `Health`,
-   `CircleHitbox`, `RectHitbox`, `Sprite`, `ScoreValue`, `AiBehavior`
+2. Create entity with `Transform2D`, `Velocity`, `Enemy`, `StabilizerDrop`,
+   `Health`, `CircleHitbox`, `RectHitbox`, `Sprite`, `ScoreValue`,
+   `AiBehavior` and an `Animation` on the `idle` clip, all from the
+   definition
 3. If the pattern exists in `PatternLibrary`, add `BulletEmitter`. An unknown
    pattern name logs a warning; an empty one means the enemy doesn't shoot.
-4. If `contact_damage` is true, add `ContactDamage` with its cooldown already
-   running for `SPAWN_CONTACT_GRACE` (1 s), so an enemy that appears on top of
-   the player can't hit them before they can react.
+4. If `contact_damage` is above 0, add `ContactDamage` with that damage and
+   its cooldown already running for `SPAWN_CONTACT_GRACE` (1 s), so an enemy
+   that appears on top of the player can't hit them before they can react.
 
 ### update_waves
 
 ```
-update_waves(reg, tilemap, stage, patterns)
+update_waves(reg, tilemap, stage, patterns, enemies)
 ```
 
 Called once per tick from `GameScene::update`. If `GameState` exists and the
@@ -287,9 +297,10 @@ of all gameplay sprites.
 | Score accumulates on enemy death via `update_damage`                  | `GameState::score` incremented                                     |
 | Game over flag set when player loses all lives                        | `GameState::game_over = true`                                      |
 | `StageLoader` parses stage JSON correctly                             | All fields round-trip through JSON parsing                         |
-| Enemy type strings map to correct enums                               | `"grunt"/"mid"/"boss"` and `"chaser"/"drifter"/"stalker"/"coward"` |
+| `StageLoader` skips wave entries that name no enemy                   | Old inline entries are reported, not silently defaulted            |
+| `spawn_wave` builds enemies from their definitions                    | Every component comes from the `EnemyDef`                          |
+| `spawn_wave` skips enemies with no definition                         | A misspelled name spawns nothing and logs a warning                |
 | Enemy type and AI parsers reject unknown strings                      | Typos such as `"Boss"` are not silently accepted                   |
-| `StageLoader` falls back to grunt and chaser for unknown strings      | A typo logs a warning and uses the defaults                        |
 
 ## Key files
 
@@ -297,6 +308,8 @@ of all gameplay sprites.
 | ---------------------------------------- | ----------------------------------------------------------------- |
 | `src/ecs/components.hpp`                 | `Exit`, `GameState`, `ScoreValue`                                 |
 | `src/ecs/systems/wave_system.hpp/.cpp`   | `StageLoader`, `spawn_wave`, `update_waves`, `check_exit_overlap` |
+| `src/ecs/enemy_library.hpp/.cpp`         | `EnemyLibrary`, `EnemyDef`, `default_ai`                          |
+| `assets/data/enemies.json`               | Enemy definitions, by name                                        |
 | `src/ecs/systems/hud_system.hpp/.cpp`    | `render_hud` (health, lives, score, decay, waves)                 |
 | `src/ecs/systems/damage_system.cpp`      | Score accumulation, game over trigger                             |
 | `src/scenes/game_scene.hpp/.cpp`         | `enter_room`, `clear_room_entities`, system wiring                |
@@ -304,3 +317,4 @@ of all gameplay sprites.
 | `assets/data/stages/stage_manifest.json` | Stage file manifest                                               |
 | `assets/data/stages/stage_01.json`       | First stage definition                                            |
 | `tests/test_waves.cpp`                   | Catch2 tests                                                      |
+| `tests/test_enemies.cpp`                 | Enemy definition loading and validation                           |

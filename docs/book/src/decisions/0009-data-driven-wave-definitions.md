@@ -1,6 +1,6 @@
 # 9. Data-Driven Wave Definitions
 
-Date: 2026-02-11 Status: Accepted
+Date: 2026-02-11 Status: Accepted (enemy entries amended by [ADR-0025](0025-named-enemy-definitions.md): stages now place enemies defined by name in `enemies.json`)
 
 ## Context
 
