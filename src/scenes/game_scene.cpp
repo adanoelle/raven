@@ -25,6 +25,7 @@
 #include "ecs/systems/tile_collision_system.hpp"
 #include "ecs/systems/tilemap_render_system.hpp"
 #include "ecs/systems/wave_system.hpp"
+#include "rendering/animation_library.hpp"
 #include "rendering/sheet_ids.hpp"
 #include "scenes/game_over_scene.hpp"
 #include "scenes/pause_scene.hpp"
@@ -108,8 +109,7 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<RectHitbox>(player, 12.f, 14.f, 0.f, 2.f);
     reg.emplace<Sprite>(player, interner.intern(sheets::PLAYER), 0, 0, 32, 32, 10, false, 0.f,
                         -5.f);
-    reg.emplace<Animation>(player, 0, 3, 0.25f, 0.f, 0, true);
-    reg.emplace<AnimationState>(player);
+    reg.emplace<Animation>(player, Animation{interner.intern(clips::IDLE)});
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);
     reg.emplace<MeleeCooldown>(player);
@@ -228,76 +228,7 @@ void GameScene::update(Game& game, float dt) {
     systems::update_emitters(reg, pattern_lib_, dt);
     systems::update_ai(reg, tilemap_, dt);
 
-    // Animation state switching (priority: Melee > Dash > Walk > Idle)
-    auto anim_view = reg.view<Player, Velocity, Animation, Sprite, AnimationState>();
-    for (auto [entity, player, vel, anim, sprite, state] : anim_view.each()) {
-        AnimationState::State desired = AnimationState::State::Idle;
-        if (reg.any_of<MeleeAttack>(entity) || reg.any_of<GroundSlam>(entity)) {
-            desired = AnimationState::State::Melee;
-        } else if (reg.any_of<Dash>(entity)) {
-            desired = AnimationState::State::Dash;
-        } else if ((vel.dx * vel.dx + vel.dy * vel.dy) > 1.f) {
-            desired = AnimationState::State::Walk;
-        } else {
-            desired = AnimationState::State::Idle;
-        }
-
-        // Hold a non-looping action animation until its last frame so the
-        // full attack/dash art plays even after the ability component
-        // expires. A new action (melee during a dash tail) still interrupts.
-        const bool action_playing = (state.current == AnimationState::State::Melee ||
-                                     state.current == AnimationState::State::Dash) &&
-                                    !anim.looping && anim.current_frame < anim.end_frame;
-        if (action_playing &&
-            (desired == AnimationState::State::Walk || desired == AnimationState::State::Idle)) {
-            desired = state.current;
-        }
-
-        if (state.current != desired) {
-            state.current = desired;
-            switch (desired) {
-            case AnimationState::State::Melee:
-                sprite.frame_y = 1;
-                anim.start_frame = 0;
-                anim.end_frame = 2;
-                anim.frame_duration = 0.05f;
-                anim.looping = false;
-                break;
-            case AnimationState::State::Dash:
-                sprite.frame_y = 1;
-                anim.start_frame = 0;
-                anim.end_frame = 2;
-                anim.frame_duration = 0.04f;
-                anim.looping = false;
-                break;
-            case AnimationState::State::Walk:
-                sprite.frame_y = 1;
-                anim.start_frame = 0;
-                anim.end_frame = 5;
-                anim.frame_duration = 0.1f;
-                anim.looping = true;
-                break;
-            case AnimationState::State::Idle:
-                sprite.frame_y = 0;
-                anim.start_frame = 0;
-                anim.end_frame = 3;
-                anim.frame_duration = 0.25f;
-                anim.looping = true;
-                break;
-            }
-            anim.current_frame = anim.start_frame;
-            anim.elapsed = 0.f;
-        }
-
-        // Flip sprite to face aim direction
-        if (auto* aim = reg.try_get<AimDirection>(entity)) {
-            if (aim->x > 0.f)
-                sprite.flip_x = false;
-            else if (aim->x < 0.f)
-                sprite.flip_x = true;
-        }
-    }
-
+    systems::update_player_animation(reg);
     systems::update_animation(reg, dt);
     systems::update_movement(reg, dt);
     systems::update_tile_collision(reg, tilemap_);

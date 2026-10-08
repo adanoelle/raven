@@ -32,6 +32,10 @@ asan:
     cmake --build build-asan -j$(nproc)
     ./build-asan/bin/raven
 
+# Export Aseprite art to sprite sheets and animation data (all of art/, or the given files)
+export-art *files:
+    tools/export_art.sh {{files}}
+
 # Format all source files
 fmt:
     find src tests -name '*.hpp' -o -name '*.cpp' | xargs clang-format -i

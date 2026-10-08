@@ -21,6 +21,7 @@ add_executable(raven_tests
     test_input.cpp
     test_movement.cpp
     test_content.cpp
+    test_animation.cpp
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/core/fs.cpp
@@ -40,6 +41,7 @@ add_executable(raven_tests
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/damage_system.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/tilemap.cpp
     ${CMAKE_SOURCE_DIR}/src/rendering/tilemap_loader.cpp
+    ${CMAKE_SOURCE_DIR}/src/rendering/animation_library.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/tile_collision_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/ai_system.cpp
     ${CMAKE_SOURCE_DIR}/src/ecs/systems/melee_system.cpp

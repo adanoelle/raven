@@ -3,6 +3,7 @@
 
 Creates:
   - assets/sprites/player.png      (32x32 frames, 6 cols x 9 rows)
+    and player.json (animation tags, in Aseprite's export format)
   - assets/sprites/enemies_mid.png  (32x32 frames, 3 cols x 2 rows)
   - assets/sprites/enemies_boss.png (48x48 frames, 3 cols x 2 rows)
   - assets/sprites/pickups.png      (16x16 frames: weapon pickup, stabilizer)
@@ -16,6 +17,7 @@ sheets is left alone:
 """
 
 from PIL import Image, ImageDraw
+import json
 import os
 import sys
 
@@ -174,6 +176,46 @@ def draw_boss_enemy(draw, x, y, w, h, body_color):
         )
 
 
+def write_animation_data(name, sheet_size, frame_size, tags):
+    """Write animation tags for a placeholder sheet in Aseprite's json-array format.
+
+    Real art gets this file from `just export-art`; placeholders get the same
+    shape so the engine reads both the same way.
+
+    tags: list of (name, [(col, row), ...], duration_ms, repeat), where
+    repeat 0 loops and 1 plays once.
+    """
+    fw, fh = frame_size
+    frames, frame_tags = [], []
+    for tag, cells, duration, repeat in tags:
+        start = len(frames)
+        for col, row in cells:
+            frames.append({
+                "filename": f"{name} {len(frames)}",
+                "frame": {"x": col * fw, "y": row * fh, "w": fw, "h": fh},
+                "duration": duration,
+            })
+        entry = {"name": tag, "from": start, "to": len(frames) - 1, "direction": "forward"}
+        if repeat:
+            entry["repeat"] = str(repeat)
+        frame_tags.append(entry)
+
+    data = {
+        "frames": frames,
+        "meta": {
+            "app": "tools/gen_placeholder_sprites.py",
+            "image": f"{name}.png",
+            "size": {"w": sheet_size[0], "h": sheet_size[1]},
+            "frameTags": frame_tags,
+        },
+    }
+    path = os.path.join(ASSETS, f"{name}.json")
+    with open(path, "w") as f:
+        json.dump(data, f, indent=1)
+        f.write("\n")
+    print(f"  {name}.json: {len(frame_tags)} tags")
+
+
 def generate_player_sheet():
     """Generate 32x32 player sprite sheet (6 cols x 9 rows)."""
     cols, rows = 6, 9
@@ -211,6 +253,15 @@ def generate_player_sheet():
     path = os.path.join(ASSETS, "player.png")
     img.save(path)
     print(f"  player.png: {img.size[0]}x{img.size[1]} ({cols}x{rows} frames @ {fw}x{fh})")
+
+    # Attack and dash reuse the start of the walk row at faster timings
+    # until the real action rows are drawn
+    write_animation_data("player", img.size, (fw, fh), [
+        ("idle", [(c, 0) for c in range(4)], 250, 0),
+        ("walk", [(c, 1) for c in range(6)], 100, 0),
+        ("attack", [(c, 1) for c in range(3)], 50, 1),
+        ("dash", [(c, 1) for c in range(3)], 40, 1),
+    ])
 
 
 def generate_enemies_mid_sheet():

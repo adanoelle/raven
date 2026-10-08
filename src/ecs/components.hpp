@@ -48,14 +48,17 @@ struct Sprite {
     float offset_y = 0.f; ///< Vertical render offset from entity center in pixels.
 };
 
-/// @brief Frame-based animation state for cycling through sprite frames.
+/// @brief Plays a named clip from the sprite's sheet (see AnimationLibrary).
+///
+/// update_animation advances it and writes the current frame into the
+/// entity's Sprite. If the sheet has no clip by this name, the Sprite keeps
+/// its frame. Change clips with systems::play_clip.
 struct Animation {
-    int start_frame = 0;         ///< First frame index in the animation.
-    int end_frame = 0;           ///< Last frame index in the animation.
-    float frame_duration = 0.1f; ///< Seconds per frame.
-    float elapsed = 0.f;         ///< Time elapsed in the current frame.
-    int current_frame = 0;       ///< Currently displayed frame index.
-    bool looping = true;         ///< Whether the animation loops or stops at end.
+    StringId clip;         ///< Interned clip name (the Aseprite tag).
+    int frame = 0;         ///< Index into the clip's frames.
+    float elapsed = 0.f;   ///< Seconds spent on the current frame.
+    int passes = 0;        ///< Completed passes through the clip.
+    bool finished = false; ///< A repeat-limited clip has shown its last frame in full.
 };
 
 // ── Collision ────────────────────────────────────────────────────
@@ -133,20 +136,6 @@ inline constexpr float post_hit_invuln = 0.5f;
 /// @brief Score value awarded when this entity is destroyed.
 struct ScoreValue {
     int points = 100; ///< Points awarded to the player on kill.
-};
-
-// ── Animation State ─────────────────────────────────────────────
-
-/// @brief Tracks the current animation state to avoid redundant transitions.
-struct AnimationState {
-    /// @brief Animation state for state-switching logic.
-    enum class State : uint8_t {
-        Idle,  ///< Standing still / idle animation.
-        Walk,  ///< Moving / walk animation.
-        Melee, ///< Melee attack animation.
-        Dash   ///< Dash animation.
-    };
-    State current = State::Idle; ///< The active animation state.
 };
 
 // ── Aiming / Shooting ───────────────────────────────────────────

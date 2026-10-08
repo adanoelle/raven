@@ -3,6 +3,7 @@
 #include "core/fs.hpp"
 #include "core/paths.hpp"
 #include "core/string_id.hpp"
+#include "rendering/animation_library.hpp"
 #include "scenes/title_scene.hpp"
 
 #include <SDL3/SDL.h>
@@ -65,8 +66,9 @@ bool Game::init() {
 #endif
 
     // The interner must exist before load_assets(): sprite sheets are
-    // registered under interned IDs.
+    // registered under interned IDs. Animation clips load alongside them.
     registry_.ctx().emplace<StringInterner>();
+    registry_.ctx().emplace<AnimationLibrary>();
 
     if (!load_assets()) {
         return false;
@@ -132,6 +134,12 @@ bool Game::load_assets() {
                 if (!sprites_.load(renderer_.sdl_renderer(), interner.intern(id),
                                    paths::asset(path), fw, fh)) {
                     spdlog::warn("Failed to load sprite sheet '{}'", id);
+                }
+                // Optional Aseprite JSON export with the sheet's animation tags
+                if (auto anim = sheet.find("animations"); anim != sheet.end()) {
+                    registry_.ctx().get<AnimationLibrary>().load_file(
+                        interner.intern(id), paths::asset(anim->get<std::string>()), fw, fh,
+                        interner);
                 }
             } catch (const nlohmann::json::exception& e) {
                 spdlog::error("config.json: malformed sprite_sheets[{}]: {}", i, e.what());

@@ -8,6 +8,7 @@
 #include "ecs/components.hpp"
 #include "ecs/systems/wave_system.hpp"
 #include "patterns/pattern_library.hpp"
+#include "rendering/animation_library.hpp"
 #include "rendering/sheet_ids.hpp"
 #include "rendering/tilemap.hpp"
 
@@ -260,6 +261,58 @@ TEST_CASE("Every sprite sheet the code uses is registered and has its frames", "
         CHECK((column + 1) * info.frame_w <= image->w);
         CHECK(info.frame_h <= image->h);
         SDL_DestroySurface(image);
+    }
+}
+
+TEST_CASE("Every animation export matches its sprite sheet", "[content]") {
+    const auto config = read_json("assets/data/config.json");
+    StringInterner interner;
+    AnimationLibrary library;
+
+    for (const auto& sheet : config.at("sprite_sheets")) {
+        const auto id = sheet.at("id").get<std::string>();
+        const auto animations = sheet.find("animations");
+        if (animations == sheet.end()) {
+            continue;
+        }
+        INFO("sheet: " << id);
+        const auto data_path = animations->get<std::string>();
+        REQUIRE(source_file_exists(data_path));
+
+        const int fw = sheet.at("frame_w").get<int>();
+        const int fh = sheet.at("frame_h").get<int>();
+        const StringId sheet_id = interner.intern(id);
+        REQUIRE(library.load_file(sheet_id, SOURCE_DIR + data_path, fw, fh, interner));
+        REQUIRE(library.has_sheet(sheet_id));
+
+        SDL_Surface* image = IMG_Load((SOURCE_DIR + sheet.at("path").get<std::string>()).c_str());
+        REQUIRE(image != nullptr);
+        const int image_w = image->w;
+        const int image_h = image->h;
+        SDL_DestroySurface(image);
+
+        // A stale export (PNG re-exported without its JSON) shows up as a size mismatch
+        const auto data = read_json(data_path);
+        CHECK(data.at("meta").at("size").at("w").get<int>() == image_w);
+        CHECK(data.at("meta").at("size").at("h").get<int>() == image_h);
+
+        for (const auto& tag : data.at("meta").at("frameTags")) {
+            const auto name = tag.at("name").get<std::string>();
+            INFO("tag: " << name);
+            const auto* clip = library.get(sheet_id, interner.intern(name));
+            REQUIRE(clip != nullptr);
+            for (const auto& frame : clip->frames) {
+                CHECK((frame.frame_x + 1) * fw <= image_w);
+                CHECK((frame.frame_y + 1) * fh <= image_h);
+            }
+        }
+    }
+
+    // Player characters need at least these to look alive
+    for (const char* id : {sheets::PLAYER, sheets::KNIGHT}) {
+        INFO("player sheet: " << id);
+        CHECK(library.get(interner.intern(id), interner.intern(clips::IDLE)) != nullptr);
+        CHECK(library.get(interner.intern(id), interner.intern(clips::WALK)) != nullptr);
     }
 }
 

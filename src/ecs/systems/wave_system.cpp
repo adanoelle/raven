@@ -5,6 +5,7 @@
 #include "core/string_id.hpp"
 #include "ecs/systems/hitbox_math.hpp"
 #include "ecs/systems/player_utils.hpp"
+#include "rendering/animation_library.hpp"
 #include "rendering/sheet_ids.hpp"
 
 #include <spdlog/spdlog.h>
@@ -276,6 +277,8 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
         reg.emplace<Sprite>(enemy, interner.intern(vis.sheet), enemy_frame(def.type), 0,
                             vis.sprite_w, vis.sprite_h, 10, false, 0.f, vis.offset_y);
         reg.emplace<ScoreValue>(enemy, def.score);
+        // Animates once the enemy's sheet has an exported "idle" tag
+        reg.emplace<Animation>(enemy, Animation{interner.intern(clips::IDLE)});
 
         // Set up bullet emitter if a pattern exists. An empty pattern name
         // means an enemy that deliberately doesn't shoot.
