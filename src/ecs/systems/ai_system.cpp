@@ -96,10 +96,12 @@ void update_stalker(Velocity& vel, AiBehavior& ai, float dir_x, float dir_y, flo
         float perp_x = -dir_y * ai.strafe_dir;
         float perp_y = dir_x * ai.strafe_dir;
 
-        // Slight range correction to maintain preferred distance
-        float range_correction = (dist - ai.preferred_range) * 0.5f;
-        vel.dx = (perp_x + dir_x * range_correction / ai.move_speed) * ai.move_speed;
-        vel.dy = (perp_y + dir_y * range_correction / ai.move_speed) * ai.move_speed;
+        // Slight range correction to maintain preferred distance. Added
+        // as its own term: dividing by move_speed made a stationary
+        // stalker's velocity NaN. A stalker that can't move stays put.
+        float range_correction = ai.move_speed > 0.f ? (dist - ai.preferred_range) * 0.5f : 0.f;
+        vel.dx = perp_x * ai.move_speed + dir_x * range_correction;
+        vel.dy = perp_y * ai.move_speed + dir_y * range_correction;
 
         // Periodically reverse strafe direction
         ai.phase_timer += dt;
