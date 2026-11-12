@@ -43,6 +43,9 @@ TEST_CASE("A minimal enemy definition gets its defaults", "[enemies]") {
     CHECK(def->pattern.empty()); // doesn't shoot
     CHECK(def->contact_damage == 0.f);
     CHECK(def->stabilizer_drop == Approx(default_stabilizer_drop(Enemy::Type::Mid)));
+    CHECK(def->disarm_hits == 1);
+    CHECK(def->disarmed_contact_damage ==
+          Approx(default_disarmed_contact_damage(Enemy::Type::Mid)));
 
     // AI tuning comes from the archetype
     const AiBehavior stalker = default_ai(AiBehavior::Archetype::Stalker);
@@ -68,7 +71,9 @@ TEST_CASE("Enemy definitions override every default", "[enemies]") {
                                      {"attack_range", 300}}},
                                    {"pattern", "nova_legendary"},
                                    {"contact_damage", 25},
-                                   {"stabilizer_drop", 0.5}});
+                                   {"stabilizer_drop", 0.5},
+                                   {"disarm_hits", 3},
+                                   {"disarmed_contact_damage", 40}});
     const EnemyDef* def = enemies.get("test");
     REQUIRE(def != nullptr);
 
@@ -87,6 +92,8 @@ TEST_CASE("Enemy definitions override every default", "[enemies]") {
     CHECK(def->pattern == "nova_legendary");
     CHECK(def->contact_damage == Approx(25.f));
     CHECK(def->stabilizer_drop == Approx(0.5f));
+    CHECK(def->disarm_hits == 3);
+    CHECK(def->disarmed_contact_damage == Approx(40.f));
 }
 
 TEST_CASE("Invalid enemy definitions are skipped", "[enemies]") {
@@ -118,6 +125,8 @@ TEST_CASE("Invalid enemy definitions are skipped", "[enemies]") {
         CHECK(load_one(with("size", {24})).count() == 0);
         CHECK(load_one(with("hitbox", {{"radius", -1}})).count() == 0);
         CHECK(load_one(with("stabilizer_drop", 1.5)).count() == 0);
+        CHECK(load_one(with("disarm_hits", 0)).count() == 0);
+        CHECK(load_one(with("disarmed_contact_damage", -1)).count() == 0);
         CHECK(load_one(with("ai", {{"archetype", "chaser"}, {"move_speed", -10}})).count() == 0);
     }
 

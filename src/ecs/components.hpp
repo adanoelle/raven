@@ -113,6 +113,29 @@ struct Enemy {
     return 0.f;
 }
 
+/// @brief Default body damage of a disarmed enemy of a tier. A disarmed
+/// enemy charges the player, so it has to be able to hurt.
+/// @param tier The enemy tier.
+/// @return Damage per contact hit.
+[[nodiscard]] constexpr float default_disarmed_contact_damage(Enemy::Type tier) {
+    switch (tier) {
+    case Enemy::Type::Boss:
+        return 30.f;
+    case Enemy::Type::Mid:
+        return 20.f;
+    case Enemy::Type::Grunt:
+        return 15.f;
+    }
+    return 15.f;
+}
+
+/// @brief How an enemy is disarmed, from its enemy definition. Enemies
+/// without it disarm on the first melee hit, with the tier's default damage.
+struct Disarmable {
+    int hits_left = 1;           ///< Melee hits still needed to knock the weapon out.
+    float contact_damage = 15.f; ///< Body damage once disarmed, if it has none of its own.
+};
+
 /// @brief Chance this enemy drops a weapon stabilizer on death, from its
 /// enemy definition. Enemies without it use default_stabilizer_drop().
 struct StabilizerDrop {
@@ -255,10 +278,6 @@ struct ContactDamage {
     float cooldown = 0.5f; ///< Minimum interval between hits (seconds).
     float timer = 0.f;     ///< Time until next hit allowed.
 };
-
-/// @brief Body damage of a disarmed enemy that had none of its own. A
-/// disarmed enemy charges the player, so it has to be able to hurt.
-inline constexpr float disarmed_contact_damage = 15.f;
 
 /// @brief Knockback impulse applied to an enemy when hit by a bullet.
 struct Knockback {

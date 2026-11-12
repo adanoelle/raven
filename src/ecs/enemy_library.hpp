@@ -46,6 +46,8 @@ struct EnemyDef {
     std::string pattern;         ///< Bullet pattern; empty for an enemy that doesn't shoot.
     float contact_damage = 0.f;  ///< Body damage per hit; 0 for none.
     float stabilizer_drop = 0.f; ///< Chance (0-1) of dropping a weapon stabilizer on death.
+    int disarm_hits = 1;         ///< Melee hits needed to knock its weapon out.
+    float disarmed_contact_damage = 15.f; ///< Body damage once disarmed, if contact_damage is 0.
 };
 
 /// @brief Enemy definitions loaded from JSON, looked up by name.
