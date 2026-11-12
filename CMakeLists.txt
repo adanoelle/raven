@@ -31,6 +31,8 @@ option(RAVEN_PLATFORM_CONSOLE "Fixed-display console target: hides window settin
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(CompilerWarnings)
+# Before Dependencies, so libraries built from source get the same flags.
+include(ShippingFlags)
 include(Dependencies)
 
 if(RAVEN_ENABLE_ASAN)
