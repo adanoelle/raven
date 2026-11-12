@@ -49,6 +49,8 @@ A stage wave entry is now `{ "spawn_index": 0, "enemy": "grunt_chaser" }`.
   - `pattern` is empty, so the enemy doesn't shoot.
   - `contact_damage` is 0 (no body damage).
   - `stabilizer_drop` comes from `default_stabilizer_drop()` for the tier.
+  - `disarm_hits` is 1, and `disarmed_contact_damage` comes from
+    `default_disarmed_contact_damage()` for the tier (both added later).
 - `EnemyLibrary` (`src/ecs/enemy_library.hpp`) loads the file. A definition
   with a missing or unknown tier or archetype, or a value out of range, is
   reported and skipped. An unknown key gets a "typo?" warning. A wave entry

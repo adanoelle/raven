@@ -177,6 +177,7 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
         reg.emplace<Velocity>(enemy);
         reg.emplace<Enemy>(enemy, def->tier);
         reg.emplace<StabilizerDrop>(enemy, def->stabilizer_drop);
+        reg.emplace<Disarmable>(enemy, def->disarm_hits, def->disarmed_contact_damage);
         reg.emplace<Health>(enemy, def->hp, def->hp);
         reg.emplace<CircleHitbox>(enemy, def->radius);
         reg.emplace<RectHitbox>(enemy, def->rect_w, def->rect_h, 0.f, 0.f);

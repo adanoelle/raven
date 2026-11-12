@@ -13,9 +13,19 @@ namespace raven {
 
 namespace {
 
-constexpr std::array<std::string_view, 11> DEF_KEYS = {
-    "tier",  "sheet", "size",    "offset_y",       "hitbox",         "hp",
-    "score", "ai",    "pattern", "contact_damage", "stabilizer_drop"};
+constexpr std::array<std::string_view, 13> DEF_KEYS = {"tier",
+                                                       "sheet",
+                                                       "size",
+                                                       "offset_y",
+                                                       "hitbox",
+                                                       "hp",
+                                                       "score",
+                                                       "ai",
+                                                       "pattern",
+                                                       "contact_damage",
+                                                       "stabilizer_drop",
+                                                       "disarm_hits",
+                                                       "disarmed_contact_damage"};
 constexpr std::array<std::string_view, 2> HITBOX_KEYS = {"radius", "rect"};
 constexpr std::array<std::string_view, 5> AI_KEYS = {"archetype", "move_speed", "activation_range",
                                                      "preferred_range", "attack_range"};
@@ -128,6 +138,16 @@ std::optional<EnemyDef> parse_def(const std::string& id, const nlohmann::json& j
 
     if (auto contact = j.find("contact_damage"); contact != j.end() && contact->is_boolean()) {
         spdlog::error("{}: 'contact_damage' is the damage per hit (e.g. 15), not true/false",
+                      where);
+        return std::nullopt;
+    }
+
+    def.disarm_hits = j.value("disarm_hits", 1);
+    def.disarmed_contact_damage =
+        j.value("disarmed_contact_damage", default_disarmed_contact_damage(def.tier));
+    if (def.disarm_hits < 1 || def.disarmed_contact_damage < 0.f) {
+        spdlog::error("{}: 'disarm_hits' must be at least 1 and 'disarmed_contact_damage' must "
+                      "not be negative",
                       where);
         return std::nullopt;
     }

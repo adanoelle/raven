@@ -36,10 +36,11 @@
             "sheet": "enemies_boss",
             "offset_y": -6,
             "hitbox": { "radius": 18, "rect": [32, 36] },
-            "hp": 10,
+            "hp": 40,
             "score": 1000,
             "ai": { "archetype": "coward", "move_speed": 110, "activation_range": 200, "attack_range": 999 },
-            "pattern": "nova_legendary"
+            "pattern": "nova_legendary",
+            "disarm_hits": 3
         }
     }
 }

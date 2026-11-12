@@ -298,8 +298,18 @@ TEST_CASE("A disarmed shooter gains body damage", "[melee]") {
 
         REQUIRE(reg.any_of<ContactDamage>(enemy));
         const auto& contact = reg.get<ContactDamage>(enemy);
-        CHECK(contact.damage == disarmed_contact_damage);
+        CHECK(contact.damage == default_disarmed_contact_damage(Enemy::Type::Grunt));
         CHECK(contact.timer > 0.f); // not on the tick of the swing
+    }
+
+    SECTION("the damage comes from the enemy's definition") {
+        auto enemy = make_enemy(reg, 120.f, 100.f);
+        reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern3"), {}, {}});
+        reg.emplace<Disarmable>(enemy, 1, 35.f);
+
+        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+
+        CHECK(reg.get<ContactDamage>(enemy).damage == 35.f);
     }
 
     SECTION("an enemy's own body damage is kept") {
@@ -311,6 +321,49 @@ TEST_CASE("A disarmed shooter gains body damage", "[melee]") {
 
         CHECK(reg.get<ContactDamage>(enemy).damage == 40.f);
     }
+}
+
+TEST_CASE("A tough enemy keeps its weapon until its last disarm hit", "[melee]") {
+    entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+    patterns.set_interner(interner);
+
+    nlohmann::json j = {
+        {"name", "test_pattern4"},
+        {"emitters", {{{"type", "radial"}, {"count", 3}, {"speed", 200.f}, {"fire_rate", 0.3f}}}}};
+    patterns.load_from_json(j);
+
+    make_player(reg, 100.f, 100.f);
+    auto enemy = make_enemy(reg, 110.f, 100.f);
+    reg.get<Health>(enemy) = Health{100.f, 100.f};
+    reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern4"), {}, {}});
+    reg.emplace<Disarmable>(enemy, 3, 30.f);
+
+    // One full swing: start it, then let the attack and its cooldown run out.
+    auto swing = [&] {
+        reg.get<Transform2D>(enemy) = Transform2D{110.f, 100.f};
+        reg.remove<Knockback>(enemy);
+        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+        for (int i = 0; i < 120; ++i) {
+            systems::update_melee(reg, no_input(), patterns, 1.f / 120.f);
+        }
+    };
+
+    swing();
+    CHECK(reg.any_of<BulletEmitter>(enemy));
+    CHECK_FALSE(reg.any_of<Disarmed>(enemy));
+    CHECK(reg.get<Health>(enemy).current < 100.f); // still takes the hit
+
+    swing();
+    CHECK(reg.any_of<BulletEmitter>(enemy));
+    CHECK(reg.view<WeaponPickup>().empty());
+
+    swing();
+    CHECK_FALSE(reg.any_of<BulletEmitter>(enemy));
+    CHECK(reg.any_of<Disarmed>(enemy));
+    CHECK(reg.get<ContactDamage>(enemy).damage == 30.f);
+    CHECK(reg.view<WeaponPickup>().size() == 1);
 }
 
 // ── Dash system tests ───────────────────────────────────────────────

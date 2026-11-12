@@ -91,8 +91,13 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
             apply_ability_hits(reg, hits, attack.damage, attack.knockback);
 
             for (auto& hit : hits) {
-                // Disarm: remove emitter, spawn weapon pickup
+                // Disarm: remove emitter, spawn weapon pickup. Tougher
+                // enemies hold on to their weapon for several hits.
                 if (auto* emitter = reg.try_get<BulletEmitter>(hit.ent)) {
+                    auto* disarmable = reg.try_get<Disarmable>(hit.ent);
+                    if (disarmable && --disarmable->hits_left > 0) {
+                        continue;
+                    }
                     auto* e_tf = reg.try_get<Transform2D>(hit.ent);
                     if (e_tf && emitter->pattern_name.valid()) {
                         const auto* pattern = patterns.get(emitter->pattern_name);
@@ -116,7 +121,11 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
                     // again. The first hit waits out one cooldown, since the
                     // enemy is in melee range right now.
                     if (!reg.any_of<ContactDamage>(hit.ent)) {
-                        ContactDamage contact{disarmed_contact_damage};
+                        const auto* enemy = reg.try_get<Enemy>(hit.ent);
+                        ContactDamage contact{disarmable
+                                                  ? disarmable->contact_damage
+                                                  : default_disarmed_contact_damage(
+                                                        enemy ? enemy->type : Enemy::Type::Grunt)};
                         contact.timer = contact.cooldown;
                         reg.emplace<ContactDamage>(hit.ent, contact);
                     }
