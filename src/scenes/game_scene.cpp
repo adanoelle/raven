@@ -224,8 +224,10 @@ void GameScene::update(Game& game, float dt) {
     // Run ECS systems in order
     systems::update_charged_shot(reg, input, dt);
     systems::update_input(reg, input, dt);
-    systems::update_melee(reg, input, pattern_lib_, dt);
+    // Dash before melee: pressing both on one tick starts the dash first,
+    // so the melee is the Knight's spin.
     systems::update_dash(reg, input, dt);
+    systems::update_melee(reg, input, pattern_lib_, dt);
     systems::update_ground_slam(reg, input, dt);
     systems::update_concussion_shot(reg, input, dt);
     systems::update_shooting(reg, input, dt);
