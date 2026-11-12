@@ -66,7 +66,7 @@ placement.
 | Mega-bosses       | 64x64      | 48x48     | 8px padding, screen-dominating           |
 | Small projectiles | 8x8        | —         | Body fills frame                         |
 | Large projectiles | 16x16      | —         | Special attacks                          |
-| Pickups / items   | 8x8        | —         | Smaller than characters                  |
+| Pickups / items   | 16x16      | —         | Smaller than characters                  |
 | Tiles             | 16x16      | —         | Standard tile grid                       |
 | UI icons          | 8x8        | —         | Hearts, ammo pips                        |
 | UI portraits      | 48x48–64x64 | —       | Stat screen, character select (see below)|
@@ -105,12 +105,12 @@ smaller than the body so combat feels fair.
 ### Note on current placeholder art
 
 The grunt sheet currently in the repo (`assets/sprites/enemies.png`) predates
-this spec revision: it is authored at 16x16 and the engine temporarily upscales
-it to 24x24 at draw time (a 1.5x non-integer scale). This is a stopgap for
-placeholder art only — **new grunt art must be authored at 24x24** per the
-table above, at which point the sheet's `frame_w`/`frame_h` in
+this spec revision: it is authored at 16x16 and the engine draws it 1:1, so
+placeholder grunts appear at 16x16 — smaller than the spec. This is a stopgap
+for placeholder art only — **new grunt art must be authored at 24x24** per
+the table above, at which point the sheet's `frame_w`/`frame_h` in
 `assets/data/config.json` changes from 16 to 24 and the engine draws it 1:1
-with no scaling.
+at the new size.
 
 ---
 
@@ -224,21 +224,22 @@ effects need no timing logic: frames map onto the ability's own countdown.
 ### Pickup sprites
 
 Pickups are the currency of the steal economy and need to read instantly at
-8x8:
+16x16:
 
-| Pickup            | Size | Notes                                                                       |
-| ----------------- | ---- | --------------------------------------------------------------------------- |
-| Weapon pickup     | 8x8  | Dropped by disarmed enemies; on the ground for only 5s, so it must pop      |
-| Stabilizer        | 8x8  | Rarer and more precious than a weapon — visually distinct, not a variant    |
+| Pickup            | Size  | Notes                                                                       |
+| ----------------- | ----- | --------------------------------------------------------------------------- |
+| Weapon pickup     | 16x16 | Dropped by disarmed enemies; on the ground for only 5s, so it must pop      |
+| Stabilizer        | 16x16 | Rarer and more precious than a weapon — visually distinct, not a variant    |
 
-At 8x8 a pickup is about 2mm tall on a Switch in handheld mode, so the
+A 16x16 pickup is still small on a Switch in handheld mode, so the
 **pickup shimmer** (see the VFX table above) is not optional polish here —
 the motion is what makes a 5-second weapon drop findable mid-firefight.
 Contrast against the floor palette matters more than interior detail.
 
-> **Status:** the engine currently references a `"pickups"` sprite sheet
-> that does not yet exist in the repo — pickups render as placeholder
-> shapes. These two sprites are a high-impact, low-effort pair to draw.
+> **Status:** `assets/sprites/pickups.png` is a generated placeholder: one
+> row of two 16x16 frames, weapon pickup in column 0 and stabilizer in
+> column 1. The engine draws them at 16x16. These two sprites are a
+> high-impact, low-effort pair to draw; keep the frame order.
 
 ---
 
