@@ -80,10 +80,15 @@ namespace systems {
 /// before they can react.
 inline constexpr float SPAWN_CONTACT_GRACE = 1.f;
 
+/// @brief Seconds a freshly spawned enemy holds its fire. Without it a fast
+/// pattern opens up a few frames after a wave appears.
+inline constexpr float SPAWN_FIRE_GRACE = 1.f;
+
 /// @brief Spawn enemies for a wave at EnemySpawn positions from the tilemap.
 ///
 /// Each enemy is built from its EnemyDef; an unknown name is reported and
-/// skipped. Enemies with contact damage start with SPAWN_CONTACT_GRACE on
+/// skipped. Enemies that shoot hold their fire for SPAWN_FIRE_GRACE.
+/// Enemies with contact damage start with SPAWN_CONTACT_GRACE on
 /// their contact cooldown.
 /// @param reg The ECS registry.
 /// @param tilemap Tilemap with spawn point positions.

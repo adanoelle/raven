@@ -232,6 +232,7 @@ struct BulletEmitter {
     std::vector<float> cooldowns;      ///< Per-emitter cooldown timers (seconds).
     std::vector<float> current_angles; ///< Per-emitter current rotation angles (degrees).
     bool active = true;                ///< Whether this emitter is currently firing.
+    float hold_fire = 0.f; ///< Seconds before it may fire at all; runs down even while inactive.
 };
 
 // ── Pickup / Decay ──────────────────────────────────────────────

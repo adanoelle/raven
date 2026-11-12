@@ -162,6 +162,11 @@ TEST_CASE("spawn_wave starts contact damage on a grace cooldown", "[waves]") {
 
     // An enemy defined without a pattern doesn't shoot
     CHECK(reg.view<BulletEmitter>().size() == 1);
+
+    // And one that shoots holds its fire for a moment
+    for (auto [entity, emitter] : reg.view<BulletEmitter>().each()) {
+        CHECK(emitter.hold_fire == Approx(systems::SPAWN_FIRE_GRACE));
+    }
 }
 
 TEST_CASE("spawn_wave builds enemies from their definitions", "[waves]") {

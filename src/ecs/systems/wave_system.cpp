@@ -191,7 +191,9 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
         // Set up bullet emitter if a pattern exists. An empty pattern name
         // means an enemy that deliberately doesn't shoot.
         if (patterns.get(def->pattern)) {
-            reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def->pattern), {}, {}});
+            auto& emitter = reg.emplace<BulletEmitter>(
+                enemy, BulletEmitter{interner.intern(def->pattern), {}, {}});
+            emitter.hold_fire = SPAWN_FIRE_GRACE;
         } else if (!def->pattern.empty()) {
             spdlog::warn("Enemy '{}': pattern '{}' not found, so it won't fire", def->id,
                          def->pattern);
