@@ -5,9 +5,13 @@
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT RAVEN_IPO_SUPPORTED OUTPUT RAVEN_IPO_OUTPUT LANGUAGES CXX)
-if(RAVEN_IPO_SUPPORTED)
+if(RAVEN_IPO_SUPPORTED AND NOT MSVC)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
+elseif(RAVEN_IPO_SUPPORTED)
+    # MSVC: only the game itself (see raven_set_shipping_flags). /GL objects
+    # can't be read by CMake's export-all-symbols step, which shared
+    # libraries built from source rely on.
 else()
     message(STATUS "Link-time optimisation not available: ${RAVEN_IPO_OUTPUT}")
 endif()
@@ -28,3 +32,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         )
     endif()
 endif()
+
+# Link-time optimise one target. Needed where it isn't on globally (MSVC).
+function(raven_set_shipping_flags target)
+    if(RAVEN_IPO_SUPPORTED)
+        set_target_properties(${target} PROPERTIES
+            INTERPROCEDURAL_OPTIMIZATION_RELEASE ON
+            INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON
+        )
+    endif()
+endfunction()

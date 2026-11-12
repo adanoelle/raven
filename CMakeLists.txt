@@ -133,6 +133,7 @@ if(RAVEN_ENABLE_STEAM)
 endif()
 
 raven_set_warnings(raven)
+raven_set_shipping_flags(raven)
 
 # Make assets available next to the built binary (SDL_GetBasePath lookup).
 # Symlinks need developer mode on Windows, so copy there instead.
