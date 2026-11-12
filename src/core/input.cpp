@@ -192,7 +192,32 @@ void Input::update() {
     update_from_keyboard();
     update_from_gamepad();
     update_mouse();
+    apply_blocks();
     compute_edges();
+}
+
+void Input::block_pressed_until_released() {
+    for (std::size_t i = 0; i < ACTIONS.size(); ++i) {
+        if (current_.*ACTIONS[i].pressed) {
+            blocked_[i] = true;
+            current_.*ACTIONS[i].held = false; // for the rest of this frame's ticks
+        }
+    }
+}
+
+void Input::apply_blocks() {
+    for (std::size_t i = 0; i < ACTIONS.size(); ++i) {
+        if (!blocked_[i]) {
+            continue;
+        }
+        // A press event since the last poll means the button was let go
+        // and pressed again, even if the poll never saw it up.
+        if (current_.*ACTIONS[i].held && !latched_.actions[i]) {
+            current_.*ACTIONS[i].held = false;
+        } else {
+            blocked_[i] = false;
+        }
+    }
 }
 
 void Input::update_mouse() {

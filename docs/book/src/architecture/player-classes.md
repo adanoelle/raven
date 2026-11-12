@@ -295,8 +295,8 @@ signalling that the shot will pierce.
 ```
 update_charged_shot      <- charge accumulation, fire-on-release
 update_input             (skip velocity during Dash, charge speed penalty)
-update_melee             <- arc check, disarm, spawn pickups, MeleeStats override
 update_dash              <- burst velocity, invulnerability
+update_melee             <- arc check, disarm, spawn pickups, MeleeStats override
 update_ground_slam       <- AoE damage, knockback
 update_concussion_shot   <- AoE knockback
 update_shooting          (skip ChargedShot entities)
