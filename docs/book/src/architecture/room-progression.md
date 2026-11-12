@@ -157,8 +157,9 @@ defined), then:
    `Health`, `CircleHitbox`, `RectHitbox`, `Sprite`, `ScoreValue`,
    `AiBehavior` and an `Animation` on the `idle` clip, all from the
    definition
-3. If the pattern exists in `PatternLibrary`, add `BulletEmitter`. An unknown
-   pattern name logs a warning; an empty one means the enemy doesn't shoot.
+3. If the pattern exists in `PatternLibrary`, add `BulletEmitter`, holding
+   its fire for `SPAWN_FIRE_GRACE` (1 s). An unknown pattern name logs a
+   warning; an empty one means the enemy doesn't shoot.
 4. If `contact_damage` is above 0, add `ContactDamage` with that damage and
    its cooldown already running for `SPAWN_CONTACT_GRACE` (1 s), so an enemy
    that appears on top of the player can't hit them before they can react.
@@ -166,16 +167,19 @@ defined), then:
 ### update_waves
 
 ```
-update_waves(reg, tilemap, stage, patterns, enemies)
+update_waves(reg, tilemap, stage, patterns, enemies, dt)
 ```
 
-Called once per tick from `GameScene::update`. If `GameState` exists and the
-room isn't already cleared or game over:
+Called once per tick from `GameScene::update`. Once the room is cleared it
+only runs down the exits' opening delay. Before that, unless the game is
+over:
 
 1. Count remaining `Enemy` entities — if any exist, return (wave in progress)
 2. Increment `current_wave`
 3. If more waves remain, call `spawn_wave` for the next wave
-4. Otherwise, set `room_cleared = true` and open all `Exit` entities
+4. Otherwise, set `room_cleared = true`. The `Exit` entities open
+   `EXIT_OPEN_DELAY` (0.75 s) later, so a player standing on one sees the
+   room clear, and what the last enemy dropped, before leaving
 
 ### check_exit_overlap
 
@@ -252,8 +256,8 @@ The decay timer only renders when the player has a `WeaponDecay` component
 
 ```
 update_input
-update_melee
 update_dash
+update_melee
 update_shooting
 update_emitters
 update_ai
