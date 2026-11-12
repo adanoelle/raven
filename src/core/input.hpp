@@ -208,6 +208,16 @@ class Input {
     /// rate relative to the tick rate.
     void consume_pressed();
 
+    /// @brief Read every button pressed on this tick as released until it
+    /// is let go.
+    ///
+    /// For a menu handing over to gameplay: the key that confirmed the menu
+    /// may also be bound to an action (Z confirms and fires), and without
+    /// this the action would start on the first gameplay tick. Buttons that
+    /// were already down before this tick keep their state, and a new press
+    /// of a blocked button counts as usual.
+    void block_pressed_until_released();
+
     /// @brief Get the current input state snapshot.
     /// @return Const reference to the current InputState.
     [[nodiscard]] const InputState& state() const { return current_; }
@@ -251,6 +261,7 @@ class Input {
     InputState current_;
     InputState previous_;
     EdgeLatch latched_;
+    std::array<bool, ACTION_COUNT> blocked_{}; ///< Held but ignored until released.
     bool quit_ = false;
 
     GamepadLayout gamepad_layout_;
@@ -269,6 +280,9 @@ class Input {
     void update_from_gamepad();
     void update_mouse();
     void compute_edges();
+
+    /// @brief Hide blocked buttons that are still down; unblock released ones.
+    void apply_blocks();
 
     /// @brief Whether a gamepad control is down now (updates trigger hysteresis).
     bool pad_control_down(const PadControl& control);
