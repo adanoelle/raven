@@ -11,12 +11,15 @@ namespace {
 
 /// @brief Where one button action lives: its held and pressed flags in
 /// InputState, and its bindings in each layout. Indexes EdgeLatch::actions.
+// clang-format versions disagree on spacing in member-pointer declarations.
+// clang-format off
 struct ActionSlots {
     bool InputState::* held;                      ///< Held flag.
     bool InputState::* pressed;                   ///< Press-edge flag.
     GamepadLayout::Controls GamepadLayout::* pad; ///< Gamepad bindings.
     KeyboardLayout::Keys KeyboardLayout::* keys;  ///< Keyboard bindings.
 };
+// clang-format on
 
 constexpr std::array<ActionSlots, Input::ACTION_COUNT> ACTIONS = {{
     {&InputState::shoot, &InputState::shoot_pressed, &GamepadLayout::shoot, &KeyboardLayout::shoot},
