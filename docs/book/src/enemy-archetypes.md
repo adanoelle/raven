@@ -33,6 +33,8 @@ These rules apply to every enemy and create feedback moments of their own
 - **Disarm enrages.** When melee knocks the weapon out of an enemy, it
   abandons its archetype entirely and charges the player at **1.5× speed**.
   A disarmed Coward — the fastest enemy in the game — becomes a missile.
+  An enemy with no body damage of its own gains the default (15) when
+  disarmed, so the charge always threatens.
   → This state change must be visible: weapon gone, posture flipped from
   cautious to berserk.
 - **Weapons are visible threats.** Armed enemies fire bullet patterns; the

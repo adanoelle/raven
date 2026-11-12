@@ -75,6 +75,7 @@
 - [Architecture Review and Follow-up Fixes](devlog/2026-07-15-architecture-review-fixes.md)
 - [Switch Port Readiness Pass](devlog/2026-09-02-switch-port-readiness.md)
 - [Full Code Review Before the Content Phase](devlog/2026-10-08-pre-content-review.md)
+- [Second Code Review: Open PRs and the First Playtest](devlog/2026-11-12-second-review.md)
 
 ---
 
