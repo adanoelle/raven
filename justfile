@@ -40,9 +40,9 @@ export-art *files:
 fmt:
     find src tests -name '*.hpp' -o -name '*.cpp' | xargs clang-format -i
 
-# Run static analysis
-lint:
-    find src -name '*.hpp' -o -name '*.cpp' | xargs clang-tidy -p build
+# Run static analysis (needs the compile database the build writes)
+lint: build
+    find src \( -name '*.hpp' -o -name '*.cpp' \) -print0 | xargs -0 -n 4 -P $(nproc) clang-tidy -p build --quiet
 
 # Clean build artifacts
 clean:

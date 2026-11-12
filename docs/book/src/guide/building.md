@@ -16,7 +16,7 @@ just test     # Build + run Catch2 tests
 | Command           | Description                                                         |
 | ----------------- | ------------------------------------------------------------------- |
 | `just build`      | Debug build with Ninja. Creates `compile_commands.json` for clangd. |
-| `just release`    | Optimised Release build (tests disabled).                           |
+| `just release`    | Optimised Release build (tests disabled, link-time optimised, stripped). |
 | `just run`        | Build + launch `build/bin/raven`.                                   |
 | `just test`       | Build + run tests via ctest.                                        |
 | `just asan`       | Debug build with AddressSanitizer enabled.                          |
