@@ -216,6 +216,11 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
         if (auto* kb = reg.try_get<Knockback>(entity)) {
             vel.dx = kb->dx;
             vel.dy = kb->dy;
+            // Being hit wakes an enemy. Otherwise one outside its activation
+            // range could be shot dead without ever reacting.
+            if (ai.phase == AiBehavior::Phase::Idle) {
+                ai.phase = AiBehavior::Phase::Advance;
+            }
             kb->remaining -= dt;
             if (kb->remaining <= 0.f) {
                 reg.remove<Knockback>(entity);
