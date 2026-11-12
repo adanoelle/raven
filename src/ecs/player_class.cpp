@@ -2,6 +2,7 @@
 
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
+#include "rendering/sheet_ids.hpp"
 
 namespace raven {
 
@@ -56,7 +57,7 @@ void apply_knight(entt::registry& reg, entt::entity entity) {
     // layout as the placeholder); other classes keep the "player" sheet.
     if (auto* sprite = reg.try_get<Sprite>(entity)) {
         if (auto* interner = reg.ctx().find<StringInterner>()) {
-            sprite->sheet_id = interner->intern("knight");
+            sprite->sheet_id = interner->intern(sheets::KNIGHT);
         }
     }
 

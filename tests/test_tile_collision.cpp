@@ -117,3 +117,44 @@ TEST_CASE("Tile collision axis-separated resolution", "[tile_collision]") {
         REQUIRE(tf.y == Catch::Approx(88.f));
     }
 }
+
+TEST_CASE("Bullets are destroyed inside solid tiles", "[tile_collision]") {
+    entt::registry reg;
+    Tilemap tilemap;
+    tilemap.init_collision(GRID_W, GRID_H, CELL, make_grid([](int gx, int) { return gx == 5; }));
+
+    auto spawn_bullet_at = [&](float x, float y, bool piercing) {
+        auto ent = reg.create();
+        reg.emplace<Transform2D>(ent, x, y);
+        reg.emplace<Bullet>(ent, Bullet::Owner::Player);
+        if (piercing) {
+            reg.emplace<Piercing>(ent);
+        }
+        return ent;
+    };
+
+    // Column 5 spans x 80..95
+    auto in_wall = spawn_bullet_at(85.f, 40.f, false);
+    auto piercing_in_wall = spawn_bullet_at(88.f, 100.f, true);
+    auto in_open = spawn_bullet_at(40.f, 40.f, false);
+    auto beside_wall = spawn_bullet_at(79.f, 40.f, false);
+
+    systems::update_bullet_walls(reg, tilemap);
+
+    CHECK_FALSE(reg.valid(in_wall));
+    CHECK_FALSE(reg.valid(piercing_in_wall));
+    CHECK(reg.valid(in_open));
+    CHECK(reg.valid(beside_wall));
+}
+
+TEST_CASE("Bullets ignore walls when no tilemap is loaded", "[tile_collision]") {
+    entt::registry reg;
+    Tilemap tilemap; // not loaded
+
+    auto ent = reg.create();
+    reg.emplace<Transform2D>(ent, 85.f, 40.f);
+    reg.emplace<Bullet>(ent, Bullet::Owner::Enemy);
+
+    systems::update_bullet_walls(reg, tilemap);
+    CHECK(reg.valid(ent));
+}

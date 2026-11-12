@@ -3,12 +3,16 @@
 namespace raven::systems {
 
 void render_tilemap(const Tilemap& tilemap, SDL_Renderer* renderer) {
-    if (!tilemap.is_loaded() || !tilemap.texture()) {
+    const auto& textures = tilemap.textures();
+    if (!tilemap.is_loaded() || textures.empty()) {
         return;
     }
 
-    SDL_Texture* tex = tilemap.texture();
     for (const auto& tile : tilemap.tiles()) {
+        if (tile.texture >= textures.size()) {
+            continue;
+        }
+        SDL_Texture* tex = textures[tile.texture];
         SDL_FRect dest{static_cast<float>(tile.dest_x), static_cast<float>(tile.dest_y),
                        static_cast<float>(tile.src.w), static_cast<float>(tile.src.h)};
 

@@ -59,6 +59,7 @@ class GameScene : public Scene {
     ClassId::Id selected_class_; ///< Player class chosen at character select.
     Tilemap tilemap_;            ///< Tilemap loaded from LDtk for the current room.
     PatternLibrary pattern_lib_; ///< Bullet pattern definitions for enemy emitters.
+    EnemyLibrary enemy_lib_;     ///< Enemy definitions that stages place by name.
     StageLoader stage_loader_;   ///< Loaded stage definitions.
     int current_stage_ = 0;      ///< Index of the current stage being played.
 };

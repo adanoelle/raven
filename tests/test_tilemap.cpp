@@ -95,7 +95,7 @@ TEST_CASE("Tilemap properties", "[tilemap]") {
     REQUIRE(tm.height_px() == 64);
     REQUIRE(tm.cell_size() == 16);
     REQUIRE(tm.is_loaded());
-    REQUIRE(tm.texture() == nullptr); // no SDL texture in test
+    REQUIRE(tm.textures().empty()); // no SDL texture in test
 }
 
 TEST_CASE("Tile collision resolution", "[tilemap][ecs]") {

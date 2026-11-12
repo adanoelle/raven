@@ -59,6 +59,8 @@ add_executable(raven
     src/rendering/renderer.cpp
     src/rendering/bitmap_font.cpp
     src/rendering/sprite_sheet.cpp
+    src/rendering/animation_library.cpp
+    src/ecs/enemy_library.cpp
     src/rendering/tilemap.cpp
     src/rendering/tilemap_loader.cpp
 

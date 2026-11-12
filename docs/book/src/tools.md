@@ -22,14 +22,25 @@ explicitly waiting to be superseded by real work under the same file name.
 
 | Script | Generates | What replaces it |
 | --- | --- | --- |
-| `tools/gen_placeholder_sprites.py` | The placeholder bird sheets — `player.png` (32x32 frames), `enemies_mid.png`, `enemies_boss.png` | Real character art, row by row ([Character Animation Process](art/character-animation-process.md)) |
+| `tools/gen_placeholder_sprites.py` | The placeholder bird sheets — `player.png` (32x32 frames, with `player.json` animation tags in Aseprite's export format), `enemies_mid.png`, `enemies_boss.png` — plus `pickups.png` (weapon pickup, stabilizer) and `props.png` (exit closed, exit open) at 16x16 | Real character art, row by row ([Character Animation Process](art/character-animation-process.md)); pickup and prop art |
 | `tools/gen_sfx.py` | All the synthesized retro SFX in `assets/audio/sfx/` (square waves, noise bursts — deterministic, seeded) | Designed sounds per the [Audio Specification](audio-spec.md), same file names |
 
 No one needs to run these — their output is committed. If a placeholder
 gets accidentally deleted or a new placeholder slot is needed, they
 regenerate everything (`python3 tools/gen_sfx.py`; the sprite script needs
 Pillow: `nix-shell -p python3Packages.pillow --run "python3
-tools/gen_placeholder_sprites.py"`).
+tools/gen_placeholder_sprites.py"`). Pass sheet names to regenerate only
+those and leave finished art alone, e.g. `python3
+tools/gen_placeholder_sprites.py pickups props`.
+
+### Exporting art
+
+`just export-art` runs `tools/export_art.sh`, which exports every
+`art/**/*.aseprite` (except templates and sketches) to
+`assets/sprites/<name>.png` and `<name>.json`. The JSON carries the frame
+tags and durations the game animates from
+([Sprite Animation](architecture/sprite-animation.md)). Pass files to
+export only those. Needs Aseprite on the `PATH`.
 
 ### Generators whose output gets used
 

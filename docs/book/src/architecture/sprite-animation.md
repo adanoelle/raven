@@ -1,169 +1,116 @@
 # Sprite Animation
 
-Raven uses a frame-based animation system driven by ECS components. The
-`Animation` component ticks elapsed time forward each update, advancing a frame
-index that the render system reads to select the correct sprite sheet column. A
-separate `AnimationState` component tracks high-level states (idle, walk) to
-avoid redundant transitions.
+Animation timing comes from Aseprite. Each frame tag in an exported sheet
+becomes a named clip; the `Animation` component plays one clip and writes the
+current frame into the entity's `Sprite`. The decision is recorded in
+[ADR-0024](../decisions/0024-animation-clips-from-aseprite.md).
+
+## From Aseprite to clips
+
+`just export-art` (`tools/export_art.sh`) exports every `art/**/*.aseprite`
+(except templates and sketches) to two files in `assets/sprites/`:
+
+- `<name>.png`: one row per frame tag (`--sheet-type rows --split-tags`)
+- `<name>.json`: frame rectangles, per-frame durations and the tags
+  (`--list-tags --format json-array`)
+
+The sheet's `config.json` entry points at the data:
+
+```json
+{ "id": "knight", "path": "assets/sprites/knight.png", "frame_w": 32, "frame_h": 32,
+  "animations": "assets/sprites/knight.json" }
+```
+
+`Game::load_assets` loads it into the `AnimationLibrary`
+(`src/rendering/animation_library.hpp`), which lives in the registry context.
+For each tag:
+
+- Every frame must be a cell of the sheet's grid (no border or padding), so
+  its rectangle becomes a `frame_x` column and `frame_y` row.
+- Each frame keeps its own duration, so per-frame holds survive.
+- The tag direction is applied once at load: `reverse` flips the order,
+  `pingpong` plays back again without repeating the turnaround frame.
+- The tag's repeat count decides looping. No repeat (Aseprite's default)
+  loops forever; repeat 1 plays once and holds the last frame; repeat N plays
+  N times.
+
+Problems are logged and the bad tag is skipped: a frame off the grid, a
+zero-length frame, a tag range past the end, an unknown direction, or a
+json-hash export. `tests/test_content.cpp` checks every shipped export
+against its PNG.
 
 ## Components
 
-### Animation
-
-Defined in `src/ecs/components.hpp`:
-
 ```cpp
 struct Animation {
-    int start_frame = 0;         // First frame index in the animation.
-    int end_frame = 0;           // Last frame index in the animation.
-    float frame_duration = 0.1f; // Seconds per frame.
-    float elapsed = 0.f;         // Time elapsed in the current frame.
-    int current_frame = 0;       // Currently displayed frame index.
-    bool looping = true;         // Whether the animation loops or stops at end.
+    StringId clip;         // Interned clip name (the Aseprite tag).
+    int frame = 0;         // Index into the clip's frames.
+    float elapsed = 0.f;   // Seconds spent on the current frame.
+    int passes = 0;        // Completed passes through the clip.
+    bool finished = false; // A repeat-limited clip has shown its last frame in full.
 };
 ```
 
-The animation system writes `current_frame` back to `Sprite::frame_x` each tick,
-so the render system always draws the correct frame without any extra coupling.
-
-### AnimationState
-
-```cpp
-struct AnimationState {
-    enum class State : uint8_t {
-        Idle,
-        Walk
-    };
-    State current = State::Idle;
-};
-```
-
-This component exists to detect state _transitions_. The game scene compares the
-desired state (derived from velocity) against the current state. Only when they
-differ does it reset the animation parameters, preventing a moving entity from
-restarting its walk animation every tick.
+Change clips with `systems::play_clip(anim, clip)`. It restarts from the
+first frame only when the clip actually changes, so calling it every tick is
+safe.
 
 ## The animation system
 
-`update_animation()` in `src/ecs/systems/animation_system.cpp` is a free
-function that runs once per fixed-timestep tick:
+`update_animation(reg, dt)` runs once per fixed tick. For each entity with
+`Animation` and `Sprite`:
 
-```cpp
-void update_animation(entt::registry& reg, float dt);
-```
+1. Look up the clip for the sprite's sheet. If the sheet has no animation
+   data, leave the sprite alone. If it has data but not this clip, log the
+   missing tag once and leave the sprite alone.
+2. Add `dt` to `elapsed`, and step through frames while `elapsed` covers the
+   current frame's duration. Several frames can pass in one tick.
+3. At the end of the clip, loop, start another pass, or mark it `finished`.
+   `finished` is set only after the last frame has shown for its full
+   duration, so follow-through frames aren't cut short.
+4. Write the frame's column and row into `Sprite::frame_x` and `frame_y`.
 
-For each entity with both `Animation` and `Sprite`:
+## Player states
 
-1. Accumulate `dt` into `elapsed`.
-2. While `elapsed >= frame_duration`, advance `current_frame`.
-3. If `current_frame > end_frame`:
-   - Looping: wrap to `start_frame`.
-   - One-shot: clamp to `end_frame` and stop advancing.
-4. Write `current_frame` to `Sprite::frame_x`.
+`update_player_animation(reg)` picks the player's clip each tick, before
+`update_animation`:
 
-The while-loop handles the case where a large `dt` (or a very short
-`frame_duration`) requires skipping multiple frames in a single tick.
+| Doing                        | Clip     |
+| ---------------------------- | -------- |
+| Melee attack or ground slam  | `attack` |
+| Dash                         | `dash`   |
+| Moving (speed² > 1)          | `walk`   |
+| Otherwise                    | `idle`   |
 
-## State switching
+- A one-shot clip plays to its end even after the action itself ends, so the
+  wind-up and follow-through always show. A new action interrupts it.
+- If the sheet has no clip for the state, the choice falls back to `walk`,
+  then `idle`, and the missing tag is logged once. A character with only
+  idle and walk drawn still works.
+- It also faces the sprite along the aim direction (all art faces right).
 
-The player's animation state is managed inline in `GameScene::update()`, after
-the input system runs but before `update_animation()`:
-
-```cpp
-bool moving = (vel.dx * vel.dx + vel.dy * vel.dy) > 1.f;
-auto desired = moving ? AnimationState::State::Walk
-                      : AnimationState::State::Idle;
-
-if (state.current != desired) {
-    state.current = desired;
-    if (desired == AnimationState::State::Walk) {
-        sprite.frame_y = 1;       // walk row
-        anim.start_frame = 0;
-        anim.end_frame = 5;       // 6 frames
-        anim.frame_duration = 0.1f;
-    } else {
-        sprite.frame_y = 0;       // idle row
-        anim.start_frame = 0;
-        anim.end_frame = 3;       // 4 frames
-        anim.frame_duration = 0.25f;
-    }
-    anim.current_frame = anim.start_frame;
-    anim.elapsed = 0.f;
-}
-```
-
-Key details:
-
-- **`frame_y`** selects the sprite sheet row (animation state). The `Animation`
-  component does not touch `frame_y` — that is set only on state transitions.
-- **`frame_x`** selects the column within the row. The animation system drives
-  this via `current_frame`.
-- **Velocity threshold** of `1.f` (squared magnitude) prevents flickering
-  between idle and walk when velocity smoothing produces near-zero values during
-  deceleration.
-
-### Horizontal flip
-
-After the state check, the sprite's `flip_x` flag is set from the horizontal
-velocity direction:
-
-```cpp
-if (vel.dx > 1.f)
-    sprite.flip_x = false;
-else if (vel.dx < -1.f)
-    sprite.flip_x = true;
-```
-
-All art faces right. The engine mirrors for leftward movement. The dead zone of
-`[-1, 1]` prevents flipping during velocity smoothing when the player stops.
-
-## One-shot animations
-
-For non-looping animations (attack, hurt, death), set `looping = false`. The
-animation system stops advancing when `current_frame == end_frame`. Game logic
-can detect completion:
-
-```cpp
-bool finished = !anim.looping && anim.current_frame == anim.end_frame;
-```
+Enemies are given the `idle` clip when they spawn, so they animate as soon as
+their sheet has an `idle` tag.
 
 ## System execution order
 
-The animation system runs between input and movement in the
-`GameScene::update()` pipeline:
-
 ```
-update_input           input → target velocity
-animation state logic  velocity → idle/walk switch
-update_animation       tick frames, write to Sprite::frame_x
-update_movement        velocity → position
+update_ai
+update_player_animation  what the player is doing → clip
+update_animation         advance frames, write Sprite::frame_x/frame_y
+update_movement          velocity → position
 ...
 ```
 
-Running animation before movement means the displayed frame reflects the current
+Running animation before movement means the displayed frame reflects this
 tick's input, not the previous tick's.
-
-## Timing reference
-
-The art spec defines animation speed in FPS. Convert to `frame_duration`:
-
-```
-frame_duration = 1.0 / anim_fps
-```
-
-| Anim FPS | frame_duration | Use case       |
-| -------- | -------------- | -------------- |
-| 4        | 0.250s         | Idle breathing |
-| 8        | 0.125s         | Slow walk      |
-| 10       | 0.100s         | Normal walk    |
-| 12       | 0.083s         | Fast action    |
-| 15       | 0.067s         | Attack / VFX   |
 
 ## Key files
 
-| File                                   | Role                                               |
-| -------------------------------------- | -------------------------------------------------- |
-| `src/ecs/components.hpp`               | `Animation`, `AnimationState`, `Sprite` components |
-| `src/ecs/systems/animation_system.cpp` | `update_animation()` — frame advancement           |
-| `src/scenes/game_scene.cpp`            | State switching logic (idle/walk)                  |
-| `src/ecs/systems/render_system.cpp`    | Reads `Sprite::frame_x` to select source rect      |
+| File                                     | Role                                                  |
+| ---------------------------------------- | ----------------------------------------------------- |
+| `src/rendering/animation_library.hpp`    | `AnimationLibrary`, `AnimationClip`, clip names        |
+| `src/ecs/components.hpp`                 | `Animation`, `Sprite`                                 |
+| `src/ecs/systems/animation_system.cpp`   | `update_animation`, `update_player_animation`, `play_clip` |
+| `tools/export_art.sh`                    | Aseprite export behind `just export-art`              |
+| `tests/test_animation.cpp`               | Loading, playback, one-shots and state fallbacks      |

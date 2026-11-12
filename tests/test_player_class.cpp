@@ -376,6 +376,36 @@ TEST_CASE("Tap-fire as Sharpshooter fires weak shot", "[class][charged_shot]") {
     }
 }
 
+TEST_CASE("A Sharpshooter tap released before the tick fires a weak shot",
+          "[class][charged_shot]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+
+    auto player = make_bare_player(reg, 100.f, 100.f);
+    apply_sharpshooter(reg, player);
+
+    float dt = 1.f / 120.f;
+
+    // Down and up between two polls: a press edge, never held
+    InputState tap{};
+    tap.shoot_pressed = true;
+    systems::update_charged_shot(reg, tap, dt);
+
+    const auto& weapon = reg.get<Weapon>(player);
+    const auto& cs = reg.get<ChargedShot>(player);
+    int bullet_count = 0;
+    for (auto [entity, bullet, dmg] : reg.view<Bullet, DamageOnContact>().each()) {
+        ++bullet_count;
+        CHECK(dmg.damage == Catch::Approx(weapon.bullet_damage * cs.min_damage_mult));
+        CHECK_FALSE(reg.any_of<Piercing>(entity));
+    }
+    CHECK(bullet_count == 1);
+
+    // The cooldown applies, so a second tap straight after doesn't fire
+    systems::update_charged_shot(reg, tap, dt);
+    CHECK(reg.view<Bullet>().size() == 1);
+}
+
 TEST_CASE("Full charge produces piercing shot", "[class][charged_shot]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();

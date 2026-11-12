@@ -2,6 +2,8 @@
 
 #include "ecs/components.hpp"
 
+#include <vector>
+
 namespace raven::systems {
 
 void update_tile_collision(entt::registry& reg, const Tilemap& tilemap) {
@@ -49,6 +51,26 @@ void update_tile_collision(entt::registry& reg, const Tilemap& tilemap) {
         tf.y = prev.y;
         vel.dx = 0.f;
         vel.dy = 0.f;
+    }
+}
+
+void update_bullet_walls(entt::registry& reg, const Tilemap& tilemap) {
+    if (!tilemap.is_loaded()) {
+        return;
+    }
+
+    std::vector<entt::entity> to_destroy;
+    auto view = reg.view<Bullet, Transform2D>();
+    for (auto [entity, bullet, tf] : view.each()) {
+        if (tilemap.is_solid(tf.x, tf.y, 1.f, 1.f)) {
+            to_destroy.push_back(entity);
+        }
+    }
+
+    for (auto entity : to_destroy) {
+        if (reg.valid(entity)) {
+            reg.destroy(entity);
+        }
     }
 }
 

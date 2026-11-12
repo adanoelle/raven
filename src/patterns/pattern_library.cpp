@@ -2,6 +2,7 @@
 
 #include "core/fs.hpp"
 #include "core/paths.hpp"
+#include "rendering/sheet_ids.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -123,12 +124,16 @@ PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) const {
     def.name = j.at("name").get<std::string>();
 
     auto tier_str = j.value("tier", "common");
-    if (tier_str == "rare")
+    if (tier_str == "rare") {
         def.tier = Weapon::Tier::Rare;
-    else if (tier_str == "legendary")
+    } else if (tier_str == "legendary") {
         def.tier = Weapon::Tier::Legendary;
-    else
+    } else {
+        if (tier_str != "common") {
+            spdlog::warn("Pattern '{}': unknown tier '{}', using 'common'", def.name, tier_str);
+        }
         def.tier = Weapon::Tier::Common;
+    }
 
     for (const auto& ej : j.at("emitters")) {
         def.emitters.push_back(parse_emitter(ej, def.name));
@@ -142,12 +147,20 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
     EmitterDef def;
 
     auto type_str = j.value("type", "radial");
-    if (type_str == "aimed")
+    if (type_str == "aimed") {
         def.type = EmitterDef::Type::Aimed;
-    else if (type_str == "linear")
+    } else if (type_str == "linear") {
         def.type = EmitterDef::Type::Linear;
-    else
+        spdlog::warn("Pattern '{}': emitter type 'linear' is not implemented yet and fires "
+                     "like 'radial'",
+                     pattern_name);
+    } else {
+        if (type_str != "radial") {
+            spdlog::warn("Pattern '{}': unknown emitter type '{}', using 'radial'", pattern_name,
+                         type_str);
+        }
         def.type = EmitterDef::Type::Radial;
+    }
 
     // Clamp values that could destabilize the game if mistyped in data:
     // fire_rate <= 0 fires a burst every tick (runaway entity growth), huge
@@ -161,7 +174,7 @@ EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
     def.fire_rate = clamp_field(pattern_name, "fire_rate", j.value("fire_rate", 0.1f), 0.05f, 60.f);
     def.spread_angle = j.value("spread_angle", 360.f);
     def.start_angle = j.value("start_angle", 0.f);
-    def.bullet_sheet = interner_->intern(j.value("bullet_sheet", "projectiles"));
+    def.bullet_sheet = interner_->intern(j.value("bullet_sheet", sheets::PROJECTILES));
     def.bullet_frame_x = j.value("bullet_frame_x", 0);
     def.bullet_frame_y = j.value("bullet_frame_y", 0);
     def.bullet_width = j.value("bullet_width", 8);

@@ -8,7 +8,8 @@ sound. Enemies in Raven are built from two independent axes:
 - **Archetype** — the movement brain: Chaser, Drifter, Stalker, or Coward.
   This sets the *personality*.
 
-Any type can carry any archetype (stage JSON decides), so the archetype —
+Any type can carry any archetype (each enemy's definition in
+`assets/data/enemies.json` decides), so the archetype —
 not the tier — is what a player learns to read at a glance. **Silhouette
 and animation should communicate the archetype; size and detail communicate
 the tier.**
@@ -41,9 +42,10 @@ These rules apply to every enemy and create feedback moments of their own
 
 ## The Four Archetypes
 
-Numbers below are the current defaults (`make_ai()` in
-`src/ecs/systems/wave_system.cpp`); the player moves at 100–150 px/s for
-comparison.
+Numbers below are the archetype defaults (`default_ai()` in
+`src/ecs/enemy_library.cpp`). Any enemy definition can override them in its
+`ai` block; the shipped definitions spell them out. The player moves at
+100–150 px/s for comparison.
 
 ### Chaser — the pressure
 
@@ -131,9 +133,12 @@ player's first lesson is "it runs."
 
 Current stage content is deliberately minimal while art is in production —
 three stages, seven waves, built from: Chaser grunts (contact damage),
-Drifter grunts, Stalker mids, and one Coward boss. The archetype system,
-stage JSON, and pattern library are all data-driven, so the roster grows by
-adding JSON and art, not code.
+Drifter grunts, Stalker mids, and one Coward boss, defined as `grunt_chaser`,
+`grunt_drifter`, `mid_stalker` and `boss_coward` in
+`assets/data/enemies.json`. A new enemy, or a variant with a different look,
+speed or pattern, is a new entry there plus art; stages place it by name
+([ADR-0025](decisions/0025-named-enemy-definitions.md)). Only a new
+*archetype* (a new movement brain) needs code.
 
 ## Key Files (for developers)
 
@@ -141,5 +146,7 @@ adding JSON and art, not code.
 | ---- | ---- |
 | `src/ecs/systems/ai_system.cpp` | All four archetype brains, activation/line-of-sight, contact damage |
 | `src/ecs/components.hpp` | `AiBehavior`, `Enemy::Type`, `ContactDamage`, `Disarmed`, `Knockback` |
-| `src/ecs/systems/wave_system.cpp` | `make_ai()` per-archetype stats, wave spawning |
-| `assets/data/stages/*.json` | Which type/archetype/pattern appears in each wave |
+| `src/ecs/enemy_library.cpp` | `default_ai()` per-archetype stats, enemy definition loading |
+| `src/ecs/systems/wave_system.cpp` | Wave spawning from enemy definitions |
+| `assets/data/enemies.json` | Each enemy's tier, archetype, tuning, pattern, look and drops |
+| `assets/data/stages/*.json` | Which enemies appear in each wave, and where |

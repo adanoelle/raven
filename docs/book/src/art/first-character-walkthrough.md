@@ -85,22 +85,24 @@ dark end.
 
 ## 6. Export — alongside the placeholder
 
-**File > Export Sprite Sheet**: By Rows, split tags, no border padding →
-`assets/sprites/knight.png`. Or headless:
+Run `just export-art`. It exports every Aseprite file under `art/` (By
+Rows, split tags, no border padding) to `assets/sprites/knight.png` plus
+`knight.json`, which carries the frame tags and the frame durations you
+set. To export just this file:
 
 ```bash
-aseprite -b art/characters/knight/knight.aseprite \
-  --sheet assets/sprites/knight.png --sheet-type rows --split-tags
+just export-art art/characters/knight/knight.aseprite
 ```
 
 This does **not** overwrite the placeholder bird. The knight is its own
 sheet: register it in `assets/data/config.json` under a new id
 (`knight`) and point the class recipe at it (`apply_knight` sets the
 `Sprite` sheet id — see [Player Classes](../architecture/player-classes.md)).
-`player.png` stays as the sheet for classes without final art. A
-two-row sheet (192x64) is fine — the engine reads idle from row 0 and
-walk from row 1, and melee and dash temporarily reuse the walk row, so
-nothing breaks while only two rows exist.
+Add `"animations": "assets/sprites/knight.json"` to the entry so the
+game uses your tags and timing. `player.png` stays as the sheet for
+classes without final art. A sheet with only `idle` and `walk` tags is
+fine: until `attack` and `dash` exist, those actions play the walk clip,
+and the log names the missing tags.
 
 ## 7. `just run`
 

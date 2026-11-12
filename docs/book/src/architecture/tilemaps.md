@@ -98,21 +98,32 @@ tilemap_.load(game.renderer().sdl_renderer(),
 
 **Tiles / AutoLayer:**
 
-- Load the tileset PNG if not already loaded. The path is resolved relative to
-  the `.ldtk` file using string manipulation (no `std::filesystem`, per project
-  convention).
+- Load the layer's tileset PNG if it isn't loaded yet. Each tileset gets its
+  own texture, and each `TileData` records which one it uses, so a level can
+  mix tilesets. The path is resolved relative to the `.ldtk` file using string
+  manipulation (no `std::filesystem`, per project convention).
 - For each tile, pre-compute a `TileData` from `tile.getTextureRect()` and
   `tile.getPosition()`.
 
 **IntGrid:**
 
-- Read grid dimensions from `layer.getGridSize()`.
-- For each cell, `getIntGridVal(gx, gy).value > 0` marks it solid.
-- Also picks up auto-tiles if the layer has an associated tileset.
+- Only the layer named `Collision` (`Tilemap::COLLISION_LAYER`) is solid. For
+  each of its cells, `getIntGridVal(gx, gy).value > 0` marks it solid, and its
+  cell size becomes the tilemap's cell size.
+- Any other IntGrid layer, such as one that only drives floor auto-tiles,
+  contributes its tiles but no collision.
+- A level with no `Collision` layer loads with nothing solid and logs a
+  warning.
 
 **Entities:**
 
-- Store each entity's `getName()` and `getPosition()` as a `SpawnPoint`.
+- Store each entity's `getName()` and `getPosition()` as a `SpawnPoint`,
+  along with its string fields (such as an exit's `target_level`).
+
+**Hidden layers:** LDtk's per-layer eye toggle is saved in the file, but it is
+an editor convenience. A hidden layer's tiles are not drawn, but its collision
+and entities still load, so hiding the collision layer while painting doesn't
+remove collision from the game.
 
 ### Path resolution
 
@@ -128,10 +139,12 @@ if (last_slash != std::string::npos) {
 std::string tex_path = base_dir + tileset.path;
 ```
 
-### Single tileset assumption
+### Multiple tilesets
 
-The initial implementation loads only the first tileset encountered. All tile
-layers should reference the same tileset. Multi-tileset support is deferred.
+Each tileset used by a level is loaded once, on first use, and
+`Tilemap::textures()` holds one texture per tileset. `TileData::texture` is
+the index of the texture a tile draws from. A tileset that fails to load is
+reported once and its tiles are skipped.
 
 ### Graceful fallback
 
@@ -250,11 +263,23 @@ The project file at `assets/maps/raven.ldtk` uses LDtk 1.5.3 format.
 
 ### Layers (top to bottom in LDtk = front to back)
 
-| Layer     | Type    | Content                             |
-| --------- | ------- | ----------------------------------- |
-| Entities  | Entity  | `PlayerStart` at (248, 136)         |
-| Tiles     | Tiles   | Floor/wall visuals from tileset     |
-| Collision | IntGrid | Value 1 on border cells, 0 interior |
+| Layer     | Type    | Content                                                    |
+| --------- | ------- | ---------------------------------------------------------- |
+| Entities  | Entity  | `PlayerStart`, four `EnemySpawn`s, one `Exit`              |
+| Tiles     | Tiles   | Floor/wall visuals from tileset                            |
+| Collision | IntGrid | Value 1 on border cells, 0 interior                        |
+
+`Room_02` and `Room_03` are copies of `Test_Room` with 2x2 pillars, and are
+placeholders for real room designs. The three rooms are the levels of
+`stage_01` to `stage_03`.
+
+### Entity types
+
+| Entity        | Fields                   | Used by                                                 |
+| ------------- | ------------------------ | ------------------------------------------------------- |
+| `PlayerStart` | none                     | Where the player appears on entering the room           |
+| `EnemySpawn`  | none                     | Enemy positions; a stage's `spawn_index` picks the Nth  |
+| `Exit`        | `target_level` (String)  | Opens when the room is cleared; leave the field null on the final room |
 
 ### Tileset
 
@@ -299,11 +324,22 @@ read these from config to support multiple rooms.
 2. Create a new level with the desired dimensions.
 3. Paint the **Collision** IntGrid layer: value 1 for solid cells.
 4. Paint the **Tiles** layer with visual tiles from the tileset.
-5. Place entities in the **Entities** layer (`PlayerStart`, enemy spawns, doors,
-   etc.).
-6. Save. The game loads the `.ldtk` file at runtime — no export step.
+5. Place entities in the **Entities** layer: one `PlayerStart`, an
+   `EnemySpawn` for every `spawn_index` the stage uses, and at least one
+   `Exit`. Set the exit's `target_level` to the next stage's level, or leave
+   it null in the final room.
+6. Point a stage file in `assets/data/stages/` at the level by name.
+7. Save. The game loads the `.ldtk` file at runtime — no export step.
+8. Run `just test`. `tests/test_content.cpp` loads every stage's level and
+   fails if a level is missing, has too few spawn points or no exit, or has
+   an entity inside a wall.
 
 ## Tests
+
+`tests/test_content.cpp` loads the shipped `raven.ldtk` through the real
+loader with a software renderer. It checks every stage's level, and uses
+modified copies of the map to test the rules above (hidden layers, only
+`Collision` is solid).
 
 `tests/test_tilemap.cpp` covers the collision and spawn logic without requiring
 SDL or `.ldtk` files. Tests use `init_collision()` to inject grids directly:

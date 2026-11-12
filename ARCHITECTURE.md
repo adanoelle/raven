@@ -113,9 +113,8 @@ raven/
 │
 ├── tools/
 │   ├── pattern_editor/            # Future: Dear ImGui editor
-│   └── scripts/
-│       ├── export_aseprite.sh     # Batch export from .aseprite -> .png
-│       └── package_steam.sh       # Steam build packaging
+│   ├── export_art.sh              # Aseprite -> .png + animation .json (just export-art)
+│   └── gen_*.py, gen_*.lua        # Placeholder and template generators
 │
 ├── .clang-format
 ├── .clang-tidy

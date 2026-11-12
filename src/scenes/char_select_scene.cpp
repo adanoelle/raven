@@ -26,17 +26,11 @@ void CharacterSelectScene::update(Game& game, float dt) {
 
     const auto& input = game.input().state();
 
-    // Left/right steps between classes; latched so a held direction
-    // moves one box per press instead of one per frame.
-    if (input.move_x > -0.5f && input.move_x < 0.5f) {
-        move_latched_ = false;
-    } else if (!move_latched_) {
-        move_latched_ = true;
-        if (input.move_x < 0.f && selected_index_ > 0) {
-            --selected_index_;
-        } else if (input.move_x > 0.f && selected_index_ < 2) {
-            ++selected_index_;
-        }
+    // Left/right steps between classes, one box per press
+    if (input.left_pressed && selected_index_ > 0) {
+        --selected_index_;
+    } else if (input.right_pressed && selected_index_ < 2) {
+        ++selected_index_;
     }
 
     if (input.confirm_pressed) {

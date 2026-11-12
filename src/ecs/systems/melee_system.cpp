@@ -5,6 +5,7 @@
 #include "ecs/systems/ability_hits.hpp"
 #include "ecs/systems/hitbox_math.hpp"
 #include "ecs/systems/pickup_system.hpp"
+#include "rendering/sheet_ids.hpp"
 
 #include <vector>
 
@@ -101,8 +102,8 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
                             reg.emplace<PreviousTransform>(pickup_ent, e_tf->x, e_tf->y);
                             reg.emplace<CircleHitbox>(pickup_ent, 8.f);
                             reg.emplace<Lifetime>(pickup_ent, 5.f);
-                            reg.emplace<Sprite>(pickup_ent, interner.intern("pickups"), 0, 0, 16,
-                                                16, 5);
+                            reg.emplace<Sprite>(pickup_ent, interner.intern(sheets::PICKUPS),
+                                                sheets::PICKUP_FRAME_WEAPON, 0, 16, 16, 5);
                             auto weapon = weapon_from_emitter(pattern->emitters[0]);
                             weapon.tier = pattern->tier;
                             reg.emplace<WeaponPickup>(pickup_ent, WeaponPickup{weapon});

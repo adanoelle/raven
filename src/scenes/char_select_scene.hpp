@@ -26,7 +26,6 @@ class CharacterSelectScene : public Scene {
     float blink_timer_ = 0.f;    ///< Timer controlling selection indicator blink.
     bool show_indicator_ = true; ///< Whether the selection indicator is visible.
     bool first_frame_ = true;    ///< Skip input on first frame to consume stale confirm.
-    bool move_latched_ = false;  ///< Held left/right steps once until released.
 };
 
 } // namespace raven

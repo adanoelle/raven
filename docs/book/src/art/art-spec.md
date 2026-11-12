@@ -145,13 +145,15 @@ visuals. Idle and walk frames stay within the 24x24 body zone.
 Key principle: fewer frames with longer holds looks better in pixel art than
 many frames played fast. Each frame should be a distinct, readable pose.
 
-> **Placeholder status:** the placeholder `player.png` implements only the
-> idle and walk rows; melee and dash temporarily reuse the walk row at faster
-> timings in `game_scene.cpp`. The knight now ships its own two-row
-> `knight.png` (sheet id `knight`) with the same idle/walk layout, so it
-> follows the same reuse until its action rows land. The table above is the
-> target for final art — when the attack/dodge/hurt/death rows land, the code
-> switches to them.
+> **Placeholder status:** timing comes from each sheet's Aseprite tags
+> (`idle`, `walk`, `attack`, `dash`; see
+> [Sprite Animation](../architecture/sprite-animation.md)). The placeholder
+> `player.png` has only idle and walk rows, and its generated data points
+> `attack` and `dash` at the start of the walk row at faster timings. The
+> knight's `knight.png` has idle and walk tags so far; until it gets
+> `attack` and `dash` tags, those actions play its walk clip. The table above
+> is the target for final art — tag the new rows, run `just export-art`, and
+> the game picks them up with no code change.
 
 ### Standard Enemies (24x24 frame, 20x20 body)
 

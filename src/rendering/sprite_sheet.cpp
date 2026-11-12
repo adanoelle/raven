@@ -32,6 +32,7 @@ bool SpriteSheet::load(SDL_Renderer* renderer, const std::string& path, int fram
     SDL_SetTextureBlendMode(texture_, SDL_BLENDMODE_BLEND);
     SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_PIXELART);
 
+    path_ = path;
     frame_w_ = frame_width;
     frame_h_ = frame_height;
 
@@ -52,9 +53,18 @@ void SpriteSheet::draw(SDL_Renderer* renderer, int frame_x, int frame_y, int des
         return;
 
     // A frame outside the sheet would sample undefined texels; skip it.
+    // Report the first one, since it usually means the art has fewer
+    // frames than the code expects.
     if (frame_x < 0 || frame_y < 0 || (frame_x + 1) * frame_w_ > sheet_w_ ||
-        (frame_y + 1) * frame_h_ > sheet_h_)
+        (frame_y + 1) * frame_h_ > sheet_h_) {
+        if (!warned_bad_frame_) {
+            warned_bad_frame_ = true;
+            spdlog::warn("Sprite sheet '{}' ({}x{}, {}x{} frames) has no frame ({}, {}); it "
+                         "will not be drawn",
+                         path_, sheet_w_, sheet_h_, frame_w_, frame_h_, frame_x, frame_y);
+        }
         return;
+    }
 
     SDL_FRect src{static_cast<float>(frame_x * frame_w_), static_cast<float>(frame_y * frame_h_),
                   static_cast<float>(frame_w_), static_cast<float>(frame_h_)};
