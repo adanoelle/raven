@@ -1,0 +1,26 @@
+name: Docs check
+
+# Builds the book for pull requests that touch it, so a broken page or
+# summary entry is found before merge. Publishing happens in docs.yml.
+on:
+  pull_request:
+    paths: ["docs/**"]
+
+concurrency:
+  group: docs-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  book:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          # Keep in sync with docs.yml and the nix dev shell.
+          mdbook-version: "0.5.2"
+
+      - name: Build book
+        run: mdbook build docs/book

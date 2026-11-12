@@ -114,26 +114,41 @@ Smaller:
 - The player sprite is fixed at 32x32 in code.
 - LDtk layer opacity and non-string entity fields are dropped.
 
-## Open: Shipping Build and CI
+## Shipping Build and CI
 
 The owner wants small binaries that run fast on low-end hardware.
 
-- `main.cpp` sets the log level to debug in every build, and
-  `SPDLOG_ACTIVE_LEVEL` isn't set, so debug logging is compiled into
-  Release.
-- No LTO, section garbage collection or strip. Release is 2.5 MB unstripped.
-- CPM dependencies lack `EXCLUDE_FROM_ALL`, so `install` ships EnTT and
-  LDtkLoader files and a `.gitkeep`.
-- Windows CI builds Debug only, and ImGui defaults on for multi-config
-  generators.
-- Lint runs serially for 20 to 28 minutes. No concurrency group, no
-  `paths-ignore` for docs-only changes.
-- clang-format and clang-tidy versions aren't pinned to the dev shell's.
-- No sanitizer job. Warnings aren't errors in CI.
+Fixed:
+
+- **Debug logging in Release.** `main.cpp` set the log level to debug in
+  every build. Optimised builds now log at info.
+- **No LTO, section garbage collection or strip.** Release and MinSizeRel
+  now have all three (`cmake/ShippingFlags.cmake`). The Linux Release
+  binary went from 2.7 MB to 1.2 MB.
+- **`install` shipped dependency files.** EnTT and LDtkLoader headers,
+  CMake packages and five `.gitkeep` files went into the package. The
+  installed tree went from 5.8 MB to 1.7 MB, and is now the game and its
+  assets only. Windows installs its DLLs explicitly.
+- **Windows CI built Debug only**, with ImGui on. There is now a Release
+  job with the overlay off, which also checks the package layout.
+- **Lint ran serially for 20 to 28 minutes.** It now runs one process per
+  core, in CI and in `just lint`, which also depends on a build now.
+- **No concurrency group**, so superseded pushes kept running. Docs-only
+  changes ran the full C++ pipeline; they now run a book build instead
+  (`docs-check.yml`), which also catches a broken book before merge.
+- **clang-format wasn't pinned.** CI now uses the dev shell's version.
+
+Open:
+
+- `spdlog::debug` calls are still compiled into Release. They cost a
+  level check each. Compiling them out means moving to the `SPDLOG_*`
+  macros.
+- clang-tidy isn't pinned. PyPI has no build of the dev shell's version.
+- No sanitizer job. Warnings aren't errors in CI (GCC reports a false
+  `-Wnull-dereference` inside EnTT).
 - `test_content.cpp` uses a shared temp file name.
   `catch_discover_tests` runs at build time.
-- The docs build runs only on `main`, so a broken book is found after merge.
-- `just lint` doesn't depend on a build.
+- Dependencies are pinned by tag, not by commit hash.
 - The tilemap is redrawn tile by tile every frame. Baking it to a texture
   once per room is the largest cheap rendering win.
 
@@ -170,5 +185,5 @@ The owner wants small binaries that run fast on low-end hardware.
 | #21 production plan | Rewritten |
 | Open gameplay items 1-4 and smaller | Open |
 | Authoring traps | Open |
-| Shipping build and CI | Open |
+| Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |
 | Out-of-date docs | Open |

@@ -24,6 +24,7 @@ if(NOT TARGET SDL3::SDL3)
         GITHUB_REPOSITORY libsdl-org/SDL
         GIT_TAG release-3.4.12
         SYSTEM YES
+        EXCLUDE_FROM_ALL YES
         OPTIONS
             "SDL_TEST_LIBRARY OFF"
             "SDL_EXAMPLES OFF"
@@ -40,6 +41,7 @@ if(NOT TARGET SDL3_image::SDL3_image)
             GITHUB_REPOSITORY libsdl-org/SDL_image
             GIT_TAG release-3.2.4
             SYSTEM YES
+            EXCLUDE_FROM_ALL YES
             OPTIONS
                 "SDLIMAGE_SAMPLES OFF"
                 "SDLIMAGE_TESTS OFF"
@@ -52,12 +54,15 @@ if(NOT TARGET SDL3_image::SDL3_image)
 endif()
 
 # ── CPM dependencies (header-only or compiled from source) ────────
+# EXCLUDE_FROM_ALL keeps their install rules (headers, CMake packages) out
+# of the game's package.
 
 CPMAddPackage(
     NAME EnTT
     VERSION 3.13.2
     GITHUB_REPOSITORY skypjack/entt
     SYSTEM YES
+    EXCLUDE_FROM_ALL YES
     OPTIONS "ENTT_INCLUDE_HEADERS ON"
 )
 
@@ -66,6 +71,7 @@ CPMAddPackage(
     VERSION 3.11.3
     GITHUB_REPOSITORY nlohmann/json
     SYSTEM YES
+    EXCLUDE_FROM_ALL YES
     OPTIONS "JSON_BuildTests OFF"
 )
 
@@ -75,6 +81,7 @@ CPMAddPackage(
     VERSION 1.15.3
     GITHUB_REPOSITORY gabime/spdlog
     SYSTEM YES
+    EXCLUDE_FROM_ALL YES
     OPTIONS "SPDLOG_FMT_EXTERNAL OFF"
 )
 
@@ -83,6 +90,7 @@ CPMAddPackage(
     GITHUB_REPOSITORY Madour/LDtkLoader
     GIT_TAG 1.5.3.1
     SYSTEM YES
+    EXCLUDE_FROM_ALL YES
     OPTIONS
         "LDTK_NO_THROW OFF"
 )
