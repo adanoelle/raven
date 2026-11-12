@@ -105,4 +105,5 @@
 - [ADR-0023: Salvage Materials and Engineer Weapon Upgrades](decisions/0023-salvage-materials-engineer-upgrades.md)
 - [ADR-0024: Animation Clips from Aseprite Tag Data](decisions/0024-animation-clips-from-aseprite.md)
 - [ADR-0025: Named Enemy Definitions](decisions/0025-named-enemy-definitions.md)
+- [ADR-0026: Record and Replay for Playtests](decisions/0026-record-and-replay-playtests.md)
 - [ADR-0027: Gamepad Layout](decisions/0027-gamepad-layout.md)
