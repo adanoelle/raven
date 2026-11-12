@@ -41,25 +41,28 @@ TitleScene  ──(confirm)──>  CharacterSelectScene  ──(confirm)──>
                                                               (quit to title)
                                                                       │
 TitleScene  <──(confirm)──  GameOverScene  <──(game over)──  GameScene
+TitleScene  <──(confirm)──  VictoryScene   <──(victory)────  GameScene
 ```
 
-On victory (final stage cleared + exit overlap), `GameScene` swaps directly back
-to `TitleScene`. On death, it swaps to `GameOverScene`, which then swaps to
-`TitleScene` on confirm. Pause pushes `PauseScene` as an overlay.
+On victory (final stage cleared + exit overlap), `GameScene` swaps to
+`VictoryScene`. On death, it swaps to `GameOverScene`. Both swap to
+`TitleScene` on confirm or Start. Pause pushes `PauseScene` as an overlay, and
+choosing OPTIONS on the title screen pushes `OptionsScene`.
 
 ## TitleScene
 
-Entry point for the game. Renders the RAVEN title and a blinking "PRESS START"
-prompt with the bitmap font (see
+Entry point for the game. Renders the RAVEN title, a two-item menu (START and
+OPTIONS) and the best score with the bitmap font (see
 [Rendering Pipeline](rendering.md#bitmap-font-text)) on a dark purple
-background. On confirm input, swaps to `CharacterSelectScene`.
+background. Up/down moves the cursor. Confirm on START swaps to
+`CharacterSelectScene`; confirm on OPTIONS pushes `OptionsScene`.
 
 ## CharacterSelectScene
 
-Lets the player choose between Brawler and Sharpshooter. Renders two coloured
-boxes (red for Brawler, blue for Sharpshooter) with class name labels, centred
-on the 480x270 virtual resolution. Left/right input toggles selection; the
-active box and label are bright, the inactive ones are dimmed. A blinking
+Lets the player choose between Brawler, Knight and Sharpshooter. Renders one
+coloured box per class with its name, centred on the 480x270 virtual
+resolution. Left/right input moves the selection; the active box and label
+are bright, the inactive ones are dimmed. A blinking
 underline and "PRESS CONFIRM" prompt guide the player. On confirm, passes the
 selected `ClassId::Id` to `GameScene`'s constructor and swaps.
 
@@ -99,10 +102,17 @@ beneath to `TitleScene` (two queued operations, applied in order).
 ## GameOverScene
 
 Displays "GAME OVER", the final score, and a blinking restart prompt on a dark
-red background. Captures the score from `GameState` in `on_enter`. On confirm,
-swaps to `TitleScene`. On exit, clears the registry and erases `GameState` from
-context. (`GameScene::on_enter` also erases any stale `GameState`, because the
-victory path bypasses this scene entirely.)
+red background. Captures the score from `GameState` in `on_enter`. On confirm
+or Start, swaps to `TitleScene`. Input is ignored for the first 0.75 s, so a
+press from the last instant of play doesn't skip the score. On exit, clears
+the registry and erases `GameState` from context.
+
+## VictoryScene
+
+Shown when the last stage's exit is reached. Displays the final score and
+records it as a high score. Like `GameOverScene`, it swaps to `TitleScene` on
+confirm or Start, ignores input for the first 0.75 s, and on exit clears the
+registry and erases `GameState`.
 
 ## Key files
 
@@ -115,3 +125,5 @@ victory path bypasses this scene entirely.)
 | `src/scenes/game_scene.hpp/.cpp`        | Main gameplay, system wiring            |
 | `src/scenes/pause_scene.hpp/.cpp`       | Pause overlay                           |
 | `src/scenes/game_over_scene.hpp/.cpp`   | Game over screen                        |
+| `src/scenes/victory_scene.hpp/.cpp`     | Victory screen                          |
+| `src/scenes/options_scene.hpp/.cpp`     | Options menu                            |

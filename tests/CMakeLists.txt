@@ -26,6 +26,7 @@ add_executable(raven_tests
 
     # Source files needed by integration tests
     ${CMAKE_SOURCE_DIR}/src/core/fs.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/input.cpp
     ${CMAKE_SOURCE_DIR}/src/core/paths.cpp
     ${CMAKE_SOURCE_DIR}/src/core/save_data.cpp
     ${CMAKE_SOURCE_DIR}/src/core/settings.cpp

@@ -16,22 +16,27 @@ option. The overlay displays entity counts, component state, and frame timing.
 
 ## Controls reference
 
-| Action  | Keyboard      | Gamepad            | Mouse           |
-| ------- | ------------- | ------------------ | --------------- |
-| Move    | WASD / Arrows | Left stick / D-pad | —               |
-| Aim     | —             | Right stick        | Cursor position |
-| Shoot   | Z             | A (south)          | Left click      |
-| Melee   | C             | X (west)           | Right click     |
-| Dash    | Space         | Left shoulder      | —               |
-| Ability | X             | B (east)           | —               |
-| Pause   | Escape        | Start              | —               |
+| Action  | Keyboard      | Gamepad              | Mouse           |
+| ------- | ------------- | -------------------- | --------------- |
+| Move    | WASD / Arrows | Left stick / D-pad   | —               |
+| Aim     | —             | Right stick          | Cursor position |
+| Shoot   | Z             | RT                   | Left click      |
+| Melee   | C             | RB, or X (west)      | Right click     |
+| Dash    | Space         | LB, or A (south)     | —               |
+| Ability | X             | LT, or B (east)      | —               |
+| Pause   | Escape        | Start                | —               |
+
+On a gamepad, every combat action is on a shoulder or trigger, so you can
+aim, fire, melee, dash and use your ability without taking your thumb off
+the aim stick ([ADR-0027](decisions/0027-gamepad-layout.md)).
 
 The Ability button triggers the class ability: Ground Slam (Brawler) or
 Concussion Shot (Sharpshooter). The Sharpshooter's charged shot is hold-shoot,
 not a separate button.
 
-Keyboard and gamepad inputs stack — both can be used simultaneously. Mouse
-movement sets aim to cursor position; right stick input overrides it.
+Keyboard and gamepad inputs stack — both can be used simultaneously. Moving
+or clicking the mouse makes it the aim device; right stick input overrides
+it.
 
 ## Playtest scenarios
 

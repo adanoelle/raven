@@ -91,7 +91,8 @@ stationary.
 
 ## Bullet spawning
 
-When `input.shoot` is held and `remaining <= 0`:
+When `input.shoot` is held (or was tapped since the last tick, `shoot_pressed`)
+and `remaining <= 0`:
 
 1. Reset `remaining` to `rate`.
 2. Create a new bullet entity with:
@@ -115,7 +116,7 @@ The bullet speed constant (`BULLET_SPEED = 300`) is defined at the top of
 
 | Action       | Keyboard | Gamepad     | Mouse           |
 | ------------ | -------- | ----------- | --------------- |
-| Shoot (hold) | `Z`      | A button    | Left click      |
+| Shoot (hold) | `Z`      | RT          | Left click      |
 | Aim          | —        | Right stick | Cursor position |
 
 All three shoot sources are OR'd together in `InputState::shoot`. The left mouse

@@ -47,7 +47,8 @@ void update_shooting(entt::registry& reg, const InputState& input, float dt) {
         if (reg.any_of<ChargedShot>(entity)) {
             continue;
         }
-        if (input.shoot && cd.remaining <= 0.f) {
+        // A tap released before the next poll still fires once
+        if ((input.shoot || input.shoot_pressed) && cd.remaining <= 0.f) {
             cd.remaining = weapon.fire_rate;
             push_sfx(reg, Sfx::Shoot);
 

@@ -31,7 +31,11 @@ void VictoryScene::update(Game& game, float dt) {
         show_prompt_ = !show_prompt_;
     }
 
-    if (game.input().state().confirm_pressed) {
+    // Ignore presses for a moment, so a dash or confirm from the last
+    // instant of play doesn't skip the screen. Start works, as the prompt says.
+    elapsed_ += dt;
+    const auto& input = game.input().state();
+    if (elapsed_ >= INPUT_DELAY && (input.confirm_pressed || input.pause_pressed)) {
         game.scenes().swap(std::make_unique<TitleScene>(), game);
     }
 }
