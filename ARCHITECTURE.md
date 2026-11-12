@@ -6,22 +6,23 @@
 | --------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------- |
 | Language              | **C++20**                          | EnTT requires modern C++, good perf for high tick rates                                           |
 | ECS                   | **EnTT**                           | Header-only, cache-friendly, battle-tested in indie games                                         |
-| Windowing/Input/Audio | **SDL2 + SDL2_image + SDL2_mixer** | Cross-platform, Switch-friendly (Nintendo has official SDL2 support), Steam Deck native           |
-| Rendering             | **SDL2_Renderer** (initially)      | Perfect for pixel art — hardware-accelerated 2D. Can swap to a custom GPU backend later if needed |
+| Windowing/Input/Audio | **SDL3 (>= 3.4) + SDL3_image**     | Cross-platform, Steam Deck native. Sound effects use SDL3's own audio streams, no mixer library   |
+| Rendering             | **SDL_Renderer** (initially)       | Perfect for pixel art — hardware-accelerated 2D. Can swap to a custom GPU backend later if needed |
 | Build System          | **CMake 3.25+** via **Ninja**      | Industry standard, CPM for dependency management                                                  |
-| Debug UI              | **Dear ImGui** (SDL2 backend)      | Invaluable for tuning hitboxes, spawn rates in real-time                                          |
+| Debug UI              | **Dear ImGui** (SDL3 backends)     | Invaluable for tuning hitboxes, spawn rates in real-time                                          |
 | Serialization         | **nlohmann/json**                  | Level data, config                                                                                |
 | Logging               | **spdlog**                         | Fast, fmt-based                                                                                   |
 | Testing               | **Catch2 v3**                      | Modern, header-friendly, good CMake integration                                                   |
-| Packaging             | **CPack** (CMake)                  | Builds distributables for Steam, can produce .AppImage / .zip                                     |
+| Packaging             | **CPack** (CMake)                  | Produces .zip and .tar.gz packages with assets/ next to the binary                                |
 
 ## Platform Distribution Strategy
 
 ### Steam (Primary Target)
 
 - **Steamworks SDK**: Added as a git-ignored vendor dependency (NDA-restricted,
-  can't be in public repos)
-- Wrap behind `platform::steam` interface
+  can't be in public repos), enabled with `-DRAVEN_ENABLE_STEAM=ON`
+- Wrapped by the `raven::Steam` class (`src/platform/steam.hpp`), a no-op
+  when Steam is not compiled in
 - Achievement, overlay, cloud save abstractions
 - CPack target produces Steam-compatible build
 
@@ -31,7 +32,8 @@
 - **Key architectural decision**: All platform-specific code lives behind
   abstract interfaces
   - `platform::input`, `platform::audio`, `platform::filesystem`
-  - SDL2 is officially supported on Switch, which makes porting much smoother
+  - SDL3 already sits between the game and the OS for windowing, input, audio
+    and file I/O, which keeps the platform-specific surface small
 - Separate CMake toolchain file for Switch cross-compilation
 - Keep draw calls and texture sizes within Switch GPU budget (pixel art helps
   enormously here)
@@ -55,16 +57,19 @@ raven/
 ├── cmake/
 │   ├── CPM.cmake                 # CMake Package Manager (vendored)
 │   ├── CompilerWarnings.cmake    # Strict warning flags
-│   ├── Sanitizers.cmake          # ASan/UBSan/TSan toggles
-│   └── Dependencies.cmake        # All CPM dependency declarations
+│   ├── Sanitizers.cmake          # ASan + UBSan flags (RAVEN_ENABLE_ASAN)
+│   ├── ShippingFlags.cmake       # Flags for optimised (shipping) builds
+│   ├── Steamworks.cmake          # Imports the SDK from vendor/steamworks/sdk
+│   └── Dependencies.cmake        # SDL3 lookup + all CPM dependency declarations
 │
 ├── src/
-│   ├── main.cpp                  # Entry point, SDL init, game loop bootstrap
+│   ├── main.cpp                  # Entry point: creates Game, runs it
 │   │
 │   ├── core/
-│   │   ├── game.hpp / .cpp       # Top-level game state machine
+│   │   ├── game.hpp / .cpp       # SDL init, owns subsystems, main loop
 │   │   ├── clock.hpp             # Fixed timestep + interpolation
-│   │   └── input.hpp / .cpp      # Input abstraction (keyboard/gamepad)
+│   │   ├── input.hpp / .cpp      # Input abstraction (keyboard/mouse/gamepad)
+│   │   └── ...                   # paths, fs, settings, save_data, string_id
 │   │
 │   ├── ecs/
 │   │   ├── components.hpp        # All components in one header (they're small)
@@ -78,42 +83,51 @@ raven/
 │   │       ├── render_system.hpp / .cpp       # Sprite batching, layer sorting
 │   │       ├── input_system.hpp / .cpp        # Maps input -> player intent
 │   │       ├── damage_system.hpp / .cpp       # Health, invuln frames, death
-│   │       └── cleanup_system.hpp / .cpp      # Lifetime tick, despawn off-screen / expired
+│   │       ├── cleanup_system.hpp / .cpp      # Lifetime tick, despawn off-screen / expired
+│   │       └── ...                            # One pair per system: ai, shooting, melee,
+│   │                                          # dash, wave, pickup, tile_collision, hud, ...
 │   │
 │   ├── rendering/
 │   │   ├── renderer.hpp / .cpp    # SDL_Renderer wrapper, virtual resolution scaling
-│   │   └── sprite_sheet.hpp / .cpp # Texture atlas + frame rects
+│   │   ├── sprite_sheet.hpp / .cpp # Texture atlas + frame rects
+│   │   └── ...                    # tilemap (LDtk), bitmap_font, animation_library
 │   │
 │   ├── scenes/
-│   │   ├── scene.hpp              # Abstract scene interface
-│   │   ├── scene_manager.hpp      # Stack-based scene management
+│   │   ├── scene.hpp              # Abstract scene interface + SceneManager
+│   │   ├── scene_manager.cpp      # Stack-based scene management
 │   │   ├── title_scene.hpp / .cpp
-│   │   └── game_scene.hpp / .cpp
+│   │   ├── game_scene.hpp / .cpp
+│   │   └── ...                    # char_select, pause, options, game_over, victory
+│   │
+│   ├── audio/                     # audio_engine: SDL3 audio streams, .wav effects
+│   ├── patterns/                  # pattern_library: bullet patterns from JSON
+│   ├── debug/                     # debug_overlay: Dear ImGui (RAVEN_ENABLE_IMGUI)
 │   │
 │   └── platform/
-│       ├── platform.hpp           # Abstract platform interface
-│       ├── platform_desktop.cpp   # Steam/desktop implementation
-│       └── platform_switch.cpp    # Future: Switch-specific (stubbed)
+│       ├── platform.hpp           # Compile-time flags (RAVEN_PLATFORM_CONSOLE)
+│       └── steam.hpp / .cpp       # Optional Steamworks wrapper
 │
 ├── assets/
 │   ├── sprites/                   # .png spritesheets (Aseprite export)
 │   ├── audio/
 │   │   ├── music/                 # .ogg for BGM
 │   │   └── sfx/                   # .wav for sound effects
-│   ├── fonts/                     # .ttf bitmap fonts
+│   ├── fonts/                     # font.png bitmap font
+│   ├── maps/                      # raven.ldtk level project
+│   ├── tilesets/                  # .png tilesets used by the LDtk project
 │   └── data/
 │       ├── stages/                # .json stage/wave scripts
-│       └── config.json            # Game settings defaults
+│       ├── patterns/              # .json bullet patterns
+│       ├── enemies.json           # Named enemy definitions
+│       └── config.json            # Read-only game data
 │
 ├── tests/
-│   ├── CMakeLists.txt
-│   ├── test_collision.cpp         # Hitbox tests
-│   ├── test_patterns.cpp          # Pattern math verification
-│   └── test_ecs.cpp               # Component/system integration
+│   ├── CMakeLists.txt             # Lists every test source
+│   └── test_<area>.cpp            # One Catch2 file per system or area
 │
 ├── tools/
-│   ├── pattern_editor/            # Future: Dear ImGui editor
 │   ├── export_art.sh              # Aseprite -> .png + animation .json (just export-art)
+│   ├── lint_files.sh              # Picks sources for just lint-changed
 │   └── gen_*.py, gen_*.lua        # Placeholder and template generators
 │
 ├── .clang-format
@@ -153,14 +167,15 @@ gives authentic pixel art scaling and consistent gameplay across resolutions.
 ### In the Nix flake
 
 - gcc14, cmake, ninja, pkg-config
-- SDL2, SDL2_image, SDL2_mixer
+- SDL3, SDL3_image
 - clang-tools (clang-format, clang-tidy, clangd)
 - gdb, valgrind, renderdoc (graphics debugging)
 - libresprite (pixel art)
-- ldtk (level editor, optional)
-- Catch2 (pulled via CPM, but nice to have system-wide for IDE)
+- ldtk (level editor)
+- mdbook, doxygen (docs), just (command runner)
 
 ### Via CPM (CMake Package Manager) — pulled at configure time
 
-- EnTT, Dear ImGui, nlohmann/json, spdlog, Catch2, fmt
+- EnTT, Dear ImGui, nlohmann/json, spdlog (bundles fmt), LDtkLoader, Catch2
+- SDL3 and SDL3_image too, but only when no system package is found
 - This keeps the Nix shell focused on system deps and tools

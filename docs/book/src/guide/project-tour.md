@@ -53,7 +53,7 @@ One file per system. Systems are free functions that operate on registry views.
 
 ### `src/rendering/`
 
-SDL2 rendering abstraction.
+SDL3 rendering abstraction.
 
 - **`renderer.hpp / .cpp`** — Window management and virtual resolution scaling
   (480x270 render target scaled to window).
