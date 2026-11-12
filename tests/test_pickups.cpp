@@ -157,6 +157,47 @@ TEST_CASE("Weapon decay and revert", "[pickups]") {
     }
 }
 
+TEST_CASE("A slow weapon's cooldown doesn't carry over to the next weapon", "[pickups]") {
+    entt::registry reg;
+    constexpr float dt = 1.f / 120.f;
+
+    auto player = make_player(reg, 100.f, 100.f);
+    const float default_rate = reg.get<Weapon>(player).fire_rate;
+    auto& cd = reg.emplace<ShootCooldown>(player);
+
+    Weapon slow;
+    slow.fire_rate = 2.f;
+
+    SECTION("when the stolen weapon decays") {
+        make_pickup(reg, 103.f, 100.f, slow);
+        systems::update_pickups(reg);
+        cd.remaining = 2.f; // just fired the slow weapon
+
+        reg.get<WeaponDecay>(player).remaining = dt;
+        systems::update_weapon_decay(reg, dt);
+
+        CHECK(reg.get<ShootCooldown>(player).remaining <= default_rate);
+    }
+
+    SECTION("when a faster weapon is picked up") {
+        cd.remaining = 2.f;
+        Weapon fast;
+        fast.fire_rate = 0.1f;
+        make_pickup(reg, 103.f, 100.f, fast);
+        systems::update_pickups(reg);
+
+        CHECK(reg.get<ShootCooldown>(player).remaining <= 0.1f);
+    }
+
+    SECTION("a short cooldown is left alone") {
+        cd.remaining = 0.05f;
+        make_pickup(reg, 103.f, 100.f, slow);
+        systems::update_pickups(reg);
+
+        CHECK(reg.get<ShootCooldown>(player).remaining == Catch::Approx(0.05f));
+    }
+}
+
 TEST_CASE("weapon_from_emitter conversion", "[pickups]") {
     StringInterner interner;
 

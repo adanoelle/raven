@@ -31,6 +31,8 @@ option(RAVEN_PLATFORM_CONSOLE "Fixed-display console target: hides window settin
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(CompilerWarnings)
+# Before Dependencies, so libraries built from source get the same flags.
+include(ShippingFlags)
 include(Dependencies)
 
 if(RAVEN_ENABLE_ASAN)
@@ -131,6 +133,7 @@ if(RAVEN_ENABLE_STEAM)
 endif()
 
 raven_set_warnings(raven)
+raven_set_shipping_flags(raven)
 
 # Make assets available next to the built binary (SDL_GetBasePath lookup).
 # Symlinks need developer mode on Windows, so copy there instead.
@@ -167,7 +170,11 @@ endif()
 # The game resolves assets relative to the executable (SDL_GetBasePath),
 # so the assets directory must sit next to the binary in packages.
 install(TARGETS raven RUNTIME DESTINATION .)
-install(DIRECTORY assets/ DESTINATION assets)
+install(DIRECTORY assets/ DESTINATION assets PATTERN ".gitkeep" EXCLUDE)
+if(WIN32)
+    # Dependencies are excluded from install, so ship their DLLs explicitly.
+    install(FILES $<TARGET_RUNTIME_DLLS:raven> DESTINATION .)
+endif()
 
 set(CPACK_PACKAGE_NAME "raven")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})

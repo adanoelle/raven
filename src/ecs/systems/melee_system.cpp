@@ -111,6 +111,15 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
                     }
                     reg.remove<BulletEmitter>(hit.ent);
                     reg.emplace_or_replace<Disarmed>(hit.ent);
+                    // It charges from here on (see update_ai). Without body
+                    // damage a disarmed shooter could never hurt the player
+                    // again. The first hit waits out one cooldown, since the
+                    // enemy is in melee range right now.
+                    if (!reg.any_of<ContactDamage>(hit.ent)) {
+                        ContactDamage contact{disarmed_contact_damage};
+                        contact.timer = contact.cooldown;
+                        reg.emplace<ContactDamage>(hit.ent, contact);
+                    }
                 }
             }
         }

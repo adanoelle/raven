@@ -6,6 +6,7 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <cmath>
 #include <random>
 
 using namespace raven;
@@ -174,6 +175,33 @@ TEST_CASE("Stalker strafes at preferred range", "[ai]") {
     REQUIRE(std::abs(vel.dy) > std::abs(vel.dx));
 }
 
+TEST_CASE("A stalker with no move speed stays put", "[ai]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    reg.ctx().emplace<std::mt19937>(42u);
+    Tilemap tilemap;
+
+    make_player(reg, 0.f, 0.f);
+
+    AiBehavior ai{};
+    ai.archetype = AiBehavior::Archetype::Stalker;
+    ai.phase = AiBehavior::Phase::Attack;
+    ai.activation_range = 200.f;
+    ai.move_speed = 0.f; // a turret
+    ai.preferred_range = 90.f;
+    ai.attack_range = 120.f;
+
+    // Both at the preferred range and off it
+    for (float x : {90.f, 70.f}) {
+        auto enemy = make_enemy(reg, x, 0.f, ai);
+        systems::update_ai(reg, tilemap, 1.f / 120.f);
+        const auto& vel = reg.get<Velocity>(enemy);
+        CHECK(vel.dx == 0.f);
+        CHECK(vel.dy == 0.f);
+        reg.destroy(enemy);
+    }
+}
+
 TEST_CASE("Stalker retreats when player closes in", "[ai]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
@@ -311,6 +339,35 @@ TEST_CASE("Knockback overrides AI velocity", "[ai]") {
     // Velocity should be knockback, not AI movement
     REQUIRE(vel.dx == Approx(-150.f));
     REQUIRE(vel.dy == Approx(0.f));
+}
+
+TEST_CASE("A hit wakes an idle enemy outside its activation range", "[ai]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    reg.ctx().emplace<std::mt19937>(42u);
+    Tilemap tilemap;
+
+    make_player(reg, 400.f, 100.f);
+
+    AiBehavior ai{};
+    ai.archetype = AiBehavior::Archetype::Chaser;
+    ai.phase = AiBehavior::Phase::Idle;
+    ai.activation_range = 100.f;
+    ai.move_speed = 70.f;
+    auto enemy = make_enemy(reg, 100.f, 100.f, ai);
+
+    // Out of range: stays idle
+    systems::update_ai(reg, tilemap, 1.f / 120.f);
+    REQUIRE(reg.get<AiBehavior>(enemy).phase == AiBehavior::Phase::Idle);
+
+    // A bullet's knockback, lasting one tick
+    reg.emplace<Knockback>(enemy, -150.f, 0.f, 0.005f);
+    systems::update_ai(reg, tilemap, 1.f / 120.f);
+    CHECK(reg.get<AiBehavior>(enemy).phase == AiBehavior::Phase::Advance);
+
+    // Then it comes for the player
+    systems::update_ai(reg, tilemap, 1.f / 120.f);
+    CHECK(reg.get<Velocity>(enemy).dx == Approx(70.f));
 }
 
 TEST_CASE("Knockback removed after duration expires", "[ai]") {

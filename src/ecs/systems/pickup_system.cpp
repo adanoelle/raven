@@ -3,7 +3,22 @@
 #include "ecs/components.hpp"
 #include "ecs/systems/hitbox_math.hpp"
 
+#include <algorithm>
+
 namespace raven::systems {
+
+namespace {
+
+/// @brief Cap the fire cooldown at the new weapon's own rate. Without
+/// this, the long cooldown of a slow weapon just fired carries over and
+/// locks out a fast one.
+void cap_cooldown_to_weapon(entt::registry& reg, entt::entity entity, const Weapon& weapon) {
+    if (auto* cd = reg.try_get<ShootCooldown>(entity)) {
+        cd->remaining = std::min(cd->remaining, weapon.fire_rate);
+    }
+}
+
+} // namespace
 
 void update_pickups(entt::registry& reg) {
     auto players = reg.view<Transform2D, CircleHitbox, Player, Weapon>();
@@ -22,6 +37,7 @@ void update_pickups(entt::registry& reg) {
 
                 // Equip the pickup's weapon
                 weapon = pickup.weapon;
+                cap_cooldown_to_weapon(reg, p_ent, weapon);
                 reg.emplace_or_replace<WeaponDecay>(p_ent, 10.f);
                 push_sfx(reg, Sfx::Pickup);
 
@@ -95,6 +111,7 @@ void update_weapon_decay(entt::registry& reg, float dt) {
             // Revert to default weapon
             if (auto* def = reg.try_get<DefaultWeapon>(entity)) {
                 weapon = def->weapon;
+                cap_cooldown_to_weapon(reg, entity, weapon);
                 reg.remove<DefaultWeapon>(entity);
             }
             expired.push_back(entity);

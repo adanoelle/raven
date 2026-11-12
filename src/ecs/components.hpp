@@ -256,6 +256,10 @@ struct ContactDamage {
     float timer = 0.f;     ///< Time until next hit allowed.
 };
 
+/// @brief Body damage of a disarmed enemy that had none of its own. A
+/// disarmed enemy charges the player, so it has to be able to hurt.
+inline constexpr float disarmed_contact_damage = 15.f;
+
 /// @brief Knockback impulse applied to an enemy when hit by a bullet.
 struct Knockback {
     float dx = 0.f;        ///< Knockback velocity X in pixels/s.
