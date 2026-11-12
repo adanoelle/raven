@@ -109,6 +109,8 @@ giving a generous margin so the arc feels good to use.
 1. **Tick cooldowns** — decrement all `MeleeCooldown::remaining` by `dt`.
 2. **Initiate** — on `melee_pressed` with cooldown elapsed and no active
    `MeleeAttack`, emplace `MeleeAttack` with current `AimDirection` snapshot.
+   A Knight who is dashing and still holds a `DashFollowUp` gets a full
+   360-degree arc instead (the spin), and the token is spent.
 3. **Hit check** — on the first tick of an active `MeleeAttack`
    (`!hit_checked`):
    - Iterate all enemies with `(Transform2D, CircleHitbox, Enemy, Health)`
@@ -120,9 +122,12 @@ giving a generous margin so the arc feels good to use.
      knockback speed for the shared `ABILITY_KNOCKBACK_DURATION` (0.15 s).
      See [ADR-0022](../decisions/0022-ability-latch-and-feedback-anchors.md)
      for the design.
-   - If the enemy has a `BulletEmitter`: look up pattern, call
+   - If the enemy has a `BulletEmitter`: count down its
+     `Disarmable::hits_left` (`disarm_hits` in `assets/data/enemies.json`).
+     On the hit that reaches zero: look up pattern, call
      `weapon_from_emitter()`, spawn `WeaponPickup` at enemy position, remove
-     `BulletEmitter`, emplace `Disarmed` tag.
+     `BulletEmitter`, emplace `Disarmed` tag, and give the enemy
+     `ContactDamage` if it has none.
    - Set `hit_checked = true`.
 4. **Expire** — tick `remaining`, remove `MeleeAttack` when expired.
 
@@ -142,7 +147,9 @@ collect/apply split are documented in
 `update_dash()` in `src/ecs/systems/dash_system.cpp`:
 
 1. **Tick cooldowns** — decrement all `DashCooldown::remaining` by `dt`.
-2. **Initiate** — on `dash_pressed` with cooldown elapsed and no active `Dash`:
+2. **Initiate** — on `dash_pressed` with cooldown elapsed and no active `Dash`
+   (a Knight holding a `DashFollowUp` skips the cooldown; see
+   [Player Classes](player-classes.md#dash-chain-knight)):
    - Direction = movement input if magnitude >= 0.01, else `AimDirection`.
    - Emplace `Dash` with normalised direction.
    - Grant `Invulnerable` (0.18 s — slightly longer than the 0.12 s dash for a
@@ -191,18 +198,20 @@ update_player_animation  (attack/dash/walk/idle clip choice)
 update_animation
 update_movement
 update_tile_collision
+update_bullet_walls
 update_collision
 update_pickups
 update_weapon_decay
 update_damage            (no more weapon drops on death)
 update_cleanup
 update_waves             <- wave clear check, next wave spawn
-check_exit_overlap       <- room transition trigger
 game_over check          <- scene swap to GameOverScene
+check_exit_overlap       <- room transition trigger
 ```
 
 Melee and dash run early in the pipeline so that the velocity overrides and
-spawned pickups are visible to downstream systems in the same frame.
+spawned pickups are visible to downstream systems in the same frame. Dash runs
+before melee, so pressing both on the same tick starts the dash first.
 `update_charged_shot` runs before `update_input` so the `charging` flag is set
 before the input system applies the movement speed penalty.
 

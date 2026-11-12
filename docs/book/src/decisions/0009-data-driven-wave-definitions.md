@@ -52,6 +52,13 @@ The format:
 }
 ```
 
+> Note (2026-11-12): this is the format as first decided. Today a wave entry
+> holds only `spawn_index` and `enemy`, a name defined in
+> `assets/data/enemies.json`, for example
+> `{ "spawn_index": 0, "enemy": "grunt_chaser" }`. Any other key is ignored
+> with a warning (`StageLoader::parse_enemy` in
+> `src/ecs/systems/wave_system.cpp`).
+
 `spawn_index` is resolved at spawn time by looking up the tilemap's `EnemySpawn`
 list in order. If the index exceeds the number of available spawn points, it
 clamps to the last one.

@@ -35,7 +35,7 @@ struct Weapon {
     float fire_rate = 0.2f;
     int bullet_count = 1;
     float spread_angle = 0.f;
-    std::string bullet_sheet = "projectiles";
+    StringId bullet_sheet;
     int bullet_frame_x = 1;
     int bullet_frame_y = 0;
     int bullet_width = 8;
@@ -47,6 +47,8 @@ struct Weapon {
 Every player entity gets a `Weapon` on spawn. Bullet spawning in
 `update_shooting()` reads these fields instead of hard-coded constants, so
 equipping a stolen weapon immediately changes how the player fires.
+`bullet_sheet` is an interned sheet ID; `GameScene::spawn_player()` sets it to
+the projectiles sheet.
 
 ### WeaponPickup
 
@@ -104,8 +106,10 @@ has a 0.5 s `Lifetime` and is cleaned up by the normal despawn system.
 ## Weapon steal
 
 Weapons are obtained exclusively via melee disarm (see
-[Melee and Dash](melee-and-dash.md)). When the melee arc hits an enemy with a
-`BulletEmitter`, the melee system:
+[Melee and Dash](melee-and-dash.md)). Each melee hit on an enemy with a
+`BulletEmitter` counts down its `Disarmable::hits_left` (`disarm_hits` in
+`assets/data/enemies.json`: 1 by default, 3 for the boss). On the hit that
+brings it to zero, the melee system:
 
 1. Looks up the `PatternDef` by `emitter.pattern_name` in the `PatternLibrary`.
 2. Calls `weapon_from_emitter()` on the first `EmitterDef` to build a `Weapon`
@@ -114,6 +118,8 @@ Weapons are obtained exclusively via melee disarm (see
 4. Spawns a `WeaponPickup` entity at the enemy's position with a 5 s lifetime
    and 8 px collection radius.
 5. Removes the enemy's `BulletEmitter` and emplaces the `Disarmed` tag.
+6. Gives the enemy `ContactDamage` if it has none, so the now-charging enemy
+   can still hurt the player.
 
 The tier flows from JSON all the way through to the pickup:
 
@@ -132,8 +138,11 @@ When the player overlaps a `WeaponPickup` (circle-circle test in
 1. If the player does **not** already have `WeaponDecay`, save the current
    `Weapon` into `DefaultWeapon`.
 2. Replace the player's `Weapon` with the pickup's weapon.
-3. Emplace `WeaponDecay` with 10 s remaining (resets timer if already decaying).
-4. Destroy the pickup entity.
+3. Cap the player's `ShootCooldown` at the new weapon's `fire_rate`
+   (`cap_cooldown_to_weapon()`), so a slow weapon's cooldown does not carry
+   over.
+4. Emplace `WeaponDecay` with 10 s remaining (resets timer if already decaying).
+5. Destroy the pickup entity.
 
 Only one pickup is collected per frame (`break` after first hit).
 
@@ -144,12 +153,13 @@ Only one pickup is collected per frame (`break` after first hit).
 1. Decrement `decay.remaining` by `dt`.
 2. If `remaining <= 0`:
    - **Damage**: if the entity is a `Player` and not `Invulnerable`, subtract 1
-     HP and grant 2 s invulnerability. If already invulnerable, skip damage
-     entirely.
+     from `Health::current` and grant 0.5 s invulnerability
+     (`post_hit_invuln`). If already invulnerable, skip damage entirely.
    - **VFX**: spawn an `ExplosionVfx` entity at the player's position with a 0.5
      s `Lifetime`.
-   - **Revert**: restore the player's `Weapon` from `DefaultWeapon`, then remove
-     both `WeaponDecay` and `DefaultWeapon`.
+   - **Revert**: restore the player's `Weapon` from `DefaultWeapon`, cap the
+     `ShootCooldown` at its `fire_rate`, then remove both `WeaponDecay` and
+     `DefaultWeapon`.
 
 The weapon **always** reverts regardless of invulnerability state — only the
 damage is conditional.
@@ -158,8 +168,9 @@ damage is conditional.
 
 ### Drop rules
 
-Stabilizer drops are handled in `update_damage()` alongside weapon pickup
-spawning:
+Stabilizer drops are handled in `update_damage()` when an enemy dies. The
+default chance comes from the enemy's tier; `stabilizer_drop` in
+`assets/data/enemies.json` overrides it per enemy:
 
 | Enemy type | Drop chance |
 | ---------- | ----------- |
@@ -168,7 +179,7 @@ spawning:
 | Boss       | 100%        |
 
 The RNG is an `std::mt19937` stored in the registry context, seeded from
-`std::random_device` in `GameScene::on_enter()`. Stabilizer pickups spawn 12 px
+SDL's clocks in `GameScene::on_enter()`. Stabilizer pickups spawn 12 px
 below the enemy's position with an 8 s lifetime.
 
 ### Collection rules
@@ -193,27 +204,34 @@ Legendary weapons can never be stabilized. They always decay and explode.
 `GameScene::update()` pipeline, after movement and collision:
 
 ```
+update_charged_shot       Sharpshooter charge + release
 update_input              read keyboard/gamepad → target velocity (skip during dash)
 update_dash               burst velocity, invulnerability
 update_melee              arc check, disarm, spawn weapon pickups
+update_ground_slam        Brawler class ability
+update_concussion_shot    Sharpshooter class ability
 update_shooting           aim resolution + bullet spawn
 update_emitters           enemy bullet pattern firing
 update_ai                 archetype dispatch + disarmed override
-animation state logic     Melee > Dash > Walk > Idle switch
+update_player_animation   Melee > Dash > Walk > Idle switch
 update_animation          tick frames
 update_movement           velocity → position
 update_tile_collision     resolve wall overlaps
+update_bullet_walls       bullets vs walls
 update_collision          circle-circle hit tests
 update_pickups         ←  weapon + stabilizer collection
 update_weapon_decay    ←  tick decay timers, handle explosion
-update_damage             apply DamageOnContact, stabilizer drops (no weapon drops)
+update_damage             tick invulnerability, deaths, stabilizer drops (no weapon drops)
 update_cleanup            tick lifetimes, despawn off-screen / expired entities
+update_waves              wave clear check, next wave, open exits
 ```
 
 Key ordering detail: `update_pickups` runs before `update_weapon_decay`, so a
 stabilizer collected on the same tick prevents the explosion from firing.
 `update_melee` runs early so that weapon pickups spawned from disarms are
-available for collection later in the same frame.
+available for collection later in the same frame. `update_dash` runs before
+`update_melee` so that pressing both on one tick starts the dash first and
+the melee becomes the Knight's spin.
 
 ## Gameplay possibilities
 
@@ -250,8 +268,9 @@ The component design enables several gameplay dynamics:
 | Decay timer ticks down                                        | `remaining` decreases by `dt` each frame                       |
 | Second pickup while decaying does not overwrite DefaultWeapon | Original default preserved across chained steals               |
 | weapon_from_emitter conversion                                | All emitter fields map to correct weapon fields                |
+| A slow weapon's cooldown doesn't carry over to the next weapon | Cooldown capped on decay and on pickup; short cooldown kept   |
 | Enemy death does not spawn weapon pickup                      | Weapons only via melee disarm                                  |
-| Decay expires — damage, invulnerability, revert               | 1 HP lost, 2 s invulnerability granted, weapon reverted        |
+| Decay expires — damage, invulnerability, revert               | 1 damage taken, `post_hit_invuln` granted, weapon reverted     |
 | Decay expires while invulnerable — no damage                  | HP unchanged, weapon still reverts                             |
 | Explosion spawns ExplosionVfx entity                          | VFX at player position with 0.5 s lifetime                     |
 | Stabilizer collected removes decay and default                | Weapon becomes permanent                                       |
@@ -271,7 +290,8 @@ The component design enables several gameplay dynamics:
 | `src/ecs/components.hpp`            | `Weapon`, `WeaponPickup`, `WeaponDecay`, `DefaultWeapon`, `StabilizerPickup`, `ExplosionVfx` |
 | `src/ecs/systems/pickup_system.hpp` | `update_pickups()`, `update_weapon_decay()`, `weapon_from_emitter()` declarations            |
 | `src/ecs/systems/pickup_system.cpp` | Pickup collection, decay timer, emitter-to-weapon conversion                                 |
-| `src/ecs/systems/damage_system.cpp` | Enemy death → weapon pickup + stabilizer drop spawning                                       |
+| `src/ecs/systems/melee_system.cpp`  | Melee disarm → weapon pickup spawning                                                        |
+| `src/ecs/systems/damage_system.cpp` | Enemy death → stabilizer drop spawning (no weapon drops)                                     |
 | `src/patterns/pattern_library.hpp`  | `PatternDef` with `tier` field, `EmitterDef` struct                                          |
 | `src/scenes/game_scene.cpp`         | System execution order, RNG seeding                                                          |
 | `tests/test_pickups.cpp`            | Catch2 tests for pickups, decay, stabilizer, tiers                                           |
