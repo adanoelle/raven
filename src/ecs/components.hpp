@@ -430,6 +430,7 @@ struct ExplosionVfx {};
 struct Exit {
     std::string target_level; ///< LDtk level name to load.
     bool open = false;        ///< Active only after room is cleared.
+    float opens_in = 0.f;     ///< Seconds until it opens, once the room is cleared.
 };
 
 // ── Audio ───────────────────────────────────────────────────────

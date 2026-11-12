@@ -252,7 +252,7 @@ TEST_CASE("update_waves advances to next wave when all enemies dead", "[waves]")
     REQUIRE(reg.view<Enemy>().size() == 0);
 
     // update_waves should advance to wave 1
-    systems::update_waves(reg, tilemap, stage, patterns, enemies);
+    systems::update_waves(reg, tilemap, stage, patterns, enemies, 1.f / 120.f);
     REQUIRE(state.current_wave == 1);
     REQUIRE(reg.view<Enemy>().size() == 1); // Wave 2 has 1 enemy
 }
@@ -285,11 +285,11 @@ TEST_CASE("update_waves sets room_cleared when all waves exhausted", "[waves]") 
     }
 
     // update_waves should mark room cleared
-    systems::update_waves(reg, tilemap, stage, patterns, enemies);
+    systems::update_waves(reg, tilemap, stage, patterns, enemies, 1.f / 120.f);
     REQUIRE(state.room_cleared);
 }
 
-TEST_CASE("Exit entities marked open when room cleared", "[waves]") {
+TEST_CASE("Exits open a moment after the room is cleared", "[waves]") {
     entt::registry reg;
     auto& interner = reg.ctx().emplace<StringInterner>();
     PatternLibrary patterns;
@@ -320,11 +320,24 @@ TEST_CASE("Exit entities marked open when room cleared", "[waves]") {
         reg.destroy(entity);
     }
 
-    systems::update_waves(reg, tilemap, stage, patterns, enemies);
+    systems::update_waves(reg, tilemap, stage, patterns, enemies, 1.f / 120.f);
     REQUIRE(state.room_cleared);
 
+    // Not on the tick of the last kill: a player standing on the exit
+    // should see the room clear first
     auto& exit = reg.get<Exit>(exit_ent);
-    REQUIRE(exit.open);
+    CHECK_FALSE(exit.open);
+
+    const int delay_ticks = static_cast<int>(systems::EXIT_OPEN_DELAY * 120.f);
+    for (int i = 0; i < delay_ticks - 2; ++i) {
+        systems::update_waves(reg, tilemap, stage, patterns, enemies, 1.f / 120.f);
+    }
+    CHECK_FALSE(exit.open);
+
+    for (int i = 0; i < 4; ++i) {
+        systems::update_waves(reg, tilemap, stage, patterns, enemies, 1.f / 120.f);
+    }
+    CHECK(exit.open);
 }
 
 // ── Exit overlap tests ─────────────────────────────────────────────

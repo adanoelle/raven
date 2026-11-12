@@ -248,7 +248,7 @@ void GameScene::update(Game& game, float dt) {
     // Wave clear check + next wave spawn
     const auto* stage = stage_loader_.get(current_stage_);
     if (stage) {
-        systems::update_waves(reg, tilemap_, *stage, pattern_lib_, enemy_lib_);
+        systems::update_waves(reg, tilemap_, *stage, pattern_lib_, enemy_lib_, dt);
     }
 
     // Forward sound requests pushed by the systems above to the engine.
