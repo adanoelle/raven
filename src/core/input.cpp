@@ -168,14 +168,18 @@ void Input::process_event(const SDL_Event& event) {
         break;
 
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        // A trigger pulled from rest. One already held doesn't re-latch
-        // while it wobbles above the threshold.
+        // Trigger hysteresis follows every axis event, not only the poll, so
+        // a release and re-pull inside one frame is a new press, and a
+        // trigger wobbling above the release point is not.
         if (gamepad_ && event.gaxis.which == SDL_GetGamepadID(gamepad_) &&
             (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ||
-             event.gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) &&
-            !trigger_held_[event.gaxis.axis] &&
-            trigger_pressed(static_cast<float>(event.gaxis.value) / 32767.f, false)) {
-            latch_pad(PadControl::Kind::Trigger, event.gaxis.axis);
+             event.gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) {
+            bool& held = trigger_held_[event.gaxis.axis];
+            const bool now = trigger_pressed(static_cast<float>(event.gaxis.value) / 32767.f, held);
+            if (now && !held) {
+                latch_pad(PadControl::Kind::Trigger, event.gaxis.axis);
+            }
+            held = now;
         }
         break;
 

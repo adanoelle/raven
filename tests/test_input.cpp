@@ -380,6 +380,33 @@ TEST_CASE("A tap released between polls still counts", "[input][gamepad]") {
     }
 }
 
+TEST_CASE("Trigger presses between polls follow the hysteresis", "[input][gamepad]") {
+    VirtualPad pad;
+    Input input;
+    input.init();
+
+    SECTION("a release and re-pull inside one frame is a new press") {
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1.f);
+        tick(input);
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 0.f);
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1.f);
+        const auto& s = frame(input);
+        CHECK(s.shoot);
+        CHECK(s.shoot_pressed);
+    }
+
+    SECTION("a wobble above the release point is not a new press") {
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 0.6f);
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 0.4f);
+        tick(input);
+        CHECK(input.state().shoot); // eased off, still held
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 0.55f);
+        const auto& s = frame(input);
+        CHECK(s.shoot);
+        CHECK_FALSE(s.shoot_pressed);
+    }
+}
+
 TEST_CASE("Keyboard and mouse events latch presses", "[input]") {
     Input input; // no devices: only events reach it
 
