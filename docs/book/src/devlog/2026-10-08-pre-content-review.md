@@ -535,6 +535,25 @@ stage entries exactly, except that grunts now draw at their sheet's 16 px
 frame size instead of being stretched to 24 px (the "Grunts are drawn at
 1.5x" item above).
 
+## Follow-up: Controller Layout
+
+Real playtests will be played on a controller, so the gamepad path came next
+([ADR-0027](../decisions/0027-gamepad-layout.md)).
+
+- **Layout:** fire moves to RT, melee to RB, dash to LB and the ability to
+  LT, so the right thumb never leaves the aim stick. A, X and B repeat dash,
+  melee and ability. Focus, which nothing read, is gone.
+- **Data:** bindings are now tables (`GamepadLayout`, `KeyboardLayout`).
+- **Triggers and sticks:** triggers press with hysteresis, and both sticks
+  use a round deadzone.
+- **Fixes** for three review items:
+  - G8: presses are latched from events, so quick taps survive low frame
+    rates.
+  - G9: only real mouse use makes the mouse the aiming device.
+  - G10: the end screens accept Start and ignore the first 0.75 s of input.
+- **Tests** drive a virtual SDL gamepad, so the layout is checked without
+  hardware.
+
 ## Status
 
 | Item | Status |
@@ -546,6 +565,9 @@ frame size instead of being stretched to 24 px (the "Grunts are drawn at
 | B5. Pause can quit the run | Fixed |
 | B6. Bullets through walls | Fixed |
 | G3. Dying can count as winning | Fixed |
+| G8. Quick taps lost at low frame rates | Fixed with the controller layout |
+| G9. Gamepad aim drifts to a hidden cursor | Fixed with the controller layout |
+| G10. End screens easy to skip; Start does nothing | Fixed with the controller layout |
 | G15. Animation timing | Fixed with the animation clips |
 | G20. Level with no cell size divides by zero | Fixed (with B3) |
 | Rest of G1-G16 and smaller issues | Open |

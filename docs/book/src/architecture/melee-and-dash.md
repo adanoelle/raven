@@ -81,8 +81,8 @@ system uses this tag to override the enemy's behavior to aggressive Chaser at
 
 | Action | Keyboard | Mouse       | Gamepad |
 | ------ | -------- | ----------- | ------- |
-| Melee  | C        | Right click | X       |
-| Dash   | Space    | —           | LB      |
+| Melee  | C        | Right click | RB, or X |
+| Dash   | Space    | —           | LB, or A |
 
 Both have edge-detected `_pressed` variants for single-activation.
 

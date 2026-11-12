@@ -33,8 +33,11 @@ void update_charged_shot(entt::registry& reg, const InputState& input, float dt)
             }
         }
 
-        // Fire on release
-        if (!input.shoot && cs.was_shooting && cs.charging) {
+        // Fire on release. A tap that went down and up between two polls
+        // never shows as held, only as a press: it fires an uncharged shot.
+        const bool released = !input.shoot && cs.was_shooting && cs.charging;
+        const bool tapped = !input.shoot && !cs.was_shooting && input.shoot_pressed;
+        if (released || tapped) {
             // Respect the fire-rate cooldown: without this check, rapid
             // tap-release fires an uncapped stream of min-charge bullets.
             if (cd.remaining > 0.f) {
@@ -43,7 +46,7 @@ void update_charged_shot(entt::registry& reg, const InputState& input, float dt)
                 cs.was_shooting = input.shoot;
                 continue;
             }
-            float t = cs.charge;
+            float t = tapped ? 0.f : cs.charge;
             float damage_mult = cs.min_damage_mult + (cs.max_damage_mult - cs.min_damage_mult) * t;
             float speed_mult = cs.min_speed_mult + (cs.max_speed_mult - cs.min_speed_mult) * t;
 
@@ -63,7 +66,7 @@ void update_charged_shot(entt::registry& reg, const InputState& input, float dt)
             params.frame_y = weapon.bullet_frame_y;
             params.width = weapon.bullet_width;
             params.height = weapon.bullet_height;
-            params.piercing = cs.charge >= cs.full_charge_threshold;
+            params.piercing = t >= cs.full_charge_threshold;
 
             spawn_bullet(reg, params);
             cd.remaining = weapon.fire_rate;

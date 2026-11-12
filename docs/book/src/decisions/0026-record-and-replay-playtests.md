@@ -96,7 +96,7 @@ for analysis.**
   where it diverges.
 - **Markers:** F2 on the keyboard, or Back/Select on a controller, drops a
   numbered marker, and the HUD flashes `MARK 3`. (F1 is taken by the debug
-  overlay; the gamepad layout in ADR-0027 keeps Back/Select free for this.)
+  overlay; the gamepad layout in [ADR-0027](0027-gamepad-layout.md) keeps Back/Select free for this.)
   The marker is not part of `InputState` and doesn't affect the simulation. Testers write notes against marker numbers
   ("mark 3: that felt cheap"), and the playbook's reporting steps change to
   ask for the recording plus marker notes.
