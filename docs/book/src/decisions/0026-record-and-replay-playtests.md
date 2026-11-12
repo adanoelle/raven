@@ -1,6 +1,6 @@
 # 26. Record and Replay for Playtests
 
-Date: 2026-10-08 Status: Proposed
+Date: 2026-10-08 Status: Proposed (revised 2026-11-12 after review)
 
 ## Context
 
@@ -29,10 +29,25 @@ The engine is already close to deterministic:
   registry context (drifter AI and stabilizer drops).
 - The only wall-clock read in gameplay is that RNG's seed
   (`GameScene::on_enter`).
-- Systems read input only through `const InputState&`.
+- Systems read input only through `const InputState&`. Everything that
+  happens before that (press edges latched from SDL events, trigger
+  hysteresis, deadzones) is already folded into the `InputState` a tick
+  receives, so none of it needs recording separately.
 
 So a run is fully determined by its build, its content, its seed, and the
 `InputState` each tick saw. Recording those four is enough to reproduce it.
+
+Three things in today's code stand in the way, and the sequencing below
+starts with them:
+
+- The per-tick system list lives inline in `GameScene::update`, and the
+  room index is a private member of the scene. A test can't run "the
+  gameplay tick" without a window.
+- `ctx().emplace<std::mt19937>` doesn't replace an existing generator, so a
+  second run in the same session continues the first run's sequence instead
+  of using its own seed.
+- A bullet carries only which side fired it, and an enemy doesn't carry the
+  name of its definition, so "what hit the player" can't be answered.
 
 Alternatives considered:
 
@@ -59,21 +74,30 @@ for analysis.**
   load in Python. The first line is a header:
   - format version
   - build id (git describe, stamped at configure time)
-  - content hash (map, stages, enemies, patterns, config)
+  - content hash (map, stages, enemies, patterns, config), taken from the
+    data as loaded when the run starts, not from the files at build time,
+    since testers and developers edit content between runs
   - class, seed, and the date
 - After the header come input lines. Each one holds the tick number and only
   the `InputState` fields that changed since the previous line, including
   the latched `*_pressed` edges exactly as that tick saw them. Recording per
   tick, rather than per frame, makes replays independent of frame rate.
-  - Analog values are quantized to 1/256 before comparing, so stick noise
-    doesn't produce a line every tick.
-  - Mouse position is recorded in virtual pixels.
+  - The recorded value is the value gameplay consumed, bit for bit. Stick
+    axes are quantized to 1/256 inside `Input`, in every build, before
+    gameplay sees them. That keeps stick noise from producing a line every
+    tick without the recording and the simulation ever disagreeing. (A
+    recorder that rounded on its own would replay slightly different
+    aim and movement than the tester had.)
+  - Mouse position is in virtual pixels and is fractional at most window
+    sizes. It is written with enough digits to read back as the same float.
 - Every 120 ticks a checksum line hashes the state that matters: the
   player's position, HP and lives, score, room and wave, enemy count and
   positions, and bullet count. A replay checks these to find the first tick
   where it diverges.
-- **Markers:** F2 drops a numbered marker (F1 is taken by the debug overlay),
-  and the HUD flashes `MARK 3`. Testers write notes against marker numbers
+- **Markers:** F2 on the keyboard, or Back/Select on a controller, drops a
+  numbered marker, and the HUD flashes `MARK 3`. (F1 is taken by the debug
+  overlay; the gamepad layout in ADR-0027 keeps Back/Select free for this.)
+  The marker is not part of `InputState` and doesn't affect the simulation. Testers write notes against marker numbers
   ("mark 3: that felt cheap"), and the playbook's reporting steps change to
   ask for the recording plus marker notes.
 - Files go to `<pref dir>/recordings/`, named by date, class and seed. The
@@ -101,8 +125,18 @@ These become project rules, enforced by a test:
    between standard libraries.
 
 A Catch2 determinism test drives a scripted input sequence through the
-gameplay systems twice and requires matching checksums at every interval.
-The test uses no stored recordings, so balance changes don't break it.
+gameplay tick twice and requires matching checksums at every interval. The
+test uses no stored recordings, so balance changes don't break it.
+
+For the test to cover the real game rather than a copy of it:
+
+- The system list moves out of `GameScene::update` into one function that
+  the scene, the test and the replay all call. The room index and anything
+  else the tick reads move from scene members into registry state.
+- The script plays through at least one room change, so wave spawning and
+  room transitions are covered.
+- One case starts a second run in the same registry with the same seed and
+  requires the same checksums as the first. That is the test for rule 3.
 
 ### Replay
 
@@ -111,16 +145,32 @@ The test uses no stored recordings, so balance changes don't break it.
   `M` jumps to the next marker. Anyone can watch exactly what the tester
   saw.
 - `raven --replay <file> --headless --out <dir>` runs with the offscreen video
-  and dummy audio drivers on a stepped clock, as fast as the CPU allows. It
-  writes:
+  and dummy audio drivers, as fast as the CPU allows. It writes:
   - `events.jsonl`: room entered or cleared, wave spawned, damage taken
     (amount and the source's enemy name), deaths, pickups, steals, and
     markers
-  - screenshots of the 480×270 render target (`SDL_RenderReadPixels` +
-    `IMG_SavePNG`) at each marker, death and room clear, plus the 30 ticks
-    before each death
+  - screenshots of the 480×270 render target at each marker, death and room
+    clear, plus the 30 ticks before each death
   - `summary.json`: time per room, damage by source, cause of each death, and
     the first checksum divergence if there is one
+
+  Three details the headless mode depends on:
+  - **Stepped clock.** The main loop today measures real time and sleeps to
+    cap the frame rate. Headless replay doesn't use that loop: it runs one
+    tick per recorded tick with no timing and no sleep, and renders only the
+    ticks it needs a screenshot of.
+  - **Screenshots.** The scene is drawn to the 480×270 target texture and
+    read back (`SDL_RenderReadPixels`) while that texture is still the
+    render target, before it is scaled to the window. A screenshot is taken
+    after the tick's gameplay render and before any scene change that tick
+    asked for, so the last death shows the room and the bullet, not the
+    game-over screen.
+  - **Damage sources.** Each enemy carries the name of its definition
+    ([ADR-0025](0025-named-enemy-definitions.md)), and each enemy bullet
+    carries the name of the enemy that fired it, as interned strings. Damage
+    events read the name from whatever dealt the hit. This is ordinary game
+    state, compiled in regardless of the replay flag, since the HUD and
+    death screen can use it too.
 - During a replay, `Input` returns the recorded `InputState` for each tick
   instead of polling SDL. This input source is also the seam a later
   stepped automation API (scripts, or an MCP server) would use; that API is
@@ -134,12 +184,14 @@ recorder and replay code isn't compiled in, and `--replay` is rejected.
 
 ## Sequencing
 
-1. **Determinism:** reseed per run, log the seed, document the rules, and
-   add the determinism test.
+1. **Determinism:** move the tick into one shared function, reseed per run,
+   log the seed, quantize stick axes in `Input`, document the rules, and add
+   the determinism test.
 2. **Recording:** the input source seam, per-tick recording, markers,
    chunked writes, and playbook updates.
 3. **Windowed replay:** watching, pausing, stepping and divergence warnings.
-4. **Headless replay:** events, screenshots and summary.
+4. **Headless replay:** damage source names, events, screenshots and
+   summary.
 
 Steps 1 and 2 are enough for a tester's run to be sent and reproduced.
 Steps 3 and 4 make it easy to work through.
@@ -167,6 +219,10 @@ Steps 3 and 4 make it easy to work through.
   longer exact.
 - More moving parts: a file format to version, a build flag, a command-line
   mode, and an append API in the file seam.
+- Some of the groundwork lands in every build, not only playtest builds:
+  the shared tick function, stick quantization (1/256 is finer than any
+  stick's noise, so it shouldn't be felt) and a name on enemies and their
+  bullets (four bytes each).
 - Testers have to send files, and the playbook has to make that easy.
 - A replay shows what happened, not how it felt. Human playtests and their
   notes are still the source of feel.
