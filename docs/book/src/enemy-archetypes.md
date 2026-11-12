@@ -33,8 +33,14 @@ These rules apply to every enemy and create feedback moments of their own
 - **Disarm enrages.** When melee knocks the weapon out of an enemy, it
   abandons its archetype entirely and charges the player at **1.5× speed**.
   A disarmed Coward — the fastest enemy in the game — becomes a missile.
-  An enemy with no body damage of its own gains the default (15) when
-  disarmed, so the charge always threatens.
+  An enemy with no body damage of its own gains some when disarmed
+  (`disarmed_contact_damage`: grunt 15, mid 20, boss 30 unless its
+  definition says otherwise), so the charge always threatens.
+- **Tough enemies hold on to their weapon.** `disarm_hits` in an enemy's
+  definition is the number of melee hits it takes to knock the weapon out
+  (default 1; the boss takes 3). Every hit still damages and knocks back.
+  → Hits short of the last one need a visible tell: the weapon jolting
+  loose a little more each time.
   → This state change must be visible: weapon gone, posture flipped from
   cautious to berserk.
 - **Weapons are visible threats.** Armed enemies fire bullet patterns; the
@@ -130,6 +136,17 @@ back over its shoulder; panic in the run cycle. The boss variant keeps the
 panicked personality but adds bulk and an overwhelming weapon — a coward
 with a cannon. Wake and flee tells should read instantly, because the
 player's first lesson is "it runs."
+
+## Ideas Not Built Yet
+
+- **Bosses re-arm.** A disarmed boss draws its weapon back magnetically
+  after a few seconds, so the fight returns to bullet patterns instead of
+  ending as a chase. The pull could be counterable: the player grabs the
+  weapon first, stands in its path, or hits the boss mid-pull to break it.
+  That makes the disarm a window to exploit, not a permanent win.
+  Open: whether a stolen weapon is pulled out of the player's hands or
+  only a weapon still on the floor; whether each re-arm costs the boss
+  something; and what the pull looks like (it needs a clear telegraph).
 
 ## Composition Today (test-scale)
 

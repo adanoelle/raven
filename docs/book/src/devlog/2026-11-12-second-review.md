@@ -61,8 +61,8 @@ project code.
   the enemy charge, but only the grunt had contact damage. One melee hit
   left the boss, the stalker and the drifter unable to hurt the player. A
   disarmed enemy with no body damage now gets the default (15, after one
-  cooldown). The boss is still disarmable with one hit, which is a design
-  question, not a bug: see "Decisions" below.
+  cooldown). Whether one hit should disarm the boss was a design question:
+  see "Decisions" below.
 - **Idle enemies never woke when shot.** Enemies spawn 208 px from the
   player start with activation ranges of 160 to 200, so the first room
   could be cleared from the doorway. A hit now wakes an idle enemy.
@@ -168,12 +168,19 @@ Open:
 
 ## Decisions
 
-- **Should one melee hit disarm the boss?** With the fix above a disarmed
-  boss is a 48 px chaser, which may be the intended reward or may trivialize
-  the fight. Options: leave it, require several hits, or make bosses
-  re-arm after a few seconds.
-- **Body damage of a disarmed enemy.** 15, the grunt's value, is a
-  placeholder (`disarmed_contact_damage`).
+Both questions the review raised were settled the same day.
+
+- **Bosses take more than one melee hit to disarm.** `disarm_hits` in an
+  enemy's definition sets the count (default 1, boss 3). Boss HP went from
+  10 to 40: melee does 2 damage, so at 10 HP the boss was half dead by the
+  third swing and the count meant little. 40 is a first guess for
+  playtests to correct.
+- **Body damage of a disarmed enemy** is per enemy
+  (`disarmed_contact_damage`), defaulting by tier: grunt 15, mid 20,
+  boss 30.
+- **Idea, not built:** bosses re-arm by pulling their weapon back
+  magnetically, and the player can counter the pull. Noted on the
+  [enemy archetypes](../enemy-archetypes.md) page.
 
 ## Status
 
@@ -183,6 +190,7 @@ Open:
 | Gameplay: disarm, idle wake, stalker NaN, cooldown carry-over | Fixed |
 | #23 ADR-0026 revisions | Done |
 | #21 production plan | Rewritten |
+| Boss disarm and disarmed body damage | Decided and built |
 | Open gameplay items 1-4 and smaller | Open |
 | Authoring traps | Open |
 | Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |

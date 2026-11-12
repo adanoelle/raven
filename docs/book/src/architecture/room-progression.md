@@ -114,6 +114,8 @@ everything about that kind of enemy:
 | `pattern`         | no       | None: the enemy doesn't shoot                                       |
 | `contact_damage`  | no       | 0: no body damage. Otherwise damage per hit                         |
 | `stabilizer_drop` | no       | Tier default: boss 1, mid 0.15, grunt 0                             |
+| `disarm_hits`     | no       | 1: melee hits needed to knock its weapon out                        |
+| `disarmed_contact_damage` | no | Tier default: boss 30, mid 20, grunt 15. Body damage once disarmed, for an enemy with no `contact_damage` |
 
 ## StageLoader
 
