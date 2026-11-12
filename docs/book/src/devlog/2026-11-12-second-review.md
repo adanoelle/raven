@@ -133,6 +133,8 @@ Fixed:
   job with the overlay off, which also checks the package layout.
 - **Lint ran serially for 20 to 28 minutes.** It now runs one process per
   core, in CI and in `just lint`, which also depends on a build now.
+  Headers are no longer linted as files of their own (about 15% of the
+  work); they are checked through the sources that include them.
 - **No concurrency group**, so superseded pushes kept running. Docs-only
   changes ran the full C++ pipeline; they now run a book build instead
   (`docs-check.yml`), which also catches a broken book before merge.

@@ -89,7 +89,9 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          find src \( -name '*.cpp' -o -name '*.hpp' \) -print0 \
+          # Headers are checked through the sources that include them
+          # (HeaderFilterRegex in .clang-tidy), not as files of their own.
+          find src -name '*.cpp' -print0 \
             | xargs -0 -n 4 -P "$(nproc)" clang-tidy -p build --quiet --warnings-as-errors='*'
 
   build-test:
