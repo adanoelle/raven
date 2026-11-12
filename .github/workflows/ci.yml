@@ -36,8 +36,28 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the pull request's base is needed to find what changed
+
+      # A pull request lints the sources it changes, or all of them when it
+      # touches a header or the lint and build setup (tools/lint_files.sh).
+      # A push to a branch lints everything.
+      - name: Choose files to lint
+        id: files
+        run: |
+          set -o pipefail # a failed diff must fail the job, not lint nothing
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            git diff --name-only "origin/$GITHUB_BASE_REF...HEAD" | tools/lint_files.sh > lint-files
+          else
+            find src -name '*.cpp' -print0 > lint-files
+          fi
+          count=$(tr -cd '\0' < lint-files | wc -c)
+          echo "Linting $count source file(s)"
+          tr '\0' '\n' < lint-files
+          echo "count=$count" >> "$GITHUB_OUTPUT"
 
       - name: Install build dependencies
+        if: steps.files.outputs.count != '0'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -47,6 +67,7 @@ jobs:
             libegl1-mesa-dev libgl1-mesa-dev libasound2-dev libpulse-dev libudev-dev
 
       - name: Cache SDL3 install
+        if: steps.files.outputs.count != '0'
         id: cache-sdl
         uses: actions/cache@v4
         with:
@@ -54,7 +75,7 @@ jobs:
           key: sdl-${{ env.SDL_TAG }}-${{ env.SDL_IMAGE_TAG }}-${{ runner.os }}-24.04
 
       - name: Build SDL3 from source
-        if: steps.cache-sdl.outputs.cache-hit != 'true'
+        if: steps.files.outputs.count != '0' && steps.cache-sdl.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 --branch "$SDL_TAG" https://github.com/libsdl-org/SDL.git /tmp/SDL
           cmake -S /tmp/SDL -B /tmp/SDL/build -G Ninja \
@@ -73,12 +94,14 @@ jobs:
           ninja -C /tmp/SDL_image/build install
 
       - name: Cache CPM packages
+        if: steps.files.outputs.count != '0'
         uses: actions/cache@v4
         with:
           path: ${{ env.CPM_SOURCE_CACHE }}
           key: cpm-${{ hashFiles('cmake/Dependencies.cmake', 'cmake/CPM.cmake') }}
 
       - name: Configure
+        if: steps.files.outputs.count != '0'
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
@@ -88,11 +111,11 @@ jobs:
           PKG_CONFIG_PATH: ${{ env.SDL_PREFIX }}/lib/pkgconfig
 
       - name: Run clang-tidy
+        if: steps.files.outputs.count != '0'
         run: |
           # Headers are checked through the sources that include them
           # (HeaderFilterRegex in .clang-tidy), not as files of their own.
-          find src -name '*.cpp' -print0 \
-            | xargs -0 -n 4 -P "$(nproc)" clang-tidy -p build --quiet --warnings-as-errors='*'
+          xargs -a lint-files -0 -n 4 -P "$(nproc)" clang-tidy -p build --quiet --warnings-as-errors='*'
 
   build-test:
     runs-on: ubuntu-24.04

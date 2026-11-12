@@ -22,6 +22,7 @@ just test     # Build + run Catch2 tests
 | `just asan`       | Debug build with AddressSanitizer enabled.                          |
 | `just fmt`        | Format all `.hpp` and `.cpp` files with clang-format.               |
 | `just lint`       | Run clang-tidy static analysis.                                     |
+| `just lint-changed` | Lint only what the branch changes relative to `main`, as CI does on a pull request. |
 | `just book build` | Build the mdBook documentation.                                     |
 | `just book serve` | Serve the book locally with live reload.                            |
 | `just book clean` | Remove generated book output.                                       |
