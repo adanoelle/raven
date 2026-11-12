@@ -162,19 +162,35 @@ Open:
 - The tilemap is redrawn tile by tile every frame. Baking it to a texture
   once per room is the largest cheap rendering win.
 
-## Open: Out-of-Date Docs
+## Out-of-Date Docs
 
-- `playtest.md` says kills drop weapons (they don't; disarms do) and gives
-  2 s of invulnerability (it is 0.5 s). `weapons.md` repeats the 2 s.
-- Render layer tables (code: characters 10, bullets and pickups 5, exits 1).
-- `art-spec.md`: grunt upscaling, "pickups sheet missing", 8x8 pickups.
-- `art-integration.md` still describes `sprite_defs`.
-- System-order listings on five pages.
-- `player-classes.md` says two classes and names `AnimationState`.
-- Examples in ADR-0004 and ADR-0009.
-- SDL2 names in the README, ARCHITECTURE, and the environment, tilemap and
-  smooth-movement pages.
-- The test list in `CLAUDE.md`.
+Refreshed against the code:
+
+- `playtest.md` and `weapons.md`: disarms drop weapons, kills don't; 0.5 s of
+  invulnerability after a hit; the checks for this review's fixes.
+- Render layer tables (characters 10, bullets and pickups 5, exits 1).
+- `art-spec.md` (grunts drawn 1:1, 16x16 pickups, the pickups sheet exists)
+  and `art-integration.md` (frame addressing instead of `sprite_defs`).
+- System-order listings on eight pages, all matching `GameScene::update`.
+- `player-classes.md`: the Knight and the dash chain.
+- `melee-and-dash.md`: disarm hits and the spin.
+- Examples in ADR-0004 and ADR-0009 (the latter as a dated note).
+- SDL2 names in the README, ARCHITECTURE, and the environment, tilemap,
+  smooth-movement, shooting and audio-resources pages.
+- `CLAUDE.md`: the test list, `just` recipes and `tools/`.
+
+Still stale: `guide/project-tour.md` (test list, docs tree, system and
+component lists) needs a pass of its own. The doc pass also turned up things
+in the code:
+
+- The decay explosion takes 1 HP from a player with 60 to 150
+  (`pickup_system.cpp`). It reads as a leftover from when the player had a
+  few hit points; the penalty needs a real number.
+- `weapon_from_emitter` never sets `piercing`.
+- The `sprite_defs` block in `assets/data/config.json` is read by nothing.
+- `ClassId` and `GameState::player_class` are written and never read.
+- The header comment in `damage_system.hpp` still says deaths drop weapons,
+  and `input.cpp` names SDL2 functions in a comment.
 
 ## Decisions
 
@@ -205,4 +221,4 @@ Both questions the review raised were settled the same day.
 | Smaller gameplay items | Open |
 | Authoring traps | Open |
 | Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |
-| Out-of-date docs | Open |
+| Out-of-date docs | Done, except `project-tour.md` |
