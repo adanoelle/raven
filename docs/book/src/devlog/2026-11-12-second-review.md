@@ -135,6 +135,9 @@ Fixed:
   core, in CI and in `just lint`, which also depends on a build now.
   Headers are no longer linted as files of their own (about 15% of the
   work); they are checked through the sources that include them.
+  A pull request lints only the sources it changes, and everything when
+  it touches a header or the lint and build setup (`tools/lint_files.sh`,
+  `just lint-changed`). Pushes to `main` still lint everything.
 - **No concurrency group**, so superseded pushes kept running. Docs-only
   changes ran the full C++ pipeline; they now run a book build instead
   (`docs-check.yml`), which also catches a broken book before merge.

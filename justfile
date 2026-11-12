@@ -45,6 +45,11 @@ fmt:
 lint: build
     find src -name '*.cpp' -print0 | xargs -0 -n 4 -P $(nproc) clang-tidy -p build --quiet
 
+# Lint only what this branch changes relative to main, as CI does on a pull request
+lint-changed: build
+    git diff --name-only "$(git merge-base origin/main HEAD)" | tools/lint_files.sh \
+        | xargs -0 -r -n 4 -P $(nproc) clang-tidy -p build --quiet
+
 # Clean build artifacts
 clean:
     rm -rf build build-release build-asan
