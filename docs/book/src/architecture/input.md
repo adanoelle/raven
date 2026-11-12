@@ -120,8 +120,8 @@ leaves the aim stick, and the face buttons repeat them:
 | Pause            | Start                            |
 | Confirm / Cancel | A / B                            |
 
-Back/Select is left free for the playtest marker
-([ADR-0026](../decisions/0026-record-and-replay-playtests.md)).
+Back/Select is left free for the playtest marker that the proposed
+record-and-replay harness (ADR-0026) would add.
 
 **Bindings are tables.** `GamepadLayout` and `KeyboardLayout` in
 `core/input.hpp` list up to two controls per action. Polling, event latching
@@ -159,14 +159,22 @@ explicit mode switching.
 
 ## Edge detection and latching
 
-Edge flags detect the _rising edge_ of a button press. The raw edge is computed
-per render frame (`begin_frame()` copies `current_` into `previous_` before
-polling), but the flag is **latched** rather than exposed directly:
+Edge flags detect the _rising edge_ of a button press. A press reaches the
+latch two ways. SDL events latch it directly (`KEY_DOWN`, `GAMEPAD_BUTTON_DOWN`,
+`MOUSE_BUTTON_DOWN`, and a trigger axis event that crosses the press
+threshold), so a tap that goes down and up between two polls still counts.
+The per-frame poll also compares held state against the previous frame
+(`begin_frame()` copies `current_` into `previous_` before polling). Either
+way the flag is **latched** rather than exposed directly. `compute_edges()`
+loops over the action table:
 
 ```cpp
-latched_.shoot = latched_.shoot || (current_.shoot && !previous_.shoot);
-current_.shoot_pressed = latched_.shoot;
+latched_.actions[i] =
+    latched_.actions[i] || (current_.*action.held && !(previous_.*action.held));
+current_.*action.pressed = latched_.actions[i];
 ```
+
+Menu direction edges (`up_pressed` and friends) come from the poll only.
 
 Latching exists because render frames and fixed ticks are decoupled. The game
 renders at display rate but simulates at 120 Hz, so a frame can run **zero**

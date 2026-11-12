@@ -43,7 +43,7 @@ leaves the aim stick; the face buttons repeat them.**
 | A / X / B    | Dash / melee / ability, repeating the shoulders    |
 | A / B        | Confirm / cancel in menus                          |
 | Start        | Pause                                              |
-| Back/Select  | Free, for the playtest marker ([ADR-0026](0026-record-and-replay-playtests.md)) |
+| Back/Select  | Free, for the playtest marker (ADR-0026, proposed) |
 
 - Melee gets the fastest digital button on the aiming hand, because
   disarming is the core loop. Dash sits on the left hand, which already
@@ -57,14 +57,17 @@ leaves the aim stick; the face buttons repeat them.**
   after `settings.json` loading is made tolerant of bad fields (review G12).
 - Triggers are read as buttons with hysteresis: a pull past 0.5 presses, and
   coming back below 0.3 releases. A trigger resting near one threshold would
-  otherwise flicker, firing a stray Sharpshooter shot on each release.
+  otherwise flicker, firing a stray Sharpshooter shot on each release. The
+  state follows every axis event, so a release and re-pull inside one frame
+  is a new press.
 - The left stick uses one round deadzone (0.2) and rescales the travel beyond
   it, so diagonals keep both components and movement starts from zero. The
   right stick uses the same round deadzone, but passes its raw direction
   through, since only the direction matters for aim.
 - Key, button and trigger presses are also latched from SDL events, so a tap
   that goes down and up between two polls still counts. A fire tap fires
-  once even when the button is already up by the next tick.
+  once even when the button is already up by the next tick; for the
+  Sharpshooter it fires an uncharged shot.
 - Only mouse motion or a click makes the mouse the aiming device.
 - The end screens accept Start as well as confirm, and ignore input for
   0.75 s after appearing.

@@ -52,11 +52,15 @@ Nix package build with `-DRAVEN_ENABLE_IMGUI=OFF`.
 
 ## Controls
 
-| Action | Keyboard          | Gamepad            |
-| ------ | ----------------- | ------------------ |
-| Move   | Arrow keys / WASD | Left stick / D-pad |
-| Shoot  | Z / Mouse         | A / Right stick    |
-| Pause  | Escape            | Start              |
+| Action  | Keyboard            | Gamepad            |
+| ------- | ------------------- | ------------------ |
+| Move    | Arrow keys / WASD   | Left stick / D-pad |
+| Aim     | Mouse               | Right stick        |
+| Shoot   | Z / Left mouse      | RT                 |
+| Melee   | C / Right mouse     | RB or X            |
+| Dash    | Space               | LB or A            |
+| Ability | X                   | LT or B            |
+| Pause   | Escape              | Start              |
 
 ## Architecture
 
