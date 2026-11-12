@@ -277,6 +277,42 @@ TEST_CASE("Disarmed enemy has no BulletEmitter and has Disarmed tag", "[melee]")
     REQUIRE(reg.any_of<Disarmed>(enemy));
 }
 
+TEST_CASE("A disarmed shooter gains body damage", "[melee]") {
+    entt::registry reg;
+    auto& interner = reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+    patterns.set_interner(interner);
+
+    nlohmann::json j = {
+        {"name", "test_pattern3"},
+        {"emitters", {{{"type", "radial"}, {"count", 3}, {"speed", 200.f}, {"fire_rate", 0.3f}}}}};
+    patterns.load_from_json(j);
+
+    make_player(reg, 100.f, 100.f);
+
+    SECTION("an enemy with none gets the default, after one cooldown") {
+        auto enemy = make_enemy(reg, 120.f, 100.f);
+        reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern3"), {}, {}});
+
+        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+
+        REQUIRE(reg.any_of<ContactDamage>(enemy));
+        const auto& contact = reg.get<ContactDamage>(enemy);
+        CHECK(contact.damage == disarmed_contact_damage);
+        CHECK(contact.timer > 0.f); // not on the tick of the swing
+    }
+
+    SECTION("an enemy's own body damage is kept") {
+        auto enemy = make_enemy(reg, 120.f, 100.f);
+        reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern3"), {}, {}});
+        reg.emplace<ContactDamage>(enemy, ContactDamage{40.f});
+
+        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+
+        CHECK(reg.get<ContactDamage>(enemy).damage == 40.f);
+    }
+}
+
 // ── Dash system tests ───────────────────────────────────────────────
 
 TEST_CASE("Dash activates with movement direction", "[dash]") {
