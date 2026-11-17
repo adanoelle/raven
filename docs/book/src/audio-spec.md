@@ -52,6 +52,49 @@ processed through NI MASSIVE and triggered via FMOD.
 | Cons       | Most complex to produce; requires both chip and DAW skills             |
 | References | Celeste (Lena Raine), Enter the Gungeon (doseone)                      |
 
+### Working plan: Option C with hardware processing
+
+The direction is still open, but the current lean is the hybrid, with one
+specific twist: parts are written "in the box" and then played through a
+hardware effects pedal from Hologram Electronics (granular textures,
+tape-style wobble, degraded repeats) for a sound that is digital in origin
+but worn and organic in character. A friend of the project who worked at
+Hologram has the pedals and the experience to run them. Nothing is agreed
+yet — this section records the plan so it can be tested.
+
+**Division of work.** Composition stays in the project: parts are written in
+a sequencer or DAW (see [Audio Learning Resources](audio-resources.md)) and
+exported as separate stems. The collaborator plays those stems through the
+pedal and returns the recordings ("re-amping"). The same route works for
+sound effects — a clean metallic hit through the pedal is a candidate for the
+signature `disarm.wav`.
+
+**Test first.** Before committing, send one short loop (about 16 bars of a
+chip-style melody at an Area 1 tempo) for a single pass through the pedal.
+That one clip answers both open questions: whether the sound is right for
+Raven, and whether the looping approach below holds up.
+
+**Looping.** These effects produce long tails and partly random textures, so
+the end of a pass does not match its start. Record every looping part
+**played twice in a row and keep the second pass**: it already contains the
+tail of the first, so the end-to-start joint is continuous. Cut to a
+sample-exact length computed from BPM and bar count. This satisfies the
+"bake the tail into the start of the loop" rule in the
+[Music Track List](music-track-list.md#3-looping).
+
+**Deliverables to ask for.**
+
+- Processed (wet) stems, one file per part, plus the untouched (dry) stems —
+  wet/dry pairs allow rebalancing later and keep adaptive layering possible
+- WAV or FLAC at the recording's native rate and bit depth; conversion to the
+  shipping formats in section 4 happens in the project, not at the source
+- A note of the pedal and settings per take, so a part can be redone
+
+**Terms.** Agree in writing before any recording is used, even informally:
+who owns the recordings, how the collaborator is credited, and whether there
+is payment or a revenue share. The game is headed for Steam and possibly
+console, and this is far easier to settle before release than after.
+
 ---
 
 ## 2. Sound Effects Catalog
@@ -195,6 +238,36 @@ quadratic gain curve (`volume_to_gain()` in `src/core/game.cpp`) so the
 slider feels perceptually even. `music_volume` is stored and displayed but
 drives nothing until music playback lands.
 
+### Loudness of short effects
+
+The LUFS targets above cannot be applied literally to most of the catalog.
+Integrated loudness (EBU R 128) is measured over 400 ms blocks, so a sound
+shorter than that has **no integrated reading** — tools report -70 LUFS or
+"-inf", and single-pass normalizers such as ffmpeg's `loudnorm` leave the
+file effectively unchanged. Even measured generously, a ~100 ms burst peaking
+at the -1 dBFS ceiling reads only about -16 LUFS, so the upper part of the
+SFX range is unreachable for 50–100 ms effects without heavy limiting.
+
+Until the targets are restated, treat them this way:
+
+| Effect length   | How to level it                                                                 |
+| --------------- | ------------------------------------------------------------------------------- |
+| 400 ms or more  | Integrated LUFS, as in the table above                                          |
+| Under 400 ms    | Match **peak and RMS within a family** (shots, hits, UI, pickups), then confirm by ear in-game against a reference effect |
+
+For a single comparable number on a short file, pad it with 0.5 s of silence
+and read the **maximum momentary** loudness:
+
+```bash
+ffmpeg -nostats -i in.wav \
+  -af "apad=pad_dur=0.5,ebur128=metadata=1,ametadata=mode=print:key=lavfi.r128.M:file=-" \
+  -f null - 2>/dev/null | grep -oE "lavfi.r128.M=-?[0-9.]+" | cut -d= -f2 | sort -n | tail -1
+```
+
+Open item: restate the SFX target in terms of maximum momentary loudness (or
+per-family peak/RMS) once a handful of final effects exist to calibrate
+against.
+
 Practical consequence for sound design: because the same master gain applies
 to every effect, **relative loudness between effects must be baked into the
 files** — hit the LUFS targets rather than relying on per-sound mixing.
@@ -298,7 +371,9 @@ A quick self-check before a sound goes into the game:
 - [ ] SFX duration is appropriate for the event (see catalog above)
 - [ ] Music loops seamlessly across the end-to-start joint
 - [ ] Peak level does not exceed -1 dBFS
-- [ ] Perceived loudness is within the target LUFS range
+- [ ] Perceived loudness is within the target LUFS range (effects under
+      400 ms: matched to their family by peak/RMS and by ear — see
+      [Loudness of short effects](#loudness-of-short-effects))
 - [ ] No audible clicks, pops, or DC offset at loop points or file boundaries
 - [ ] Variants (if any) are numbered sequentially (`_01`, `_02`, etc.)
 - [ ] Audio plays correctly in-game at both low and high volume settings
