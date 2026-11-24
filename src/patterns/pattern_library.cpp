@@ -1,16 +1,25 @@
 #include "patterns/pattern_library.hpp"
 
 #include "core/fs.hpp"
+#include "core/json_keys.hpp"
 #include "core/paths.hpp"
 #include "rendering/sheet_ids.hpp"
 
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
+#include <string_view>
 
 namespace raven {
 
 namespace {
+
+constexpr std::array<std::string_view, 3> PATTERN_KEYS = {"name", "tier", "emitters"};
+constexpr std::array<std::string_view, 15> EMITTER_KEYS = {
+    "type",         "count",         "speed",        "angular_velocity", "fire_rate",
+    "spread_angle", "start_angle",   "bullet_sheet", "bullet_frame_x",   "bullet_frame_y",
+    "bullet_width", "bullet_height", "lifetime",     "damage",           "hitbox_radius"};
 
 /// @brief Clamp a parsed value to a safe range, warning when out of bounds.
 float clamp_field(const std::string& pattern, const char* field, float value, float min_v,
@@ -67,11 +76,7 @@ bool PatternLibrary::load_file(const std::string& file_path) {
 
     try {
         auto j = nlohmann::json::parse(*text);
-        auto pattern = parse_pattern(j);
-        auto name = pattern.name;
-        patterns_[interner_->intern(name).value] = std::move(pattern);
-        spdlog::debug("Loaded pattern '{}'", name);
-        return true;
+        return add(parse_pattern(j), "file '" + file_path + "'");
     } catch (const nlohmann::json::exception& e) {
         spdlog::error("Failed to parse pattern '{}': {}", file_path, e.what());
         return false;
@@ -84,15 +89,26 @@ bool PatternLibrary::load_from_json(const nlohmann::json& j) {
         return false;
     }
     try {
-        auto pattern = parse_pattern(j);
-        auto name = pattern.name;
-        patterns_[interner_->intern(name).value] = std::move(pattern);
-        spdlog::debug("Loaded pattern '{}' from JSON", name);
-        return true;
+        return add(parse_pattern(j), "JSON");
     } catch (const nlohmann::json::exception& e) {
         spdlog::error("Failed to parse pattern from JSON: {}", e.what());
         return false;
     }
+}
+
+bool PatternLibrary::add(PatternDef pattern, const std::string& source) {
+    const uint16_t key = interner_->intern(pattern.name).value;
+    if (patterns_.contains(key)) {
+        // Usually a copied file whose "name" was never changed. Replacing
+        // the first would silently change every enemy that uses it.
+        spdlog::error("Pattern '{}' from {} has the same name as a pattern already loaded; "
+                      "keeping the first. Give each pattern its own \"name\".",
+                      pattern.name, source);
+        return false;
+    }
+    spdlog::debug("Loaded pattern '{}' from {}", pattern.name, source);
+    patterns_.emplace(key, std::move(pattern));
+    return true;
 }
 
 const PatternDef* PatternLibrary::get(StringId id) const {
@@ -122,6 +138,7 @@ std::vector<std::string> PatternLibrary::names() const {
 PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) const {
     PatternDef def;
     def.name = j.at("name").get<std::string>();
+    warn_unknown_keys(j, PATTERN_KEYS, "Pattern '" + def.name + "'");
 
     auto tier_str = j.value("tier", "common");
     if (tier_str == "rare") {
@@ -145,6 +162,7 @@ PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) const {
 EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
                                          const std::string& pattern_name) const {
     EmitterDef def;
+    warn_unknown_keys(j, EMITTER_KEYS, "Pattern '" + pattern_name + "' emitter");
 
     auto type_str = j.value("type", "radial");
     if (type_str == "aimed") {

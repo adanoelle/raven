@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,6 +18,7 @@ struct TileData {
     bool flip_x = false;  ///< Flip tile horizontally.
     bool flip_y = false;  ///< Flip tile vertically.
     uint16_t texture = 0; ///< Index into Tilemap::textures() of this tile's tileset.
+    uint8_t alpha = 255;  ///< Its layer's opacity in LDtk (255 is opaque).
 };
 
 /// @brief Named spawn point extracted from an LDtk entity layer.
@@ -24,7 +26,15 @@ struct SpawnPoint {
     std::string name; ///< Entity identifier (e.g. "PlayerStart", "EnemySpawn").
     float x;          ///< World X position in pixels.
     float y;          ///< World Y position in pixels.
-    std::unordered_map<std::string, std::string> fields; ///< Custom LDtk entity fields.
+    /// Custom LDtk entity fields, as text. Int, Float, Bool ("true" or
+    /// "false"), String, Enum (the value's name) and FilePath fields are
+    /// kept; null values and other field types are left out.
+    std::unordered_map<std::string, std::string> fields;
+
+    /// @brief Read a field as a whole number.
+    /// @param field The field's identifier in LDtk.
+    /// @return The value, or nothing if the field is absent or not a whole number.
+    [[nodiscard]] std::optional<int> field_int(const std::string& field) const;
 };
 
 /// @brief Tilemap loaded from an LDtk project. Holds pre-baked render data,

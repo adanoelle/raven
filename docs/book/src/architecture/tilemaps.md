@@ -120,7 +120,13 @@ tilemap_.load(game.renderer().sdl_renderer(),
 **Entities:**
 
 - Store each entity's `getName()` and `getPosition()` as a `SpawnPoint`,
-  along with its string fields (such as an exit's `target_level`).
+  along with its fields as text (such as an exit's `target_level`). Int,
+  Float, Bool, String, Enum and FilePath fields are kept; a null value is
+  left out; colours, points, entity references and arrays are ignored with a
+  warning. `SpawnPoint::field_int()` reads one back as a whole number.
+
+**Layer opacity:** a tile layer's opacity in LDtk is stored on each of its
+tiles (`TileData::alpha`) and applied when drawing.
 
 **Hidden layers:** LDtk's per-layer eye toggle is saved in the file, but it is
 an editor convenience. A hidden layer's tiles are not drawn, but its collision
@@ -293,8 +299,15 @@ placeholders for real room designs. The three rooms are the levels of
 | Entity        | Fields                   | Used by                                                 |
 | ------------- | ------------------------ | ------------------------------------------------------- |
 | `PlayerStart` | none                     | Where the player appears on entering the room           |
-| `EnemySpawn`  | none                     | Enemy positions; a stage's `spawn_index` picks the Nth  |
+| `EnemySpawn`  | `index` (Int, optional)  | Enemy positions; a stage's `spawn_index` picks the one with that `index`, or the Nth if none have one |
 | `Exit`        | `target_level` (String)  | Opens when the room is cleared; leave the field null on the final room |
+
+The shipped map's `EnemySpawn` has no `index` field yet, so `spawn_index`
+follows LDtk's entity list order, which changes when entities are deleted
+and re-added. To pin it down, add an Int field named `index` to the
+`EnemySpawn` entity definition in LDtk and number each room's spawn points
+from 0. `test_content` then checks that every `spawn_index` a stage uses has
+exactly one spawn point.
 
 ### Tileset
 

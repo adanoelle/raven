@@ -1,6 +1,7 @@
 #include "ecs/systems/wave_system.hpp"
 
 #include "core/fs.hpp"
+#include "core/json_keys.hpp"
 #include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "ecs/systems/hitbox_math.hpp"
@@ -11,9 +12,18 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
+#include <string_view>
 #include <utility>
 
 namespace raven {
+
+namespace {
+
+constexpr std::array<std::string_view, 3> STAGE_KEYS = {"name", "level", "waves"};
+constexpr std::array<std::string_view, 1> WAVE_KEYS = {"enemies"};
+
+} // namespace
 
 // ── StageLoader ────────────────────────────────────────────────────
 
@@ -27,11 +37,19 @@ bool StageLoader::load_manifest(const std::string& manifest_path) {
     try {
         auto j = nlohmann::json::parse(*text);
         int loaded = 0;
-        for (const auto& path : j.at("stages")) {
+        const auto& listed = j.at("stages");
+        for (const auto& path : listed) {
             // Manifest entries are relative to the install dir, not the CWD
-            if (load_file(paths::asset(path.get<std::string>()))) {
-                ++loaded;
+            const auto file = path.get<std::string>();
+            if (!load_file(paths::asset(file))) {
+                // Stages are played in list order. Skipping this one would
+                // move every later stage up a place without saying so.
+                spdlog::error("Stage file '{}' did not load, so the run ends after stage {}: "
+                              "the {} stage(s) from there on are left out",
+                              file, loaded, listed.size() - static_cast<size_t>(loaded));
+                break;
             }
+            ++loaded;
         }
         spdlog::info("Loaded {} stages from manifest '{}'", loaded, manifest_path);
         return loaded > 0;
@@ -85,6 +103,7 @@ StageDef StageLoader::parse_stage(const nlohmann::json& j) const {
     StageDef stage;
     stage.name = j.at("name").get<std::string>();
     stage.level = j.at("level").get<std::string>();
+    warn_unknown_keys(j, STAGE_KEYS, "Stage '" + stage.name + "'");
 
     for (const auto& wj : j.at("waves")) {
         stage.waves.push_back(parse_wave(wj, stage.name));
@@ -95,6 +114,7 @@ StageDef StageLoader::parse_stage(const nlohmann::json& j) const {
 
 WaveDef StageLoader::parse_wave(const nlohmann::json& j, const std::string& stage_name) const {
     WaveDef wave;
+    warn_unknown_keys(j, WAVE_KEYS, "Stage '" + stage_name + "' wave");
     for (const auto& ej : j.at("enemies")) {
         if (auto entry = parse_enemy(ej, stage_name)) {
             wave.enemies.push_back(std::move(*entry));
@@ -144,6 +164,10 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
                      stage.name, stage.level, wave_index + 1);
     }
 
+    const bool indexed = std::ranges::any_of(spawn_points, [](const SpawnPoint* sp) {
+        return sp->field_int(SPAWN_INDEX_FIELD).has_value();
+    });
+
     for (const auto& entry : wave.enemies) {
         const EnemyDef* def = enemies.get(entry.enemy);
         if (!def) {
@@ -159,16 +183,31 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
             spawn_y = static_cast<float>(tilemap.height_px()) / 2.f;
         }
         if (!spawn_points.empty()) {
-            if (entry.spawn_index < 0 ||
-                std::cmp_greater_equal(entry.spawn_index, spawn_points.size())) {
+            const SpawnPoint* spawn = nullptr;
+            if (indexed) {
+                // The level numbers its spawn points itself
+                const auto match = std::ranges::find_if(spawn_points, [&](const SpawnPoint* sp) {
+                    return sp->field_int(SPAWN_INDEX_FIELD) == entry.spawn_index;
+                });
+                if (match != spawn_points.end()) {
+                    spawn = *match;
+                } else {
+                    spdlog::warn("Stage '{}': level '{}' has no EnemySpawn whose '{}' is {}",
+                                 stage.name, stage.level, SPAWN_INDEX_FIELD, entry.spawn_index);
+                }
+            } else if (entry.spawn_index < 0 ||
+                       std::cmp_greater_equal(entry.spawn_index, spawn_points.size())) {
                 spdlog::warn("Stage '{}': spawn_index {} is out of range for level '{}' ({} "
                              "EnemySpawn entities)",
                              stage.name, entry.spawn_index, stage.level, spawn_points.size());
             }
-            size_t idx = static_cast<size_t>(
-                std::clamp(entry.spawn_index, 0, static_cast<int>(spawn_points.size()) - 1));
-            spawn_x = spawn_points[idx]->x;
-            spawn_y = spawn_points[idx]->y;
+            if (!spawn) {
+                // LDtk's entity order, which changes when entities are edited
+                spawn = spawn_points[static_cast<size_t>(
+                    std::clamp(entry.spawn_index, 0, static_cast<int>(spawn_points.size()) - 1))];
+            }
+            spawn_x = spawn->x;
+            spawn_y = spawn->y;
         }
 
         auto enemy = reg.create();

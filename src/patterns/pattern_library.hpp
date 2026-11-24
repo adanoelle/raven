@@ -56,12 +56,14 @@ class PatternLibrary {
 
     /// @brief Load a single pattern definition from a JSON file.
     /// @param file_path Path to the pattern JSON file.
-    /// @return True on success, false if the file could not be parsed.
+    /// @return True on success, false if the file could not be parsed or
+    /// its pattern's name is already taken (the first one is kept).
     bool load_file(const std::string& file_path);
 
     /// @brief Load a pattern definition from an already-parsed JSON object.
     /// @param j JSON object containing the pattern definition.
-    /// @return True on success, false if the JSON structure is invalid.
+    /// @return True on success, false if the JSON structure is invalid or
+    /// the pattern's name is already taken (the first one is kept).
     bool load_from_json(const nlohmann::json& j);
 
     /// @brief Retrieve a pattern by interned ID (hot path — integer lookup).
@@ -85,6 +87,9 @@ class PatternLibrary {
   private:
     std::unordered_map<uint16_t, PatternDef> patterns_; ///< Keyed by interned name.
     StringInterner* interner_ = nullptr;
+
+    /// @brief Store a parsed pattern unless its name is already taken.
+    bool add(PatternDef pattern, const std::string& source);
 
     PatternDef parse_pattern(const nlohmann::json& j) const;
     EmitterDef parse_emitter(const nlohmann::json& j, const std::string& pattern_name) const;

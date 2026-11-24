@@ -42,6 +42,17 @@ tags and durations the game animates from
 ([Sprite Animation](architecture/sprite-animation.md)). Pass files to
 export only those. Needs Aseprite on the `PATH`.
 
+All sheets land in one directory, so the script guards it:
+
+- Two sources with the same file name would write the same sheet. That is
+  an error and nothing is exported.
+- `assets/sprites/.exported` lists the sheets the script has made. A sheet
+  that is not on the list, such as a generated placeholder, is not replaced
+  unless you pass `--force` (`just export-art --force`). Replacing the
+  placeholder `player.png` with real art needs it once.
+- A full export reports listed sheets whose source file is gone, and
+  `--prune` deletes them.
+
 ### Generators whose output gets used
 
 | Script | Generates | Notes |
