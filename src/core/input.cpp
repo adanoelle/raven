@@ -89,6 +89,7 @@ void Input::consume_pressed() {
     current_.down_pressed = false;
     current_.left_pressed = false;
     current_.right_pressed = false;
+    current_.gamepad_lost = false;
 }
 
 void Input::set_renderer(SDL_Renderer* renderer) {
@@ -130,6 +131,7 @@ void Input::process_event(const SDL_Event& event) {
             SDL_CloseGamepad(gamepad_);
             gamepad_ = nullptr;
             trigger_held_ = {};
+            latched_.gamepad_lost = true;
             spdlog::info("Gamepad disconnected");
         }
         break;
@@ -375,6 +377,7 @@ void Input::compute_edges() {
     current_.down_pressed = latched_.down;
     current_.left_pressed = latched_.left;
     current_.right_pressed = latched_.right;
+    current_.gamepad_lost = latched_.gamepad_lost;
 
     // Resolve mouse_active: mouse movement activates, right stick deactivates
     if (mouse_moved_) {

@@ -300,8 +300,10 @@ void GameScene::update(Game& game, float dt) {
         return;
     }
 
-    // Pause: push the overlay; this scene stops updating but keeps rendering
-    if (input.pause_pressed) {
+    // Pause: push the overlay; this scene stops updating but keeps rendering.
+    // Losing the controller pauses too, so a flat battery or a pulled cable
+    // doesn't leave the player standing in the bullets.
+    if (input.pause_pressed || input.gamepad_lost) {
         game.scenes().push(std::make_unique<PauseScene>(), game);
         return;
     }

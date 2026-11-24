@@ -50,6 +50,10 @@ struct InputState {
     bool down_pressed = false;  ///< Move-down press edge.
     bool left_pressed = false;  ///< Move-left press edge.
     bool right_pressed = false; ///< Move-right press edge.
+
+    /// The gamepad in use was disconnected. Latched and consumed like a
+    /// press edge, so gameplay can pause for it.
+    bool gamepad_lost = false;
 };
 
 /// @brief Whether a movement axis was pushed past the menu threshold this frame.
@@ -256,6 +260,7 @@ class Input {
         bool down = false;
         bool left = false;
         bool right = false;
+        bool gamepad_lost = false; ///< The gamepad in use went away.
     };
 
     InputState current_;

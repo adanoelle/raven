@@ -452,6 +452,30 @@ TEST_CASE("A button blocked on its press reads as released until let go", "[inpu
     }
 }
 
+TEST_CASE("Losing the gamepad in use is reported once", "[input][gamepad]") {
+    Input input;
+    {
+        VirtualPad pad;
+        input.init();
+        pad.button(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, true);
+        CHECK(frame(input).dash);
+        CHECK_FALSE(input.state().gamepad_lost);
+        input.consume_pressed();
+
+        // Unplug it. The pad's destructor would also quit the gamepad
+        // subsystem, so read the removal while it is still up.
+        SDL_DetachVirtualJoystick(pad.id);
+        SDL_UpdateJoysticks();
+
+        // Reported on the next frame, and held until a tick has seen it
+        CHECK(frame(input).gamepad_lost);
+        CHECK(frame(input).gamepad_lost);
+        CHECK_FALSE(input.state().dash);
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).gamepad_lost);
+    }
+}
+
 TEST_CASE("Keyboard and mouse events latch presses", "[input]") {
     Input input; // no devices: only events reach it
 
