@@ -82,6 +82,7 @@
 - [Switch Port Readiness Pass](devlog/2026-09-02-switch-port-readiness.md)
 - [Full Code Review Before the Content Phase](devlog/2026-10-08-pre-content-review.md)
 - [Second Code Review: Open PRs and the First Playtest](devlog/2026-11-12-second-review.md)
+- [Shader Direction: Proposal, Research and Plan](devlog/2026-11-24-shader-direction.md)
 
 ---
 
@@ -114,3 +115,4 @@
 - [ADR-0025: Named Enemy Definitions](decisions/0025-named-enemy-definitions.md)
 - [ADR-0026: Record and Replay for Playtests](decisions/0026-record-and-replay-playtests.md)
 - [ADR-0027: Gamepad Layout](decisions/0027-gamepad-layout.md)
+- [ADR-0028: Shader-Resolved Palette and Lighting](decisions/0028-shader-resolved-palette-lighting.md)

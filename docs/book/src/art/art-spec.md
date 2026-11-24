@@ -337,6 +337,13 @@ display size:
 - Background tiles use lower saturation and contrast than foreground sprites.
 - Keep a `.pal` or `.gpl` palette file alongside the art.
 
+> **Proposed change (2026-11-24).**
+> [ADR-0028](../decisions/0028-shader-resolved-palette-lighting.md) would
+> resolve colour through the palette in a shader. If it is accepted, the
+> 16–32 budget is replaced by a larger one, art is drawn in Indexed colour
+> mode, and world sprites lose translucent pixels. The rules above stand
+> until then.
+
 ---
 
 ## 10. File Format
