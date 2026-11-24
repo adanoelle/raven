@@ -31,7 +31,8 @@ void PauseScene::update(Game& game, float /*dt*/) {
 
     if (input.confirm_pressed) {
         switch (selected_) {
-        case 0: // Resume
+        case 0: // Resume. The confirm key may also fire (Z does).
+            game.input().block_pressed_until_released();
             game.scenes().pop(game);
             break;
         case 1: // Options overlay on top of the pause menu

@@ -97,6 +97,42 @@ TEST_CASE("Emitter system", "[emitters]") {
         REQUIRE(count_bullets(reg) == 1);
     }
 
+    SECTION("An emitter holding its fire waits, even for a fast pattern") {
+        load_radial_pattern(patterns, "test_hold", 3, 100.f, 0.1f, 360.f);
+
+        auto enemy = reg.create();
+        reg.emplace<Transform2D>(enemy, 50.f, 50.f);
+        BulletEmitter emitter;
+        emitter.pattern_name = interner.intern("test_hold");
+        emitter.hold_fire = 0.5f;
+        reg.emplace<BulletEmitter>(enemy, std::move(emitter));
+
+        run_ticks(reg, patterns, 55); // several fire intervals, still held
+        CHECK(count_bullets(reg) == 0);
+
+        run_ticks(reg, patterns, 10); // the hold runs out: first burst
+        CHECK(count_bullets(reg) == 3);
+    }
+
+    SECTION("The hold runs down while the emitter is inactive") {
+        load_radial_pattern(patterns, "test_hold_idle", 3, 100.f, 0.1f, 360.f);
+
+        auto enemy = reg.create();
+        reg.emplace<Transform2D>(enemy, 50.f, 50.f);
+        BulletEmitter emitter;
+        emitter.pattern_name = interner.intern("test_hold_idle");
+        emitter.hold_fire = 0.5f;
+        emitter.active = false;
+        reg.emplace<BulletEmitter>(enemy, std::move(emitter));
+
+        run_ticks(reg, patterns, 70); // idle for longer than the hold
+        reg.get<BulletEmitter>(enemy).active = true;
+
+        // Only the usual first interval is left to wait
+        run_ticks(reg, patterns, 13);
+        CHECK(count_bullets(reg) == 3);
+    }
+
     SECTION("Inactive emitter does not fire") {
         load_radial_pattern(patterns, "inactive_test", 3, 100.f, 0.1f, 360.f);
 

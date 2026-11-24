@@ -232,6 +232,7 @@ struct BulletEmitter {
     std::vector<float> cooldowns;      ///< Per-emitter cooldown timers (seconds).
     std::vector<float> current_angles; ///< Per-emitter current rotation angles (degrees).
     bool active = true;                ///< Whether this emitter is currently firing.
+    float hold_fire = 0.f; ///< Seconds before it may fire at all; runs down even while inactive.
 };
 
 // ── Pickup / Decay ──────────────────────────────────────────────
@@ -429,6 +430,7 @@ struct ExplosionVfx {};
 struct Exit {
     std::string target_level; ///< LDtk level name to load.
     bool open = false;        ///< Active only after room is cleared.
+    float opens_in = 0.f;     ///< Seconds until it opens, once the room is cleared.
 };
 
 // ── Audio ───────────────────────────────────────────────────────

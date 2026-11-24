@@ -407,6 +407,51 @@ TEST_CASE("Trigger presses between polls follow the hysteresis", "[input][gamepa
     }
 }
 
+TEST_CASE("A button blocked on its press reads as released until let go", "[input][gamepad]") {
+    VirtualPad pad;
+    Input input;
+    input.init();
+
+    // Dash was already down before the tick that confirms the menu
+    pad.button(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, true);
+    tick(input);
+
+    // The trigger goes down on that tick, and the menu hands over to gameplay
+    pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1.f);
+    REQUIRE(frame(input).shoot_pressed);
+    input.block_pressed_until_released();
+    CHECK_FALSE(input.state().shoot); // for the rest of this frame too
+    input.consume_pressed();
+
+    SECTION("still down: stays released, with no press") {
+        const auto& s = frame(input);
+        CHECK_FALSE(s.shoot);
+        CHECK_FALSE(s.shoot_pressed);
+    }
+
+    SECTION("let go and pressed again: counts as usual") {
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 0.f);
+        tick(input);
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1.f);
+        const auto& s = frame(input);
+        CHECK(s.shoot);
+        CHECK(s.shoot_pressed);
+    }
+
+    SECTION("let go and pressed again between two polls") {
+        tick(input);
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 0.f);
+        pad.trigger(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 1.f);
+        const auto& s = frame(input);
+        CHECK(s.shoot);
+        CHECK(s.shoot_pressed);
+    }
+
+    SECTION("a button held since before the tick keeps its state") {
+        CHECK(frame(input).dash);
+    }
+}
+
 TEST_CASE("Keyboard and mouse events latch presses", "[input]") {
     Input input; // no devices: only events reach it
 

@@ -366,6 +366,28 @@ TEST_CASE("A tough enemy keeps its weapon until its last disarm hit", "[melee]")
     CHECK(reg.view<WeaponPickup>().size() == 1);
 }
 
+TEST_CASE("Dash and melee pressed on the same tick give the spin", "[melee][dash]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+
+    auto player = make_player(reg, 100.f, 100.f);
+    reg.emplace<DashChainTalent>(player);
+
+    auto input = dash_input(1.f, 0.f);
+    input.melee = true;
+    input.melee_pressed = true;
+
+    // The order GameScene runs them in
+    systems::update_dash(reg, input, 1.f / 120.f);
+    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+
+    REQUIRE(reg.any_of<Dash>(player));
+    REQUIRE(reg.any_of<MeleeAttack>(player));
+    CHECK(reg.get<MeleeAttack>(player).half_angle > 3.f); // full circle
+    CHECK_FALSE(reg.any_of<DashFollowUp>(player));        // the spin spent the token
+}
+
 // ── Dash system tests ───────────────────────────────────────────────
 
 TEST_CASE("Dash activates with movement direction", "[dash]") {

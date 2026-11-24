@@ -36,6 +36,8 @@ void CharacterSelectScene::update(Game& game, float dt) {
     if (input.confirm_pressed) {
         constexpr ClassId::Id classes[] = {ClassId::Id::Brawler, ClassId::Id::Knight,
                                            ClassId::Id::Sharpshooter};
+        // The confirm key may also fire (Z does); don't open with a shot
+        game.input().block_pressed_until_released();
         game.scenes().swap(std::make_unique<GameScene>(classes[selected_index_]), game);
     }
 }

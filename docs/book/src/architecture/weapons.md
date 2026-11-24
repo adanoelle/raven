@@ -194,8 +194,8 @@ Legendary weapons can never be stabilized. They always decay and explode.
 
 ```
 update_input              read keyboard/gamepad → target velocity (skip during dash)
-update_melee              arc check, disarm, spawn weapon pickups
 update_dash               burst velocity, invulnerability
+update_melee              arc check, disarm, spawn weapon pickups
 update_shooting           aim resolution + bullet spawn
 update_emitters           enemy bullet pattern firing
 update_ai                 archetype dispatch + disarmed override

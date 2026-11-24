@@ -191,7 +191,9 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
         // Set up bullet emitter if a pattern exists. An empty pattern name
         // means an enemy that deliberately doesn't shoot.
         if (patterns.get(def->pattern)) {
-            reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern(def->pattern), {}, {}});
+            auto& emitter = reg.emplace<BulletEmitter>(
+                enemy, BulletEmitter{interner.intern(def->pattern), {}, {}});
+            emitter.hold_fire = SPAWN_FIRE_GRACE;
         } else if (!def->pattern.empty()) {
             spdlog::warn("Enemy '{}': pattern '{}' not found, so it won't fire", def->id,
                          def->pattern);
@@ -211,9 +213,26 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
 }
 
 void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& stage,
-                  const PatternLibrary& patterns, const EnemyLibrary& enemies) {
+                  const PatternLibrary& patterns, const EnemyLibrary& enemies, float dt) {
     auto* state = reg.ctx().find<GameState>();
-    if (!state || state->room_cleared || state->game_over) {
+    if (!state || state->game_over) {
+        return;
+    }
+
+    // Room already cleared: run down the exits' opening delay
+    if (state->room_cleared) {
+        for (auto [entity, exit] : reg.view<Exit>().each()) {
+            if (exit.open) {
+                continue;
+            }
+            exit.opens_in -= dt;
+            if (exit.opens_in <= 0.f) {
+                exit.open = true;
+                if (auto* sprite = reg.try_get<Sprite>(entity)) {
+                    sprite->frame_x = sheets::PROP_FRAME_EXIT_OPEN;
+                }
+            }
+        }
         return;
     }
 
@@ -231,13 +250,9 @@ void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& s
         // All waves exhausted — room cleared
         state->room_cleared = true;
 
-        // Open all Exit entities
-        auto exit_view = reg.view<Exit>();
-        for (auto [entity, exit] : exit_view.each()) {
-            exit.open = true;
-            if (auto* sprite = reg.try_get<Sprite>(entity)) {
-                sprite->frame_x = sheets::PROP_FRAME_EXIT_OPEN;
-            }
+        // The exits open a moment later (see EXIT_OPEN_DELAY)
+        for (auto [entity, exit] : reg.view<Exit>().each()) {
+            exit.opens_in = EXIT_OPEN_DELAY;
         }
 
         spdlog::info("Room cleared!");

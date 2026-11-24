@@ -78,18 +78,23 @@ Each fix has a test.
 
 ## Open: Gameplay
 
-In priority order.
+The four items that were first in priority are fixed (the same day, in a
+follow-up PR):
 
-1. **Dash and melee on the same tick never give the Knight's spin.**
-   `update_melee` runs before `update_dash`.
-2. **Confirm leaks into shoot on keyboard.** Z confirms the class and fires
-   on the first gameplay tick.
-3. **Spawn grace covers contact damage only.** Emitters start firing about
-   83 ms after a wave spawns.
-4. **The exit opens, and is checked, on the tick of the last kill.** A
-   player standing on it leaves before seeing the room clear.
+1. **Dash and melee on the same tick never gave the Knight's spin.** The
+   dash system now runs before melee. Melee pressed a tick or two *before*
+   the dash is still a plain swing; that would need an input buffer.
+2. **Confirm leaked into shoot on keyboard.** A button pressed on the tick
+   that hands a menu over to gameplay reads as released until it is let go
+   (`Input::block_pressed_until_released`), for class select and for
+   resuming from pause.
+3. **Spawn grace covered contact damage only.** A spawned enemy now holds
+   its fire for 1 s (`SPAWN_FIRE_GRACE`), counted from the spawn even while
+   it is dormant.
+4. **The exit opened, and was checked, on the tick of the last kill.**
+   Exits open 0.75 s after the room is cleared (`EXIT_OPEN_DELAY`).
 
-Smaller:
+Still open:
 
 - A drifter keeps its knockback velocity until its next wander timer.
 - The boss coward's wall probe is shorter than its hitbox.
@@ -196,7 +201,8 @@ Both questions the review raised were settled the same day.
 | #23 ADR-0026 revisions | Done |
 | #21 production plan | Rewritten |
 | Boss disarm and disarmed body damage | Decided and built |
-| Open gameplay items 1-4 and smaller | Open |
+| Gameplay items 1-4 | Done |
+| Smaller gameplay items | Open |
 | Authoring traps | Open |
 | Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |
 | Out-of-date docs | Open |

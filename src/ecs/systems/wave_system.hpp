@@ -80,10 +80,15 @@ namespace systems {
 /// before they can react.
 inline constexpr float SPAWN_CONTACT_GRACE = 1.f;
 
+/// @brief Seconds a freshly spawned enemy holds its fire. Without it a fast
+/// pattern opens up a few frames after a wave appears.
+inline constexpr float SPAWN_FIRE_GRACE = 1.f;
+
 /// @brief Spawn enemies for a wave at EnemySpawn positions from the tilemap.
 ///
 /// Each enemy is built from its EnemyDef; an unknown name is reported and
-/// skipped. Enemies with contact damage start with SPAWN_CONTACT_GRACE on
+/// skipped. Enemies that shoot hold their fire for SPAWN_FIRE_GRACE.
+/// Enemies with contact damage start with SPAWN_CONTACT_GRACE on
 /// their contact cooldown.
 /// @param reg The ECS registry.
 /// @param tilemap Tilemap with spawn point positions.
@@ -94,17 +99,23 @@ inline constexpr float SPAWN_CONTACT_GRACE = 1.f;
 void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& stage, int wave_index,
                 const PatternLibrary& patterns, const EnemyLibrary& enemies);
 
+/// @brief Seconds between clearing a room and its exits opening, so the
+/// player sees the room clear (and what the last enemy dropped) before an
+/// exit they are standing on takes them away.
+inline constexpr float EXIT_OPEN_DELAY = 0.75f;
+
 /// @brief Check if current wave is cleared; advance wave or mark room cleared.
 ///
-/// Clearing the room opens every Exit and switches any exit Sprite to its
-/// open frame.
+/// Clearing the room opens every Exit after EXIT_OPEN_DELAY and switches
+/// any exit Sprite to its open frame.
 /// @param reg The ECS registry.
 /// @param tilemap Tilemap with spawn point positions.
 /// @param stage The current stage definition.
 /// @param patterns Bullet pattern library for emitter setup.
 /// @param enemies Enemy definitions the stage refers to by name.
+/// @param dt Fixed timestep delta in seconds.
 void update_waves(entt::registry& reg, const Tilemap& tilemap, const StageDef& stage,
-                  const PatternLibrary& patterns, const EnemyLibrary& enemies);
+                  const PatternLibrary& patterns, const EnemyLibrary& enemies, float dt);
 
 /// @brief Check player overlap with open Exit entities.
 /// @param reg The ECS registry.

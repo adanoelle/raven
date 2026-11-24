@@ -72,6 +72,9 @@ void update_emitters(entt::registry& reg, const PatternLibrary& patterns, float 
 
     auto view = reg.view<Transform2D, BulletEmitter>();
     for (auto [entity, tf, emitter] : view.each()) {
+        if (emitter.hold_fire > 0.f) {
+            emitter.hold_fire -= dt;
+        }
         if (!emitter.active) {
             continue;
         }
@@ -102,7 +105,7 @@ void update_emitters(entt::registry& reg, const PatternLibrary& patterns, float 
 
             // Tick cooldown
             emitter.cooldowns[i] -= dt;
-            if (emitter.cooldowns[i] > 0.f) {
+            if (emitter.cooldowns[i] > 0.f || emitter.hold_fire > 0.f) {
                 continue;
             }
 
