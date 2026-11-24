@@ -284,6 +284,39 @@ TEST_CASE("Coward wall-slides instead of getting stuck", "[ai]") {
     REQUIRE(std::abs(vel.dy) > 0.f);
 }
 
+TEST_CASE("A large coward sees a wall before its body reaches it", "[ai]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    reg.ctx().emplace<std::mt19937>(42u);
+
+    // 20x10 grid, cell size 16px. Solid wall on the right edge (column 19,
+    // from x=304).
+    Tilemap tilemap;
+    std::vector<bool> grid(200, false);
+    for (int row = 0; row < 10; ++row) {
+        grid[static_cast<size_t>(row * 20 + 19)] = true;
+    }
+    tilemap.init_collision(20, 10, 16, grid);
+
+    make_player(reg, 16.f, 80.f);
+
+    AiBehavior ai{};
+    ai.archetype = AiBehavior::Archetype::Coward;
+    ai.activation_range = 400.f;
+    ai.move_speed = 110.f;
+    // The boss's body: its right edge (x=298) is 6 px from the wall, but a
+    // probe one cell from its centre (x=296) is still inside the body.
+    auto enemy = make_enemy(reg, 280.f, 80.f, ai);
+    reg.emplace<RectHitbox>(enemy, 36.f, 36.f);
+
+    systems::update_ai(reg, tilemap, 1.f / 120.f);
+
+    // It slides along the wall instead of running into it
+    const auto& vel = reg.get<Velocity>(enemy);
+    CHECK(vel.dx == Approx(0.f).margin(0.01f));
+    CHECK(std::abs(vel.dy) == Approx(110.f));
+}
+
 TEST_CASE("Coward escapes when fully cornered", "[ai]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();

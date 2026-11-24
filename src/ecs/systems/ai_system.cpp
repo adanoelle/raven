@@ -4,6 +4,7 @@
 #include "ecs/systems/hitbox_math.hpp"
 #include "ecs/systems/player_utils.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <random>
 
@@ -148,13 +149,17 @@ bool is_probe_blocked(const Tilemap& tilemap, float x, float y) {
 }
 
 /// @brief Update a Coward enemy: flee away from the player, wall-sliding to avoid corners.
+/// @param body_reach Distance from the entity's centre to the edge of its wall hitbox.
 void update_coward(Velocity& vel, AiBehavior& ai, float dir_x, float dir_y, float entity_x,
-                   float entity_y, const Tilemap& tilemap) {
+                   float entity_y, float body_reach, const Tilemap& tilemap) {
     float flee_x = -dir_x;
     float flee_y = -dir_y;
 
-    // Probe one cell ahead in the flee direction
-    float probe_dist = tilemap.is_loaded() ? static_cast<float>(tilemap.cell_size()) : 16.f;
+    // Probe one cell beyond the body in the flee direction. Measured from
+    // the centre alone, a probe shorter than a large body (the boss) never
+    // left it, and the boss ran into walls it could not see.
+    float probe_dist =
+        body_reach + (tilemap.is_loaded() ? static_cast<float>(tilemap.cell_size()) : 16.f);
     float probe_x = entity_x + flee_x * probe_dist;
     float probe_y = entity_y + flee_y * probe_dist;
 
@@ -279,9 +284,17 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
         case AiBehavior::Archetype::Stalker:
             update_stalker(vel, ai, dir_x, dir_y, dist, dt);
             break;
-        case AiBehavior::Archetype::Coward:
-            update_coward(vel, ai, dir_x, dir_y, tf.x, tf.y, tilemap);
+        case AiBehavior::Archetype::Coward: {
+            // Walls stop the rect hitbox; fall back to the circle
+            float body_reach = 0.f;
+            if (const auto* rect = reg.try_get<RectHitbox>(entity)) {
+                body_reach = std::max(rect->width, rect->height) * 0.5f;
+            } else if (const auto* circle = reg.try_get<CircleHitbox>(entity)) {
+                body_reach = circle->radius;
+            }
+            update_coward(vel, ai, dir_x, dir_y, tf.x, tf.y, body_reach, tilemap);
             break;
+        }
         }
 
         // Disarmed enemies become aggressive Chasers
