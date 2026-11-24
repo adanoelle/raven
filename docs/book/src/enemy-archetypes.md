@@ -28,8 +28,12 @@ These rules apply to every enemy and create feedback moments of their own
   wake-up tell so activation feels fair.
 - **Knockback suspends the brain.** While being knocked back (from melee,
   slam, concussion, or bullet impacts) an enemy has no control — it slides,
-  and if a wall is in the way it slams into it. → The hurt pose can serve as
-  the "helpless slide" look.
+  and if a wall is in the way it slams into it. When the knockback ends the
+  slide stops dead and the brain takes over again (a Drifter picks a fresh
+  heading at once). → The hurt pose can serve as the "helpless slide" look.
+- **Walls block the player's melee and abilities.** A swing, slam or
+  concussion blast does not reach an enemy on the far side of a wall, the
+  same line-of-sight rule that keeps enemies dormant.
 - **Disarm enrages.** When melee knocks the weapon out of an enemy, it
   abandons its archetype entirely and charges the player at **1.5× speed**.
   A disarmed Coward — the fastest enemy in the game — becomes a missile.
@@ -121,7 +125,8 @@ dodgeable.
 | Fires | **always**, at any range |
 | Typical loadout | **Boss**, `nova_legendary` |
 
-Runs directly away from the player, probing ahead for walls and sliding
+Runs directly away from the player, probing one tile beyond its own body
+for walls and sliding
 along them to avoid getting cornered; if truly boxed in, it darts back
 *past* the player to escape. All the while it never stops firing.
 

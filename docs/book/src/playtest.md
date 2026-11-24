@@ -129,6 +129,15 @@ Work through each group in order. Check every box before moving on.
       first gameplay tick
 - [ ] Room clear: exits open 0.75 s after the last enemy dies, not instantly
 - [ ] Dash and melee pressed on the same tick as the Knight gives the spin
+- [ ] Melee, ground slam and concussion shot do not hit an enemy on the far
+      side of a wall
+- [ ] A drifter knocked back stops when the knockback ends and wanders off
+      at its own speed
+- [ ] The boss slides along walls instead of running into them
+- [ ] Unplugging the controller mid-run opens the pause menu
+- [ ] Options: a diagonal stick push moves the cursor or changes a value,
+      never both; a quick flick of the stick always registers
+- [ ] Options: changing a volume does not resize or re-centre the window
 
 ## What to look for
 

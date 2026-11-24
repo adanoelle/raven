@@ -31,8 +31,12 @@ struct InputState {
     bool shoot_pressed, melee_pressed, dash_pressed, bomb_pressed;
     bool pause_pressed, confirm_pressed, cancel_pressed;
 
-    // Menu navigation edges: a movement axis pushed past half-way
+    // Menu navigation edges: a direction key or d-pad press, or the stick
+    // settling on a new direction
     bool up_pressed, down_pressed, left_pressed, right_pressed;
+
+    // The gamepad in use was disconnected (latched like a press edge)
+    bool gamepad_lost;
 };
 ```
 
@@ -174,7 +178,23 @@ latched_.actions[i] =
 current_.*action.pressed = latched_.actions[i];
 ```
 
-Menu direction edges (`up_pressed` and friends) come from the poll only.
+Menu direction edges (`up_pressed` and friends) are latched the same way,
+from two sources:
+
+- **Events.** A direction key or d-pad button going down latches its
+  direction. Left stick axis events run through `menu_direction()`, which
+  reduces the stick to one of four directions: an axis counts once it is past
+  half-way, only the leading axis counts, and the direction already held
+  keeps the lead until the other axis is 0.2 ahead. A new direction is a
+  press. So a diagonal push moves a menu one way, not two, and a flick out
+  and back between two polls still counts.
+- **The poll**, as a backup. It runs `menu_direction()` on the combined
+  movement axes and counts a new direction only if its axis crossed half-way
+  since the last poll. With one direction held and a second pressed, the
+  second's event is its press; letting go of the first is not another one.
+
+`gamepad_lost` is latched when the gamepad in use is removed. `GameScene`
+pauses on it, the same as on `pause_pressed`.
 
 Latching exists because render frames and fixed ticks are decoupled. The game
 renders at display rate but simulates at 120 Hz, so a frame can run **zero**
