@@ -875,7 +875,7 @@ void run_interactive(Spike& s) {
     bool auto_fade = true;
     bool cpu_path = false;
     bool emissives = true;
-    int band = 2; // dither band half-width: 0 flat rings, 8 fully dithered
+    int band = 8; // dither band half-width: 0 flat rings, 8 fully dithered
     int zones = 4;
     float radius = 90.0f;
     float mix = 0.0f; // 0..16
@@ -900,7 +900,7 @@ void run_interactive(Spike& s) {
                 radius = std::clamp(radius + event.wheel.y * 6.0f, 12.0f, 240.0f);
             } else if (event.type == SDL_EVENT_KEY_DOWN) {
                 switch (event.key.key) {
-                case SDLK_D: // narrow seam -> fully dithered -> flat rings
+                case SDLK_D: // fully dithered -> flat rings -> narrow seam
                     band = (band == 0) ? 2 : (band >= 8 ? 0 : 8);
                     break;
                 case SDLK_MINUS:

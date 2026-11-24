@@ -34,8 +34,8 @@ Five of them from the Linux run are in `results/linux/`.
 
 Interactive keys: `1` `2` pick a variant, `C` auto cross-fade, `L` light,
 mouse moves the light, the wheel changes its radius, `[` `]` change its
-number of zones, `D` cycles the zone edges through a narrow dithered seam,
-a fully dithered falloff and flat rings, `-` `=` set the seam width,
+number of zones, `D` cycles the zone edges through a fully dithered falloff,
+flat rings and a narrow dithered seam, `-` `=` set the seam width,
 `S` whole-pixel snapping, `P` pixel-art scale mode,
 `M` colour modulation, `F` the shader-free CPU path, `E` emissives, `Esc`
 quits. The top line shows how many index values are invalid.
@@ -50,12 +50,17 @@ remainder decides the edge between two zones, in one of three ways:
 | Dither band | Look | Still |
 | ----------- | ---- | ----- |
 | 0 | Flat rings with hard edges | `4b-light-banded.png` |
-| 1 to 7 | Flat zones with a dithered seam where they meet; 2 is the default | `4c-light-narrow-band.png` |
-| 8 | Every zone fades into the next; grain across the whole light | `4-light.png` |
+| 1 to 7 | Flat zones with a dithered seam where they meet | `4c-light-narrow-band.png` |
+| 8 | Every zone fades into the next; grain across the whole light. The default | `4-light.png` |
 
 The band is measured in light level, not in pixels, so a seam is wider
 where the falloff is shallow (near the centre and the rim) and narrower
 where it is steep. No in-between colour is produced in any mode.
+
+**Preference, 2026-11-24:** after comparing the three live, the fully
+dithered falloff (band 8) is the one to carry forward. Its cost is grain
+across the lit area, which shows most on flat, plain surfaces, so textured
+tiles suit it better than large flat fills.
 
 Because it is all whole-number arithmetic, the shader and the CPU reference
 agree on every pixel.
