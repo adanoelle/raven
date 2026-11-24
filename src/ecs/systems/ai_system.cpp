@@ -226,6 +226,14 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
             kb->remaining -= dt;
             if (kb->remaining <= 0.f) {
                 reg.remove<Knockback>(entity);
+                // The slide ends here. A drifter only sets its velocity
+                // when its wander timer runs out, so without this it would
+                // keep flying at knockback speed until then.
+                vel.dx = 0.f;
+                vel.dy = 0.f;
+                if (ai.archetype == AiBehavior::Archetype::Drifter) {
+                    ai.phase_timer = 0.f; // pick a new heading next tick
+                }
             }
             continue;
         }

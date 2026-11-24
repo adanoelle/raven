@@ -393,6 +393,33 @@ TEST_CASE("Knockback removed after duration expires", "[ai]") {
     REQUIRE_FALSE(reg.any_of<Knockback>(enemy));
 }
 
+TEST_CASE("A drifter stops sliding when its knockback ends", "[ai]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    reg.ctx().emplace<std::mt19937>(42u);
+    Tilemap tilemap;
+
+    make_player(reg, 200.f, 100.f);
+
+    AiBehavior ai{};
+    ai.archetype = AiBehavior::Archetype::Drifter;
+    ai.phase = AiBehavior::Phase::Advance;
+    ai.move_speed = 40.f;
+    ai.phase_timer = 2.f; // mid-wander: no new heading due for 2 s
+    auto enemy = make_enemy(reg, 100.f, 100.f, ai);
+    reg.emplace<Knockback>(enemy, -300.f, 0.f, 0.01f);
+
+    const float dt = 1.f / 120.f;
+    systems::update_ai(reg, tilemap, dt);
+    systems::update_ai(reg, tilemap, dt);
+    REQUIRE_FALSE(reg.any_of<Knockback>(enemy));
+
+    // The tick after the knockback it is wandering again, at its own speed
+    systems::update_ai(reg, tilemap, dt);
+    const auto& vel = reg.get<Velocity>(enemy);
+    CHECK(std::sqrt(vel.dx * vel.dx + vel.dy * vel.dy) == Approx(40.f));
+}
+
 TEST_CASE("Contact damage applies with cooldown", "[ai]") {
     entt::registry reg;
     reg.ctx().emplace<StringInterner>();
