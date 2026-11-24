@@ -118,19 +118,33 @@ Left for playtesting to judge: the line-of-sight check runs centre to
 centre in half-cell steps, so a swing can still clip the very corner of a
 wall.
 
-## Open: Authoring Traps
+## Authoring Traps
 
-- Pattern and stage files don't warn on unknown keys, so a typo is ignored.
-- A duplicate pattern name overwrites the first without a warning.
-- A stage file that fails to parse shifts every later stage down one.
-- `spawn_index` follows LDtk's entity list order, which changes when
-  entities are edited.
-- A one-shot clip doesn't restart when the same clip is requested again
-  (two melee swings in a row show one animation).
-- `export_art.sh` writes every sheet into one flat directory, overwrites
-  without asking and leaves outputs of deleted sources behind.
-- The player sprite is fixed at 32x32 in code.
-- LDtk layer opacity and non-string entity fields are dropped.
+Fixed on 2026-11-24:
+
+- **Pattern and stage files didn't warn on unknown keys.** They now do, with
+  the check the enemy library already had (`core/json_keys.hpp`).
+- **A duplicate pattern name overwrote the first.** The second is refused
+  with an error and the first is kept.
+- **A stage file that failed to parse shifted every later stage down.** The
+  stage list now ends at the broken file, with an error saying so.
+- **`spawn_index` followed LDtk's entity list order.** An `EnemySpawn` can
+  carry an Int field `index`, and `spawn_index` is matched against it. The
+  shipped map does not have the field yet; adding it is a job for the LDtk
+  editor.
+- **A one-shot clip didn't restart when the same clip was requested
+  again.** A new swing or dash restarts it.
+- **`export_art.sh` overwrote and never cleaned up.** It refuses two
+  sources with one name, refuses to replace a sheet it did not make without
+  `--force`, and reports sheets whose source is gone (`--prune` deletes
+  them). It still writes one flat directory, since `config.json` and the
+  sheet IDs point there.
+- **The player sprite was fixed at 32x32 in code.** It is drawn at its
+  sheet's frame size, and the screen clamp uses the body instead of the
+  sprite.
+- **LDtk layer opacity and non-string entity fields were dropped.** Opacity
+  is applied when drawing; Int, Float, Bool, Enum and FilePath fields are
+  kept as text.
 
 ## Shipping Build and CI
 
@@ -232,6 +246,6 @@ Both questions the review raised were settled the same day.
 | Boss disarm and disarmed body damage | Decided and built |
 | Gameplay items 1-4 | Done |
 | Smaller gameplay items | Done |
-| Authoring traps | Open |
+| Authoring traps | Done; the shipped map still needs the `index` field on its spawn points |
 | Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |
 | Out-of-date docs | Done, except `project-tour.md` |

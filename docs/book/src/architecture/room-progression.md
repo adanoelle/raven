@@ -82,7 +82,11 @@ places an enemy by name at a spawn point:
 }
 ```
 
-`spawn_index` selects the Nth `EnemySpawn` position from the tilemap.
+`spawn_index` selects an `EnemySpawn` position from the tilemap. If the
+level's `EnemySpawn` entities carry an Int field named `index`, it is matched
+against that; otherwise it is the Nth `EnemySpawn` in LDtk's entity list,
+an order that changes when entities are edited (see
+[Tilemaps](tilemaps.md#entity-types)).
 `enemy` names a definition in `assets/data/enemies.json`
 ([ADR-0025](../decisions/0025-named-enemy-definitions.md)), which holds
 everything about that kind of enemy:
@@ -134,7 +138,14 @@ A wave entry with no `enemy` name (such as one still in the old inline
 format) is reported and skipped. `EnemyLibrary` (`src/ecs/enemy_library.hpp`)
 loads `enemies.json`: a definition with an unknown tier or archetype, or a
 value out of range, is reported and skipped, and an unknown key gets a
-"typo?" warning. `GameScene` reloads both at the start of every run.
+"typo?" warning. Stage files and pattern files warn about unknown keys the
+same way (`warn_unknown_keys()` in `src/core/json_keys.hpp`). `GameScene`
+reloads both at the start of every run.
+
+Stages play in manifest order. If a stage file fails to load, the list ends
+there and an error says so: skipping it would move every later stage up a
+place. A second pattern with a name already loaded is refused with an error,
+and the first is kept.
 
 ## Wave system functions
 
@@ -150,9 +161,11 @@ Creates enemy entities for the given wave index. For each `WaveEnemyDef`,
 it looks up the named `EnemyDef` (skipping, with a warning, a name that isn't
 defined), then:
 
-1. Resolve spawn position from tilemap `EnemySpawn` list (clamped to bounds;
-   falls back to the room centre if the level has none). A missing spawn list
-   or an out-of-range `spawn_index` logs a warning.
+1. Resolve spawn position from the tilemap's `EnemySpawn` entities: by
+   their `index` field if they have one, else by list position (clamped to
+   bounds; falls back to the room centre if the level has none). A missing
+   spawn list, an index no spawn point carries, or an out-of-range
+   `spawn_index` logs a warning.
 2. Create entity with `Transform2D`, `Velocity`, `Enemy`, `StabilizerDrop`,
    `Health`, `CircleHitbox`, `RectHitbox`, `Sprite`, `ScoreValue`,
    `AiBehavior` and an `Animation` on the `idle` clip, all from the

@@ -659,6 +659,11 @@ just export-art                                         # everything
 just export-art art/characters/knight/knight.aseprite   # one file
 ```
 
+Two sources may not share a file name (both would export the same sheet),
+and a sheet the script did not make, such as a placeholder, is only replaced
+with `--force`. A full export also lists sheets whose source has been
+deleted; `--prune` removes them. See [Tools](../tools.md#exporting-art).
+
 It runs `tools/export_art.sh`, which uses:
 
 ```bash

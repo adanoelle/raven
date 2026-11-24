@@ -83,7 +83,11 @@ safe.
 | Otherwise                    | `idle`   |
 
 - A one-shot clip plays to its end even after the action itself ends, so the
-  wind-up and follow-through always show. A new action interrupts it.
+  wind-up and follow-through always show. A new action interrupts it, and
+  restarts the clip even when it is the same one: a second swing, or the
+  second dash of a chain, plays from its first frame. The system tells a new
+  action from a running one by its time remaining going up
+  (`ActionAnimation`).
 - If the sheet has no clip for the state, the choice falls back to `walk`,
   then `idle`, and the missing tag is logged once. A character with only
   idle and walk drawn still works.
