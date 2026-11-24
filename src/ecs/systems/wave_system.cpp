@@ -164,6 +164,10 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
                      stage.name, stage.level, wave_index + 1);
     }
 
+    const bool indexed = std::ranges::any_of(spawn_points, [](const SpawnPoint* sp) {
+        return sp->field_int(SPAWN_INDEX_FIELD).has_value();
+    });
+
     for (const auto& entry : wave.enemies) {
         const EnemyDef* def = enemies.get(entry.enemy);
         if (!def) {
@@ -179,16 +183,31 @@ void spawn_wave(entt::registry& reg, const Tilemap& tilemap, const StageDef& sta
             spawn_y = static_cast<float>(tilemap.height_px()) / 2.f;
         }
         if (!spawn_points.empty()) {
-            if (entry.spawn_index < 0 ||
-                std::cmp_greater_equal(entry.spawn_index, spawn_points.size())) {
+            const SpawnPoint* spawn = nullptr;
+            if (indexed) {
+                // The level numbers its spawn points itself
+                const auto match = std::ranges::find_if(spawn_points, [&](const SpawnPoint* sp) {
+                    return sp->field_int(SPAWN_INDEX_FIELD) == entry.spawn_index;
+                });
+                if (match != spawn_points.end()) {
+                    spawn = *match;
+                } else {
+                    spdlog::warn("Stage '{}': level '{}' has no EnemySpawn whose '{}' is {}",
+                                 stage.name, stage.level, SPAWN_INDEX_FIELD, entry.spawn_index);
+                }
+            } else if (entry.spawn_index < 0 ||
+                       std::cmp_greater_equal(entry.spawn_index, spawn_points.size())) {
                 spdlog::warn("Stage '{}': spawn_index {} is out of range for level '{}' ({} "
                              "EnemySpawn entities)",
                              stage.name, entry.spawn_index, stage.level, spawn_points.size());
             }
-            size_t idx = static_cast<size_t>(
-                std::clamp(entry.spawn_index, 0, static_cast<int>(spawn_points.size()) - 1));
-            spawn_x = spawn_points[idx]->x;
-            spawn_y = spawn_points[idx]->y;
+            if (!spawn) {
+                // LDtk's entity order, which changes when entities are edited
+                spawn = spawn_points[static_cast<size_t>(
+                    std::clamp(entry.spawn_index, 0, static_cast<int>(spawn_points.size()) - 1))];
+            }
+            spawn_x = spawn->x;
+            spawn_y = spawn->y;
         }
 
         auto enemy = reg.create();

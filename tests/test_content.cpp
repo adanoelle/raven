@@ -15,6 +15,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <entt/entt.hpp>
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
@@ -23,6 +24,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace raven;
@@ -240,15 +242,28 @@ TEST_CASE("Every stage's level exists and can be played through", "[content]") {
         REQUIRE(starts.size() == 1);
         CHECK_FALSE(in_solid_cell(map, *starts[0]));
 
-        // Enough spawn points for every spawn_index the stage uses
+        // A spawn point for every spawn_index the stage uses: by the
+        // level's own "index" field if its spawn points carry one, by
+        // list position otherwise
         const auto spawns = map.find_all_spawns("EnemySpawn");
+        const bool indexed = std::ranges::any_of(spawns, [](const SpawnPoint* sp) {
+            return sp->field_int(systems::SPAWN_INDEX_FIELD).has_value();
+        });
         int max_index = 0;
         for (const auto& wave : stage.waves) {
             for (const auto& enemy : wave.enemies) {
                 max_index = std::max(max_index, enemy.spawn_index);
+                if (indexed) {
+                    INFO("spawn_index: " << enemy.spawn_index);
+                    CHECK(std::ranges::count_if(spawns, [&](const SpawnPoint* sp) {
+                              return sp->field_int(systems::SPAWN_INDEX_FIELD) == enemy.spawn_index;
+                          }) == 1);
+                }
             }
         }
-        CHECK(spawns.size() > static_cast<size_t>(max_index));
+        if (!indexed) {
+            CHECK(spawns.size() > static_cast<size_t>(max_index));
+        }
         for (const auto* sp : spawns) {
             CHECK_FALSE(in_solid_cell(map, *sp));
         }
@@ -479,4 +494,43 @@ TEST_CASE("LDtk entity fields other than strings are read", "[tilemap]") {
     const auto exits = map.find_all_spawns("Exit");
     REQUIRE_FALSE(exits.empty());
     CHECK(exits[0]->fields.contains("target_level"));
+}
+
+TEST_CASE("spawn_index follows the spawn points' index field when they have one", "[tilemap]") {
+    SoftwareRenderer sw;
+    StageDef stage;
+    stage.name = "indexed";
+    stage.level = "Test_Room";
+    stage.waves.push_back(WaveDef{{{0, "grunt"}}});
+
+    EnemyLibrary enemies;
+    REQUIRE(enemies.load_json(
+        {{"enemies",
+          {{"grunt",
+            {{"tier", "grunt"}, {"sheet", "enemies"}, {"ai", {{"archetype", "chaser"}}}}}}}}));
+    PatternLibrary patterns;
+
+    auto spawn_position = [&](const Tilemap& map) {
+        entt::registry reg;
+        reg.ctx().emplace<StringInterner>();
+        systems::spawn_wave(reg, map, stage, 0, patterns, enemies);
+        auto view = reg.view<Enemy, Transform2D>();
+        REQUIRE(view.size_hint() == 1);
+        const auto& tf = view.get<Transform2D>(view.front());
+        return std::pair{tf.x, tf.y};
+    };
+
+    // With no index field, spawn_index 0 is the first EnemySpawn in the list
+    auto plain = load_modified_test_room(sw.renderer, [](nlohmann::json&) {});
+    const auto plain_spawns = plain.find_all_spawns("EnemySpawn");
+    REQUIRE(plain_spawns.size() == 4);
+    CHECK(spawn_position(plain) == std::pair{plain_spawns[0]->x, plain_spawns[0]->y});
+
+    // Numbered in reverse, spawn_index 0 is the last one in the list:
+    // the numbers decide, wherever LDtk keeps the entity
+    auto indexed = load_modified_test_room(sw.renderer, [](nlohmann::json& project) {
+        add_entity_field(project, "EnemySpawn", "index", "Int", {3, 2, 1, 0});
+    });
+    const auto spawns = indexed.find_all_spawns("EnemySpawn");
+    CHECK(spawn_position(indexed) == std::pair{spawns[3]->x, spawns[3]->y});
 }

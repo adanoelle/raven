@@ -77,6 +77,13 @@ class StageLoader {
 
 namespace systems {
 
+/// @brief The LDtk Int field that numbers an EnemySpawn entity.
+///
+/// A level whose EnemySpawn entities carry it has its waves' `spawn_index`
+/// matched against it. Without it `spawn_index` counts through LDtk's
+/// entity list, whose order changes when entities are edited.
+inline constexpr const char* SPAWN_INDEX_FIELD = "index";
+
 /// @brief Seconds after spawning before an enemy's contact damage can hit.
 ///
 /// Keeps an enemy that appears on top of the player from hurting them
