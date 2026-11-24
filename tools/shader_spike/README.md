@@ -30,12 +30,27 @@ cmake --build build-spike --target raven_shader_spike
 lines are findings, not failures: several are expected to be bad. With
 `--out DIR` it writes numbered PNGs of each case.
 
-Three of them from the Linux run are in `results/linux/`.
+Four of them from the Linux run are in `results/linux/`.
 
 Interactive keys: `1` `2` pick a variant, `C` auto cross-fade, `L` light,
-mouse moves the light, `S` whole-pixel snapping, `P` pixel-art scale mode,
+mouse moves the light, the wheel changes its radius, `[` `]` change its
+number of zones, `D` switches between a dithered falloff and flat bands,
+`S` whole-pixel snapping, `P` pixel-art scale mode,
 `M` colour modulation, `F` the shader-free CPU path, `E` emissives, `Esc`
 quits. The top line shows how many index values are invalid.
+
+## The light
+
+The light raises each pixel along its ramp by up to `zones` steps at the
+centre, falling off as (1 - (d/r)²)². The level is worked out in whole
+numbers, in sixteenths of a step. The whole part is the step shift and the
+remainder is ordered-dithered, so each zone fades into the next and no
+in-between colour is ever produced. With dither off (`D`) the level is
+rounded and the zones show as flat rings: compare `4-light.png` with
+`4b-light-banded.png`.
+
+Because it is all whole-number arithmetic, the shader and the CPU reference
+agree on every pixel.
 
 ## Shaders
 
@@ -56,7 +71,7 @@ All must-pass checks passed.
 | Question | Result |
 | -------- | ------ |
 | Does the `gpu` renderer take a custom fragment shader? | Yes, from SPIR-V, with the lookup table bound as a second sampler |
-| Does the resolve match the CPU reference? | Exactly, 0 of 129,600 pixels differ, in all five cases (two variants, dithered cross-fade, light, both) |
+| Does the resolve match the CPU reference? | Exactly, 0 of 129,600 pixels differ, in all six cases (two variants, dithered cross-fade, a four-zone light dithered and banded, cross-fade with light) |
 | Does lighting stay on the palette? | Yes, 0 pixels off the table with cross-fade and light together |
 | Do render targets and logical presentation work with it? | Yes |
 | Does ordinary drawing work after the state is cleared? | Yes, additive emissives draw on top |
@@ -107,7 +122,8 @@ Not run yet. This is the only place the MSL shader is exercised.
 
 - The Switch 2. That needs the NDA port of SDL3.
 - Performance. One pass at 480x270 was not measured.
-- A light mask texture. The one light here is two uniforms.
+- A light mask texture, and more than one light. The one light here is a
+  position, a radius and a zone count in uniforms.
 - Real art, and a table exported by Pigment. The table is generated in
   `make_lut()` and the art in `make_tile_sheet()` and `make_sprite_sheet()`.
 - The real shader-free path. `F` resolves on the CPU every frame to show

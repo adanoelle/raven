@@ -9,8 +9,9 @@
 
 cbuffer Context : register(b0, space3) {
     float4 size_variants; // target w, target h, variant A, variant B
-    float4 light;         // x, y, inner radius, outer radius (target pixels)
+    float4 light;         // x, y, radius (whole target pixels), zones
     float4 params;        // mix (0..16), ambient shift, ramp count, step count
+    float4 extra;         // x: dither the light (1) or band it (0)
 };
 
 Texture2D u_texture : register(t0, space2);
@@ -48,25 +49,27 @@ PSOutput main(PSInput input) {
 
     float threshold = bayer[(px.y & 3) * 4 + (px.x & 3)];
 
-    // Light: +2 steps inside the inner radius, +1 inside the outer, and a
-    // dithered half-step in the band just outside each.
-    float2 d = (float2(px) + 0.5) - light.xy;
-    float d2 = dot(d, d);
-    float inner2 = light.z * light.z;
-    float outer2 = light.w * light.w;
-    float inner_band2 = (light.z + 4.0) * (light.z + 4.0);
-    float outer_band2 = (light.w + 4.0) * (light.w + 4.0);
-
+    // Light: a smooth falloff, (1 - (d/r)^2)^2, scaled to `zones` ramp steps
+    // at the centre. It is worked out in whole numbers, in sixteenths of a
+    // step. The whole part is the step shift; the remainder is dithered, so
+    // each zone fades into the next. With dither off the level is rounded
+    // and the zones are flat bands.
     float shift = params.y;
-    if (light.w > 0.0) {
-        if (d2 < inner2) {
-            shift += 2.0;
-        } else if (d2 < inner_band2) {
-            shift += (threshold < 8.0) ? 2.0 : 1.0;
-        } else if (d2 < outer2) {
-            shift += 1.0;
-        } else if (d2 < outer_band2) {
-            shift += (threshold < 8.0) ? 1.0 : 0.0;
+    int radius = int(light.z);
+    int zones = int(light.w);
+    if (radius > 0 && zones > 0) {
+        int2 dd = px * 2 + 1 - int2(light.xy) * 2; // twice the offset from the light
+        int d2x4 = dd.x * dd.x + dd.y * dd.y;
+        int r2x4 = 4 * radius * radius;
+        if (d2x4 < r2x4) {
+            int t = ((r2x4 - d2x4) * 256) / r2x4;     // 1 - (d/r)^2, as 0..256
+            int level16 = (zones * 16 * t * t) >> 16; // sixteenths of a step
+            if (extra.x < 0.5) {
+                shift += float((level16 + 8) >> 4);
+            } else {
+                shift += float(level16 >> 4);
+                shift += (float(level16 & 15) > threshold) ? 1.0 : 0.0;
+            }
         }
     }
     if (unlit) {

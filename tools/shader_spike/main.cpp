@@ -63,8 +63,9 @@ struct Image {
 /// Matches the cbuffer in resolve.frag.hlsl.
 struct ResolveUniforms {
     float size_variants[4]; // target w, target h, variant A, variant B
-    float light[4];         // x, y, inner radius, outer radius
+    float light[4];         // x, y, radius (whole pixels), zones
     float params[4];        // mix (0..16), ambient shift, ramp count, step count
+    float extra[4];         // x: dither the light (1) or band it (0)
 };
 
 constexpr std::array<int, 16> BAYER = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
@@ -364,16 +365,18 @@ int count_different(const Image& a, const Image& b) {
 // ── Resolve pass ─────────────────────────────────────────────────────
 
 ResolveUniforms make_uniforms(float variant_a, float variant_b, float mix16, float ambient,
-                              float light_x, float light_y, float inner, float outer) {
+                              float light_x, float light_y, float radius, float zones,
+                              bool dither = true) {
     ResolveUniforms u{};
     u.size_variants[0] = VW;
     u.size_variants[1] = VH;
     u.size_variants[2] = variant_a;
     u.size_variants[3] = variant_b;
-    u.light[0] = light_x;
-    u.light[1] = light_y;
-    u.light[2] = inner;
-    u.light[3] = outer;
+    u.light[0] = std::floor(light_x);
+    u.light[1] = std::floor(light_y);
+    u.light[2] = radius;
+    u.light[3] = zones;
+    u.extra[0] = dither ? 1.0f : 0.0f;
     u.params[0] = mix16;
     u.params[1] = ambient;
     u.params[2] = RAMPS;
@@ -390,24 +393,23 @@ Image cpu_resolve(const Image& index, const Image& lut, const ResolveUniforms& u
             Rgba in = index.at(x, y);
             auto threshold = static_cast<float>(BAYER[static_cast<size_t>((y & 3) * 4 + (x & 3))]);
 
-            float dx = (static_cast<float>(x) + 0.5f) - u.light[0];
-            float dy = (static_cast<float>(y) + 0.5f) - u.light[1];
-            float d2 = dx * dx + dy * dy;
-            float inner2 = u.light[2] * u.light[2];
-            float outer2 = u.light[3] * u.light[3];
-            float inner_band2 = (u.light[2] + 4.0f) * (u.light[2] + 4.0f);
-            float outer_band2 = (u.light[3] + 4.0f) * (u.light[3] + 4.0f);
-
             float shift = u.params[1];
-            if (u.light[3] > 0.0f) {
-                if (d2 < inner2) {
-                    shift += 2.0f;
-                } else if (d2 < inner_band2) {
-                    shift += (threshold < 8.0f) ? 2.0f : 1.0f;
-                } else if (d2 < outer2) {
-                    shift += 1.0f;
-                } else if (d2 < outer_band2) {
-                    shift += (threshold < 8.0f) ? 1.0f : 0.0f;
+            int radius = static_cast<int>(u.light[2]);
+            int zones = static_cast<int>(u.light[3]);
+            if (radius > 0 && zones > 0) {
+                int ddx = x * 2 + 1 - static_cast<int>(u.light[0]) * 2;
+                int ddy = y * 2 + 1 - static_cast<int>(u.light[1]) * 2;
+                int d2x4 = ddx * ddx + ddy * ddy;
+                int r2x4 = 4 * radius * radius;
+                if (d2x4 < r2x4) {
+                    int t = ((r2x4 - d2x4) * 256) / r2x4;
+                    int level16 = (zones * 16 * t * t) >> 16;
+                    if (u.extra[0] < 0.5f) {
+                        shift += static_cast<float>((level16 + 8) >> 4);
+                    } else {
+                        shift += static_cast<float>(level16 >> 4);
+                        shift += (static_cast<float>(level16 & 15) > threshold) ? 1.0f : 0.0f;
+                    }
                 }
             }
             if (in.b & 1) {
@@ -704,14 +706,16 @@ bool run_checks(Spike& s, const std::string& out_dir) {
         const char* file;
         ResolveUniforms u;
     };
-    const std::array<Case, 5> cases = {{
+    const std::array<Case, 6> cases = {{
         {"variant A (daylight)", "1-daylight.png", make_uniforms(0, 1, 0, 0, 0, 0, 0, 0)},
         {"variant B (dark ruins)", "2-dark-ruins.png", make_uniforms(0, 1, 16, 0, 0, 0, 0, 0)},
         {"dithered cross-fade, half way", "3-crossfade.png", make_uniforms(0, 1, 8, 0, 0, 0, 0, 0)},
-        {"dark ruins, ambient -1, one light", "4-light.png",
-         make_uniforms(1, 1, 0, -1, 150, 120, 38, 74)},
+        {"dark ruins, ambient -2, one light of four zones", "4-light.png",
+         make_uniforms(1, 1, 0, -2, 150, 120, 90, 4)},
         {"cross-fade and light together", "5-crossfade-light.png",
-         make_uniforms(0, 1, 6, -1, 300, 150, 30, 60)},
+         make_uniforms(0, 1, 6, -1, 300, 150, 70, 3)},
+        {"the same light as flat bands, no dither", "4b-light-banded.png",
+         make_uniforms(1, 1, 0, -2, 150, 120, 90, 4, false)},
     }};
     draw_index_scene(s.renderer, s.index_target, s.tiles, s.sprites, s.movers, SAFE);
     for (const Case& c : cases) {
@@ -866,6 +870,9 @@ void run_interactive(Spike& s) {
     bool auto_fade = true;
     bool cpu_path = false;
     bool emissives = true;
+    bool dither = true;
+    int zones = 4;
+    float radius = 90.0f;
     float mix = 0.0f; // 0..16
     float mix_target = 0.0f;
     float light_x = 240.0f;
@@ -884,8 +891,19 @@ void run_interactive(Spike& s) {
                 SDL_ConvertEventToRenderCoordinates(s.renderer, &event);
                 light_x = event.motion.x;
                 light_y = event.motion.y;
+            } else if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+                radius = std::clamp(radius + event.wheel.y * 6.0f, 12.0f, 240.0f);
             } else if (event.type == SDL_EVENT_KEY_DOWN) {
                 switch (event.key.key) {
+                case SDLK_D:
+                    dither = !dither;
+                    break;
+                case SDLK_LEFTBRACKET:
+                    zones = std::max(1, zones - 1);
+                    break;
+                case SDLK_RIGHTBRACKET:
+                    zones = std::min(6, zones + 1);
+                    break;
                 case SDLK_ESCAPE:
                     running = false;
                     break;
@@ -951,9 +969,10 @@ void run_interactive(Spike& s) {
 
         // The shader-free path has one palette per room and no light.
         ResolveUniforms u =
-            cpu_path ? make_uniforms(0, 1, mix >= 8.0f ? 16.0f : 0.0f, 0, 0, 0, 0, 0)
-                     : make_uniforms(0, 1, std::floor(mix), light_on ? -1.0f : 0.0f, light_x,
-                                     light_y, light_on ? 34.0f : 0.0f, light_on ? 68.0f : 0.0f);
+            cpu_path
+                ? make_uniforms(0, 1, mix >= 8.0f ? 16.0f : 0.0f, 0, 0, 0, 0, 0)
+                : make_uniforms(0, 1, std::floor(mix), light_on ? -2.0f : 0.0f, light_x, light_y,
+                                light_on ? radius : 0.0f, static_cast<float>(zones), dither);
 
         SDL_Texture* shown = s.colour_target;
         if (cpu_path || frame % 20 == 0) {
@@ -983,6 +1002,9 @@ void run_interactive(Spike& s) {
                       snap ? "on" : "OFF", pixelart ? "ON" : "off", colour_mod ? "ON" : "off",
                       light_on ? "on" : "off");
         SDL_RenderDebugText(s.renderer, 4, 14, line);
+        std::snprintf(line, sizeof(line), "[ ] zones %d  wheel: radius %d  [D]ither %s", zones,
+                      static_cast<int>(radius), dither ? "on" : "OFF");
+        SDL_RenderDebugText(s.renderer, 4, 24, line);
         SDL_RenderDebugText(
             s.renderer, 4, VH - 12,
             "[1][2] variant  [C] auto fade  [F] CPU path  [E]missives  mouse: light");
