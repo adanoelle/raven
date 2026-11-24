@@ -11,7 +11,7 @@
 	"iid": "a0000001-0000-0000-0000-000000000001",
 	"jsonVersion": "1.5.3",
 	"appBuildId": 473702,
-	"nextUid": 25,
+	"nextUid": 26,
 	"identifierStyle": "Capitalize",
 	"toc": [],
 	"worldLayout": "Free",
@@ -223,7 +223,45 @@
 				"limitBehavior": "MoveLastOne",
 				"pivotX": 0.5,
 				"pivotY": 0.5,
-				"fieldDefs": []
+				"fieldDefs": [
+					{
+						"identifier": "index",
+						"doc": "Number that a stage's spawn_index refers to. Unique within a level, counted from 0.",
+						"__type": "Int",
+						"uid": 25,
+						"type": "F_Int",
+						"isArray": false,
+						"canBeNull": false,
+						"arrayMinLength": null,
+						"arrayMaxLength": null,
+						"editorDisplayMode": "ValueOnly",
+						"editorDisplayScale": 1,
+						"editorDisplayPos": "Above",
+						"editorLinkStyle": "StraightArrow",
+						"editorDisplayColor": null,
+						"editorAlwaysShow": false,
+						"editorShowInWorld": true,
+						"editorCutLongValues": true,
+						"editorTextSuffix": null,
+						"editorTextPrefix": null,
+						"useForSmartColor": false,
+						"exportToToc": false,
+						"searchable": false,
+						"min": 0,
+						"max": null,
+						"regex": null,
+						"acceptFileTypes": null,
+						"defaultOverride": null,
+						"textLanguageMode": null,
+						"symmetricalRef": false,
+						"autoChainRef": true,
+						"allowOutOfLevelRef": true,
+						"allowedRefs": "OnlySame",
+						"allowedRefsEntityUid": null,
+						"allowedRefTags": [],
+						"tilesetUid": null
+					}
+				]
 			},
 			{
 				"identifier": "Exit",
@@ -417,7 +455,23 @@
 								56,
 								56
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 0,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												0
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -442,7 +496,23 @@
 								440,
 								56
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 1,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												1
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -467,7 +537,23 @@
 								56,
 								216
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 2,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												2
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -492,7 +578,23 @@
 								440,
 								216
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 3,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												3
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -9355,7 +9457,23 @@
 								56,
 								56
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 0,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												0
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -9380,7 +9498,23 @@
 								440,
 								56
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 1,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												1
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -9405,7 +9539,23 @@
 								248,
 								216
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 2,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												2
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -9430,7 +9580,23 @@
 								56,
 								216
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 3,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												3
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -18293,7 +18459,23 @@
 								248,
 								56
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 0,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												0
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -18318,7 +18500,23 @@
 								56,
 								136
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 1,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												1
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -18343,7 +18541,23 @@
 								440,
 								136
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 2,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												2
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{
@@ -18368,7 +18582,23 @@
 								248,
 								216
 							],
-							"fieldInstances": [],
+							"fieldInstances": [
+								{
+									"__identifier": "index",
+									"__type": "Int",
+									"__value": 3,
+									"__tile": null,
+									"defUid": 25,
+									"realEditorValues": [
+										{
+											"id": "V_Int",
+											"params": [
+												3
+											]
+										}
+									]
+								}
+							],
 							"__tile": null
 						},
 						{

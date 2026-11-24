@@ -125,10 +125,41 @@ Tilemap load_modified_test_room(SDL_Renderer* renderer,
     return map;
 }
 
+/// @brief Take a field off an LDtk entity definition and all its instances.
+void remove_entity_field(nlohmann::json& project, const std::string& entity,
+                         const std::string& name) {
+    // Rebuild an array of fields without the ones called `name`
+    auto without = [&name](nlohmann::json& fields, const char* key) {
+        auto kept = nlohmann::json::array();
+        for (auto& field : fields) {
+            if (field.at(key) != name) {
+                kept.push_back(std::move(field));
+            }
+        }
+        fields = std::move(kept);
+    };
+    for (auto& def : project.at("defs").at("entities")) {
+        if (def.at("identifier") == entity) {
+            without(def.at("fieldDefs"), "identifier");
+        }
+    }
+    for (auto& level : project.at("levels")) {
+        for (auto& layer : level.at("layerInstances")) {
+            for (auto& instance : layer.at("entityInstances")) {
+                if (instance.at("__identifier") == entity) {
+                    without(instance.at("fieldInstances"), "__identifier");
+                }
+            }
+        }
+    }
+}
+
 /// @brief Give an LDtk entity definition a field, and each of its instances
-/// in Test_Room a value for it (in entity list order).
+/// in Test_Room a value for it (in entity list order). Replaces a field of
+/// the same name.
 void add_entity_field(nlohmann::json& project, const std::string& entity, const std::string& name,
                       const std::string& type, const std::vector<nlohmann::json>& values) {
+    remove_entity_field(project, entity, name);
     const int uid = project.at("nextUid").get<int>();
     project["nextUid"] = uid + 1;
     for (auto& def : project.at("defs").at("entities")) {
@@ -249,6 +280,9 @@ TEST_CASE("Every stage's level exists and can be played through", "[content]") {
         const bool indexed = std::ranges::any_of(spawns, [](const SpawnPoint* sp) {
             return sp->field_int(systems::SPAWN_INDEX_FIELD).has_value();
         });
+        // The shipped rooms number their spawn points, so editing entities
+        // in LDtk can't reorder a stage's enemies
+        CHECK(indexed);
         int max_index = 0;
         for (const auto& wave : stage.waves) {
             for (const auto& enemy : wave.enemies) {
@@ -521,9 +555,12 @@ TEST_CASE("spawn_index follows the spawn points' index field when they have one"
     };
 
     // With no index field, spawn_index 0 is the first EnemySpawn in the list
-    auto plain = load_modified_test_room(sw.renderer, [](nlohmann::json&) {});
+    auto plain = load_modified_test_room(sw.renderer, [](nlohmann::json& project) {
+        remove_entity_field(project, "EnemySpawn", "index");
+    });
     const auto plain_spawns = plain.find_all_spawns("EnemySpawn");
     REQUIRE(plain_spawns.size() == 4);
+    REQUIRE_FALSE(plain_spawns[0]->field_int("index").has_value());
     CHECK(spawn_position(plain) == std::pair{plain_spawns[0]->x, plain_spawns[0]->y});
 
     // Numbered in reverse, spawn_index 0 is the last one in the list:
