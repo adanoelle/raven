@@ -1005,9 +1005,8 @@ void run_interactive(Spike& s) {
         std::snprintf(line, sizeof(line), "[ ] zones %d  wheel: radius %d  [D]ither %s", zones,
                       static_cast<int>(radius), dither ? "on" : "OFF");
         SDL_RenderDebugText(s.renderer, 4, 24, line);
-        SDL_RenderDebugText(
-            s.renderer, 4, VH - 12,
-            "[1][2] variant  [C] auto fade  [F] CPU path  [E]missives  mouse: light");
+        SDL_RenderDebugText(s.renderer, 4, VH - 22, "[1][2] variant  [C] auto fade  [F] CPU path");
+        SDL_RenderDebugText(s.renderer, 4, VH - 12, "[E]missives  mouse: light  Esc: quit");
         SDL_RenderPresent(s.renderer);
         ++frame;
     }
