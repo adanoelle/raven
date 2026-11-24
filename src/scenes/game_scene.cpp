@@ -227,9 +227,9 @@ void GameScene::update(Game& game, float dt) {
     // Dash before melee: pressing both on one tick starts the dash first,
     // so the melee is the Knight's spin.
     systems::update_dash(reg, input, dt);
-    systems::update_melee(reg, input, pattern_lib_, dt);
-    systems::update_ground_slam(reg, input, dt);
-    systems::update_concussion_shot(reg, input, dt);
+    systems::update_melee(reg, input, tilemap_, pattern_lib_, dt);
+    systems::update_ground_slam(reg, input, tilemap_, dt);
+    systems::update_concussion_shot(reg, input, tilemap_, dt);
     systems::update_shooting(reg, input, dt);
     systems::update_emitters(reg, pattern_lib_, dt);
     systems::update_ai(reg, tilemap_, dt);

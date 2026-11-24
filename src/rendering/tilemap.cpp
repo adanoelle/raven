@@ -1,6 +1,7 @@
 #include "rendering/tilemap.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <utility>
 
 namespace raven {
@@ -93,6 +94,32 @@ bool Tilemap::is_cell_solid(int grid_x, int grid_y) const {
     }
     return collision_grid_[static_cast<size_t>(grid_y) * static_cast<size_t>(grid_w_) +
                            static_cast<size_t>(grid_x)];
+}
+
+bool Tilemap::has_line_of_sight(float x1, float y1, float x2, float y2) const {
+    if (!loaded_) {
+        return true;
+    }
+
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+    const float dist = std::sqrt(dx * dx + dy * dy);
+    if (dist > 0.f) {
+        dx /= dist;
+        dy /= dist;
+    }
+
+    const float step_size = static_cast<float>(cell_size_) * 0.5f;
+    const int steps = static_cast<int>(dist / step_size);
+
+    for (int i = 1; i <= steps; ++i) {
+        const float px = x1 + dx * step_size * static_cast<float>(i);
+        const float py = y1 + dy * step_size * static_cast<float>(i);
+        if (is_cell_solid(static_cast<int>(px) / cell_size_, static_cast<int>(py) / cell_size_)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 const SpawnPoint* Tilemap::find_spawn(const std::string& name) const {

@@ -12,52 +12,6 @@ namespace raven::systems {
 
 namespace {
 
-/// @brief Normalize a 2D vector in-place.
-/// @param x X component (modified in-place).
-/// @param y Y component (modified in-place).
-/// @return The original length of the vector.
-float normalize(float& x, float& y) {
-    float len = std::sqrt(x * x + y * y);
-    if (len > 0.f) {
-        x /= len;
-        y /= len;
-    }
-    return len;
-}
-
-/// @brief Check line-of-sight between two points using the tilemap.
-///
-/// Steps along the line in half-cell increments and checks for solid cells.
-/// @param tilemap The tilemap with collision data.
-/// @param x1 Start X position.
-/// @param y1 Start Y position.
-/// @param x2 End X position.
-/// @param y2 End Y position.
-/// @return True if there is an unobstructed line of sight.
-bool has_line_of_sight(const Tilemap& tilemap, float x1, float y1, float x2, float y2) {
-    if (!tilemap.is_loaded()) {
-        return true;
-    }
-
-    float dx = x2 - x1;
-    float dy = y2 - y1;
-    float dist = normalize(dx, dy);
-
-    float step_size = static_cast<float>(tilemap.cell_size()) * 0.5f;
-    int steps = static_cast<int>(dist / step_size);
-
-    for (int i = 1; i <= steps; ++i) {
-        float px = x1 + dx * step_size * static_cast<float>(i);
-        float py = y1 + dy * step_size * static_cast<float>(i);
-        int gx = static_cast<int>(px) / tilemap.cell_size();
-        int gy = static_cast<int>(py) / tilemap.cell_size();
-        if (tilemap.is_cell_solid(gx, gy)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 /// @brief Update a Chaser enemy: beeline toward the player.
 void update_chaser(Velocity& vel, const AiBehavior& ai, float dir_x, float dir_y) {
     vel.dx = dir_x * ai.move_speed;
@@ -258,7 +212,7 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
         // Idle: wait for activation
         if (ai.phase == AiBehavior::Phase::Idle) {
             if (dist > ai.activation_range ||
-                !has_line_of_sight(tilemap, tf.x, tf.y, player_x, player_y)) {
+                !tilemap.has_line_of_sight(tf.x, tf.y, player_x, player_y)) {
                 vel.dx = 0.f;
                 vel.dy = 0.f;
                 // Emitter off while idle

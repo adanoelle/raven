@@ -5,7 +5,8 @@
 
 namespace raven::systems {
 
-void update_concussion_shot(entt::registry& reg, const InputState& input, float dt) {
+void update_concussion_shot(entt::registry& reg, const InputState& input, const Tilemap& tilemap,
+                            float dt) {
     // Tick cooldowns
     auto cd_view = reg.view<ConcussionShotCooldown>();
     for (auto [entity, cooldown] : cd_view.each()) {
@@ -39,7 +40,7 @@ void update_concussion_shot(entt::registry& reg, const InputState& input, float 
         if (!shot.hit_checked) {
             shot.hit_checked = true;
 
-            auto hits = collect_enemies_in_circle(reg, tf.x, tf.y, shot.radius);
+            auto hits = collect_enemies_in_circle(reg, tilemap, tf.x, tf.y, shot.radius);
             apply_ability_hits(reg, hits, shot.damage, shot.knockback);
         }
 

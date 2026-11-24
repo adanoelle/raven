@@ -5,7 +5,8 @@
 
 namespace raven::systems {
 
-void update_ground_slam(entt::registry& reg, const InputState& input, float dt) {
+void update_ground_slam(entt::registry& reg, const InputState& input, const Tilemap& tilemap,
+                        float dt) {
     // Tick cooldowns
     auto cd_view = reg.view<GroundSlamCooldown>();
     for (auto [entity, cooldown] : cd_view.each()) {
@@ -39,7 +40,7 @@ void update_ground_slam(entt::registry& reg, const InputState& input, float dt) 
         if (!slam.hit_checked) {
             slam.hit_checked = true;
 
-            auto hits = collect_enemies_in_circle(reg, tf.x, tf.y, slam.radius);
+            auto hits = collect_enemies_in_circle(reg, tilemap, tf.x, tf.y, slam.radius);
             apply_ability_hits(reg, hits, slam.damage, slam.knockback);
         }
 

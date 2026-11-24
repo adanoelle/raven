@@ -10,17 +10,33 @@
 #include "ecs/systems/melee_system.hpp"
 #include "ecs/systems/shooting_system.hpp"
 #include "patterns/pattern_library.hpp"
+#include "rendering/tilemap.hpp"
 
 #include <entt/entt.hpp>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
+#include <vector>
 
 using namespace raven;
 using Catch::Approx;
 
 namespace {
+
+/// @brief An unloaded tilemap: nothing blocks an ability.
+const Tilemap no_walls;
+
+/// @brief A map with one wall column between x=96 and x=112.
+Tilemap wall_at_96() {
+    Tilemap tilemap;
+    std::vector<bool> grid(10 * 10, false);
+    for (std::size_t row = 0; row < 10; ++row) {
+        grid[row * 10 + 6] = true;
+    }
+    tilemap.init_collision(10, 10, 16, grid);
+    return tilemap;
+}
 
 /// @brief Create a bare player entity with universal components (pre-recipe).
 entt::entity make_bare_player(entt::registry& reg, float x, float y) {
@@ -185,7 +201,7 @@ TEST_CASE("MeleeStats overrides default MeleeAttack values", "[class][melee]") {
     input.melee = true;
     input.melee_pressed = true;
 
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     REQUIRE(reg.any_of<MeleeAttack>(player));
     auto& attack = reg.get<MeleeAttack>(player);
@@ -208,7 +224,7 @@ TEST_CASE("Sharpshooter has weaker melee via MeleeStats", "[class][melee]") {
     input.melee = true;
     input.melee_pressed = true;
 
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     REQUIRE(reg.any_of<MeleeAttack>(player));
     auto& attack = reg.get<MeleeAttack>(player);
@@ -231,11 +247,29 @@ TEST_CASE("Ground slam hits nearby enemies", "[class][ground_slam]") {
     auto enemy = make_enemy(reg, 130.f, 100.f); // 30px away, within 50px radius
 
     auto input = bomb_input();
-    systems::update_ground_slam(reg, input, 1.f / 120.f);
+    systems::update_ground_slam(reg, input, no_walls, 1.f / 120.f);
 
     auto& e_hp = reg.get<Health>(enemy);
     REQUIRE(e_hp.current < 10.f); // Took damage
     REQUIRE(reg.any_of<Knockback>(enemy));
+}
+
+TEST_CASE("Ground slam does not reach through a wall", "[class][ground_slam]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    const Tilemap tilemap = wall_at_96();
+
+    auto player = make_bare_player(reg, 88.f, 100.f);
+    apply_brawler(reg, player);
+
+    auto behind_wall = make_enemy(reg, 120.f, 100.f); // 32px away, wall between
+    auto in_the_open = make_enemy(reg, 60.f, 100.f);  // 28px away, same side
+
+    systems::update_ground_slam(reg, bomb_input(), tilemap, 1.f / 120.f);
+
+    CHECK(reg.get<Health>(behind_wall).current == Approx(10.f));
+    CHECK_FALSE(reg.any_of<Knockback>(behind_wall));
+    CHECK(reg.get<Health>(in_the_open).current < 10.f);
 }
 
 TEST_CASE("Ground slam misses distant enemies", "[class][ground_slam]") {
@@ -248,7 +282,7 @@ TEST_CASE("Ground slam misses distant enemies", "[class][ground_slam]") {
     auto enemy = make_enemy(reg, 200.f, 200.f); // Far outside 50px radius
 
     auto input = bomb_input();
-    systems::update_ground_slam(reg, input, 1.f / 120.f);
+    systems::update_ground_slam(reg, input, no_walls, 1.f / 120.f);
 
     auto& e_hp = reg.get<Health>(enemy);
     REQUIRE(e_hp.current == Approx(10.f)); // No damage
@@ -265,18 +299,18 @@ TEST_CASE("Ground slam cooldown prevents spam", "[class][ground_slam]") {
 
     // First slam
     auto input = bomb_input();
-    systems::update_ground_slam(reg, input, 1.f / 120.f);
+    systems::update_ground_slam(reg, input, no_walls, 1.f / 120.f);
     float hp_after_first = reg.get<Health>(enemy).current;
     REQUIRE(hp_after_first < 10.f);
 
     // Expire the slam
     auto empty = no_input();
     for (int i = 0; i < 25; ++i) {
-        systems::update_ground_slam(reg, empty, 1.f / 120.f);
+        systems::update_ground_slam(reg, empty, no_walls, 1.f / 120.f);
     }
 
     // Second slam immediately — cooldown should prevent it
-    systems::update_ground_slam(reg, input, 1.f / 120.f);
+    systems::update_ground_slam(reg, input, no_walls, 1.f / 120.f);
     REQUIRE(reg.get<Health>(enemy).current == Approx(hp_after_first));
 }
 
@@ -291,7 +325,7 @@ TEST_CASE("Ground slam blocked during dash", "[class][ground_slam]") {
     reg.emplace<Dash>(player);
 
     auto input = bomb_input();
-    systems::update_ground_slam(reg, input, 1.f / 120.f);
+    systems::update_ground_slam(reg, input, no_walls, 1.f / 120.f);
 
     REQUIRE_FALSE(reg.any_of<GroundSlam>(player));
 }
@@ -543,7 +577,7 @@ TEST_CASE("Concussion shot hits nearby enemies with knockback", "[class][concuss
     auto enemy = make_enemy(reg, 130.f, 100.f); // 30px away, within 45px radius
 
     auto input = bomb_input();
-    systems::update_concussion_shot(reg, input, 1.f / 120.f);
+    systems::update_concussion_shot(reg, input, no_walls, 1.f / 120.f);
 
     auto& e_hp = reg.get<Health>(enemy);
     REQUIRE(e_hp.current < 10.f);
@@ -551,6 +585,24 @@ TEST_CASE("Concussion shot hits nearby enemies with knockback", "[class][concuss
 
     auto& kb = reg.get<Knockback>(enemy);
     REQUIRE(kb.dx > 0.f); // Knocked away from player (player at 100, enemy at 130)
+}
+
+TEST_CASE("Concussion shot does not reach through a wall", "[class][concussion_shot]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    const Tilemap tilemap = wall_at_96();
+
+    auto player = make_bare_player(reg, 88.f, 100.f);
+    apply_sharpshooter(reg, player);
+
+    auto behind_wall = make_enemy(reg, 120.f, 100.f); // 32px away, wall between
+    auto in_the_open = make_enemy(reg, 60.f, 100.f);  // 28px away, same side
+
+    systems::update_concussion_shot(reg, bomb_input(), tilemap, 1.f / 120.f);
+
+    CHECK(reg.get<Health>(behind_wall).current == Approx(10.f));
+    CHECK_FALSE(reg.any_of<Knockback>(behind_wall));
+    CHECK(reg.get<Health>(in_the_open).current < 10.f);
 }
 
 TEST_CASE("Concussion shot misses distant enemies", "[class][concussion_shot]") {
@@ -563,7 +615,7 @@ TEST_CASE("Concussion shot misses distant enemies", "[class][concussion_shot]") 
     auto enemy = make_enemy(reg, 200.f, 200.f); // Far outside 45px radius
 
     auto input = bomb_input();
-    systems::update_concussion_shot(reg, input, 1.f / 120.f);
+    systems::update_concussion_shot(reg, input, no_walls, 1.f / 120.f);
 
     auto& e_hp = reg.get<Health>(enemy);
     REQUIRE(e_hp.current == Approx(10.f));
@@ -580,18 +632,18 @@ TEST_CASE("Concussion shot cooldown prevents spam", "[class][concussion_shot]") 
 
     // First shot
     auto input = bomb_input();
-    systems::update_concussion_shot(reg, input, 1.f / 120.f);
+    systems::update_concussion_shot(reg, input, no_walls, 1.f / 120.f);
     float hp_after_first = reg.get<Health>(enemy).current;
     REQUIRE(hp_after_first < 10.f);
 
     // Expire the shot
     auto empty = no_input();
     for (int i = 0; i < 15; ++i) {
-        systems::update_concussion_shot(reg, empty, 1.f / 120.f);
+        systems::update_concussion_shot(reg, empty, no_walls, 1.f / 120.f);
     }
 
     // Second shot immediately — cooldown should prevent it
-    systems::update_concussion_shot(reg, input, 1.f / 120.f);
+    systems::update_concussion_shot(reg, input, no_walls, 1.f / 120.f);
     REQUIRE(reg.get<Health>(enemy).current == Approx(hp_after_first));
 }
 
@@ -606,7 +658,7 @@ TEST_CASE("Concussion shot blocked during dash", "[class][concussion_shot]") {
     reg.emplace<Dash>(player);
 
     auto input = bomb_input();
-    systems::update_concussion_shot(reg, input, 1.f / 120.f);
+    systems::update_concussion_shot(reg, input, no_walls, 1.f / 120.f);
 
     REQUIRE_FALSE(reg.any_of<ConcussionShot>(player));
 }
@@ -622,7 +674,7 @@ TEST_CASE("Brawler has no ChargedShot or ConcussionShotCooldown", "[class]") {
 
     // Bomb input should not trigger concussion shot (no ConcussionShotCooldown)
     auto input = bomb_input();
-    systems::update_concussion_shot(reg, input, 1.f / 120.f);
+    systems::update_concussion_shot(reg, input, no_walls, 1.f / 120.f);
     REQUIRE_FALSE(reg.any_of<ConcussionShot>(player));
 
     // Charged shot system should not affect Brawler (no ChargedShot component)
@@ -642,6 +694,6 @@ TEST_CASE("Sharpshooter has no GroundSlamCooldown", "[class]") {
 
     // Bomb input should not trigger ground slam (no GroundSlamCooldown)
     auto input = bomb_input();
-    systems::update_ground_slam(reg, input, 1.f / 120.f);
+    systems::update_ground_slam(reg, input, no_walls, 1.f / 120.f);
     REQUIRE_FALSE(reg.any_of<GroundSlam>(player));
 }

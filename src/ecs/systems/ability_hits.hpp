@@ -2,6 +2,7 @@
 
 #include "ecs/components.hpp"
 #include "ecs/systems/hitbox_math.hpp"
+#include "rendering/tilemap.hpp"
 
 #include <entt/entt.hpp>
 
@@ -43,19 +44,24 @@ inline void knockback_dir(float from_x, float from_y, float to_x, float to_y, fl
 /// @brief Collect all enemies whose hitbox overlaps a circle centred on an ability origin.
 ///
 /// Collecting first and mutating afterwards avoids modifying components while
-/// iterating the enemy view.
+/// iterating the enemy view. An enemy with a wall between it and the origin
+/// is not hit.
 /// @param reg The ECS registry.
+/// @param tilemap The tilemap whose walls block the ability.
 /// @param cx Circle centre X (ability origin).
 /// @param cy Circle centre Y (ability origin).
 /// @param radius Area-of-effect radius in pixels.
 /// @return Hit enemies with their knockback directions.
-[[nodiscard]] inline std::vector<AbilityHit>
-collect_enemies_in_circle(entt::registry& reg, float cx, float cy, float radius) {
+[[nodiscard]] inline std::vector<AbilityHit> collect_enemies_in_circle(entt::registry& reg,
+                                                                       const Tilemap& tilemap,
+                                                                       float cx, float cy,
+                                                                       float radius) {
     std::vector<AbilityHit> hits;
     auto enemy_view = reg.view<Transform2D, CircleHitbox, Enemy, Health>();
     for (auto [e_ent, e_tf, e_hb, enemy, e_hp] : enemy_view.each()) {
         if (circles_overlap(cx, cy, radius, e_tf.x + e_hb.offset_x, e_tf.y + e_hb.offset_y,
-                            e_hb.radius)) {
+                            e_hb.radius) &&
+            tilemap.has_line_of_sight(cx, cy, e_tf.x, e_tf.y)) {
             AbilityHit hit{e_ent, 0.f, 0.f};
             knockback_dir(cx, cy, e_tf.x, e_tf.y, hit.dir_x, hit.dir_y);
             hits.push_back(hit);

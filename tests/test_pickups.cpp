@@ -5,6 +5,7 @@
 #include "ecs/systems/melee_system.hpp"
 #include "ecs/systems/pickup_system.hpp"
 #include "patterns/pattern_library.hpp"
+#include "rendering/tilemap.hpp"
 
 #include <entt/entt.hpp>
 
@@ -15,6 +16,9 @@
 using namespace raven;
 
 namespace {
+
+/// @brief An unloaded tilemap: nothing blocks an ability.
+const Tilemap no_walls;
 
 /// @brief Create a player entity with weapon and hitbox for pickup testing.
 entt::entity make_player(entt::registry& reg, float x, float y) {
@@ -586,7 +590,7 @@ TEST_CASE("Weapon tier flows from PatternDef to melee pickup", "[pickups][tier]"
     InputState input{};
     input.melee = true;
     input.melee_pressed = true;
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     auto pickup_view = reg.view<WeaponPickup>();
     int count = 0;
