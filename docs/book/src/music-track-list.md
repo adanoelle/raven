@@ -60,7 +60,10 @@ features.
 - **Default: seamless whole-file loop.** The engine will initially loop from
   the end of the file straight back to the start. The joint must be
   click-free and musically continuous — no reverb/delay tails cut off at the
-  boundary (bake the tail into the start of the loop if needed).
+  boundary (bake the tail into the start of the loop if needed). The
+  reliable way to do that with any tool or hardware chain: render or record
+  the loop **twice in a row and keep the second pass**, which already
+  carries the tail of the first.
 - **Intro-then-loop (optional).** If a track wants a one-time intro before the
   repeating section, use `LOOPSTART` and `LOOPLENGTH` Vorbis comment tags with
   **sample offsets**, and note the values alongside the file. The streaming

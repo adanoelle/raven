@@ -51,15 +51,26 @@ Free tools for generating and designing sound effects:
 
 - **[FamiTracker](http://famitracker.com/)** — NES-style tracker for authentic
   8-bit music. Windows-native but runs under Wine.
+- **[FamiStudio](https://famistudio.org/)** — NES-focused music editor with
+  a piano roll rather than a tracker grid, and the gentlest learning curve of
+  the chip tools. Native on Linux, open source (MIT). Exports OGG at 44.1 kHz
+  directly, per-channel stems, and a separate intro file for intro-then-loop
+  tracks. The recommended place to start sketching.
 - **[Furnace](https://github.com/tildearrow/furnace)** — Multi-system chiptune
   tracker supporting NES, SNES, Genesis, Game Boy, and more. Cross-platform,
   actively maintained. Good choice if targeting an authentic retro sound.
 
 ### DAWs (Modern / Hybrid)
 
-- **[KiraStudio](https://kirastudio.app/)** — Free DAW with a retro chip
-  focus, designed specifically for game audio with built-in chiptune synths
-  and a streamlined workflow.
+- **[KiraStudio](https://kirastudio.org/)** — Piano-roll sequencer aimed at
+  video game music, by the author of FamiStudio: chip-flavored generators
+  (not hardware-accurate), FM, wavetable, SoundFonts, reverb and side-chain
+  compression. **Not a fit for this project's Linux machines as of
+  November 2026**: there is no Linux build (Windows, macOS, iOS and Android
+  only; Linux means Wine), it is closed source with a proprietary project
+  format, it hosts no plugins and records no audio, and export is locked to
+  48 kHz (the spec is 44.1 kHz). Free on Windows, paid elsewhere. Worth
+  revisiting if a Linux build appears.
 - **[REAPER](https://www.reaper.fm/)** — Full-featured DAW with a generous
   evaluation license and low indie price ($60). Industry-standard for game audio
   production.
