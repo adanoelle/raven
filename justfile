@@ -57,3 +57,9 @@ clean:
 # Watch for changes and rebuild (requires entr)
 watch:
     find src -name '*.hpp' -o -name '*.cpp' | entr -c just run
+
+# Build and run the ADR-0028 shader spike (tools/shader_spike). Pass --check for the report.
+shader-spike *args:
+    cmake -B build-spike -G Ninja -DCMAKE_BUILD_TYPE=Debug -DRAVEN_BUILD_SHADER_SPIKE=ON -DRAVEN_ENABLE_TESTS=OFF
+    cmake --build build-spike --target raven_shader_spike
+    ./build-spike/bin/raven_shader_spike {{args}}

@@ -27,6 +27,7 @@ endif()
 option(RAVEN_ENABLE_IMGUI "Enable Dear ImGui debug overlay" ${RAVEN_IMGUI_DEFAULT})
 option(RAVEN_ENABLE_STEAM "Enable Steamworks (needs SDK in vendor/steamworks/sdk)" OFF)
 option(RAVEN_PLATFORM_CONSOLE "Fixed-display console target: hides window settings" OFF)
+option(RAVEN_BUILD_SHADER_SPIKE "Build the ADR-0028 shader spike (tools/shader_spike)" OFF)
 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -158,6 +159,24 @@ else()
             ${CMAKE_BINARY_DIR}/bin/assets
         COMMENT "Symlinking assets directory"
     )
+endif()
+
+# ── ADR-0028 shader spike (throwaway, off by default) ─────────────
+if(RAVEN_BUILD_SHADER_SPIKE)
+    add_executable(raven_shader_spike tools/shader_spike/main.cpp)
+    target_include_directories(raven_shader_spike PRIVATE tools/shader_spike)
+    target_link_libraries(raven_shader_spike PRIVATE SDL3::SDL3)
+    if(RAVEN_ENABLE_IMGUI)
+        target_link_libraries(raven_shader_spike PRIVATE imgui::imgui)
+        target_compile_definitions(raven_shader_spike PRIVATE RAVEN_SPIKE_IMGUI)
+    endif()
+    if(WIN32)
+        add_custom_command(TARGET raven_shader_spike POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_RUNTIME_DLLS:raven_shader_spike> $<TARGET_FILE_DIR:raven_shader_spike>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
 endif()
 
 # ── Tests ─────────────────────────────────────────────────────────
