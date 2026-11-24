@@ -56,6 +56,7 @@ bool Game::init() {
     // Audio is optional: a failed init leaves the engine in silent no-op mode
     audio_.init();
     audio_.set_master_gain(volume_to_gain(settings_.sfx_volume));
+    applied_settings_ = settings_;
 
     // Steam is optional: no-op unless built with RAVEN_ENABLE_STEAM and
     // running under Steam (or with a dev steam_appid.txt)
@@ -260,12 +261,20 @@ bool Game::record_score(int score) {
 }
 
 void Game::apply_settings() {
-    renderer_.set_fullscreen(settings_.fullscreen);
-    if (!settings_.fullscreen) {
+    const SettingsChanges changes = settings_changes(applied_settings_, settings_);
+    if (changes.fullscreen) {
+        renderer_.set_fullscreen(settings_.fullscreen);
+    }
+    if (changes.window_size) {
         renderer_.set_window_scale(settings_.window_scale);
     }
-    renderer_.set_vsync(settings_.vsync);
-    audio_.set_master_gain(volume_to_gain(settings_.sfx_volume));
+    if (changes.vsync) {
+        renderer_.set_vsync(settings_.vsync);
+    }
+    if (changes.sfx_volume) {
+        audio_.set_master_gain(volume_to_gain(settings_.sfx_volume));
+    }
+    applied_settings_ = settings_;
 }
 
 void Game::save_settings() {

@@ -74,7 +74,8 @@ class Game {
     /// @brief Apply the current settings to subsystems (does not persist).
     ///
     /// Pushes fullscreen/scale/vsync to the renderer and volume to the
-    /// audio engine. Call save_settings() to persist — callers that adjust
+    /// audio engine, each only if it changed since it was last applied.
+    /// Call save_settings() to persist — callers that adjust
     /// repeatedly (option sliders) apply per change and save once on exit.
     void apply_settings();
 
@@ -115,6 +116,7 @@ class Game {
     SceneManager scenes_;
     SpriteSheetManager sprites_;
     Settings settings_;
+    Settings applied_settings_; ///< What the subsystems were last told.
     SaveData save_data_;
     BitmapFont font_;
     AudioEngine audio_;
