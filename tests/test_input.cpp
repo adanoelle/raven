@@ -125,20 +125,30 @@ TEST_CASE("Input system movement", "[input]") {
     }
 }
 
-TEST_CASE("Menu direction edges only fire when an axis crosses half-way", "[input]") {
-    // A fresh push past half-way is a press
-    CHECK(axis_pressed(0.f, 1.f, 1.f));
-    CHECK(axis_pressed(0.f, -1.f, -1.f));
-    CHECK(axis_pressed(0.4f, 0.6f, 1.f));
+TEST_CASE("Menu direction is one of four, past half-way", "[input]") {
+    using enum MenuDirection;
 
-    // Holding a direction is not a press: a menu opened while the player
-    // is already moving must not move its cursor
-    CHECK_FALSE(axis_pressed(1.f, 1.f, 1.f));
-    CHECK_FALSE(axis_pressed(-1.f, -1.f, -1.f));
+    // A push past half-way is a direction
+    CHECK(menu_direction(0.f, 1.f, None) == Down);
+    CHECK(menu_direction(0.f, -1.f, None) == Up);
+    CHECK(menu_direction(-0.6f, 0.f, None) == Left);
+    CHECK(menu_direction(0.6f, 0.4f, None) == Right);
 
-    // Wrong direction, or not far enough
-    CHECK_FALSE(axis_pressed(0.f, 1.f, -1.f));
-    CHECK_FALSE(axis_pressed(0.f, 0.5f, 1.f));
+    // Not far enough
+    CHECK(menu_direction(0.5f, 0.5f, None) == None);
+    CHECK(menu_direction(0.f, 0.f, Down) == None);
+
+    // A diagonal is the leading axis only; a tie goes to the vertical
+    CHECK(menu_direction(0.6f, 0.9f, None) == Down);
+    CHECK(menu_direction(0.9f, 0.6f, None) == Right);
+    CHECK(menu_direction(1.f, 1.f, None) == Down);
+
+    // The held direction keeps the lead while the stick wobbles near 45
+    // degrees, and gives it up once the other axis is clearly ahead
+    CHECK(menu_direction(0.75f, 0.7f, Down) == Down);
+    CHECK(menu_direction(0.7f, 0.75f, Right) == Right);
+    CHECK(menu_direction(1.f, 0.6f, Down) == Right);
+    CHECK(menu_direction(1.f, 0.f, Down) == Right);
 }
 
 // ── Device input (Input class) ─────────────────────────────────────
@@ -350,6 +360,36 @@ TEST_CASE("Sticks use a round deadzone", "[input][gamepad]") {
         CHECK(s.move_x > 0.8f);
         CHECK(s.move_y > 0.f); // a per-axis deadzone would have zeroed this
     }
+}
+
+TEST_CASE("A diagonal stick push is one menu direction", "[input][gamepad]") {
+    VirtualPad pad;
+    Input input;
+    input.init();
+
+    // Down-right, leaning down, arriving over two frames
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.8f);
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 0.3f);
+    {
+        const auto& s = frame(input);
+        CHECK(s.down_pressed);
+        CHECK_FALSE(s.right_pressed);
+    }
+    input.consume_pressed();
+
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.75f);
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 0.7f);
+    {
+        const auto& s = frame(input);
+        CHECK_FALSE(s.down_pressed); // still held, not pressed again
+        CHECK_FALSE(s.right_pressed);
+    }
+    input.consume_pressed();
+
+    // Rolling round to the right is a new direction
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.f);
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 1.f);
+    CHECK(frame(input).right_pressed);
 }
 
 TEST_CASE("A tap released between polls still counts", "[input][gamepad]") {

@@ -353,6 +353,25 @@ void Input::latch_pad(PadControl::Kind kind, int code) {
     }
 }
 
+void Input::latch_direction(MenuDirection direction) {
+    switch (direction) {
+    case MenuDirection::Up:
+        latched_.up = true;
+        break;
+    case MenuDirection::Down:
+        latched_.down = true;
+        break;
+    case MenuDirection::Left:
+        latched_.left = true;
+        break;
+    case MenuDirection::Right:
+        latched_.right = true;
+        break;
+    case MenuDirection::None:
+        break;
+    }
+}
+
 void Input::compute_edges() {
     // Clamp movement first so axis edges compare like with like
     current_.move_x = std::clamp(current_.move_x, -1.f, 1.f);
@@ -368,10 +387,12 @@ void Input::compute_edges() {
             latched_.actions[i] || (current_.*action.held && !(previous_.*action.held));
         current_.*action.pressed = latched_.actions[i];
     }
-    latched_.up = latched_.up || axis_pressed(previous_.move_y, current_.move_y, -1.f);
-    latched_.down = latched_.down || axis_pressed(previous_.move_y, current_.move_y, 1.f);
-    latched_.left = latched_.left || axis_pressed(previous_.move_x, current_.move_x, -1.f);
-    latched_.right = latched_.right || axis_pressed(previous_.move_x, current_.move_x, 1.f);
+    const MenuDirection direction =
+        menu_direction(current_.move_x, current_.move_y, menu_direction_);
+    if (direction != menu_direction_) {
+        latch_direction(direction);
+    }
+    menu_direction_ = direction;
 
     current_.up_pressed = latched_.up;
     current_.down_pressed = latched_.down;
