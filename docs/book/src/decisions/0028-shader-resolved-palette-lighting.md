@@ -158,16 +158,95 @@ to draw for.
   in the exported sheets. Aseprite still shows one variant.
 - A shader toolchain enters the build, with three output formats to keep
   working in CI.
-- The Switch port plan assumes plain `SDL_Renderer`. Whether the `gpu`
-  backend exists in the Switch port of SDL3 is unknown. The fallback covers
-  it, at the cost of the lighting.
+- The Switch port plan assumes plain `SDL_Renderer`, so it needs revising
+  (see Platform support below).
 - Raven's build would depend on a Pigment binary, which Pigment has not
   decided to ship (pigment #35, #42).
 
+## Platform support
+
+Researched 2026-11-24 from SDL's public documentation. Nothing here has
+been run.
+
+| Platform           | `gpu` backend        | Requirement, as documented                         |
+| ------------------ | -------------------- | -------------------------------------------------- |
+| Windows            | Direct3D 12, Vulkan  | Windows 10+; D3D12 Feature Level 11_0, or Vulkan 1.0 |
+| Linux, Steam Deck  | Vulkan               | Vulkan 1.0 plus a short list of common features    |
+| macOS              | Metal                | macOS 10.14+; Apple Silicon or a "Mac2 family" Intel GPU |
+| Nintendo Switch    | Vulkan               | Listed as supported in SDL's GPU documentation     |
+| Nintendo Switch 2  | Not stated           | See below                                          |
+
+- **There is no OpenGL path.** A machine with neither Vulkan nor Direct3D 12
+  cannot run the `gpu` backend. In practice that is hardware from before
+  about 2013, and some virtual machines.
+- **Switch and Switch 2.** SDL's Switch page says both consoles are
+  supported and that commercial games ship on the port. The port is a
+  separate repository, free under the zlib licence to developers under
+  Nintendo's NDA, and is obtained from its maintainer. SDL's GPU page names
+  "Nintendo Switch" under the Vulkan backend. It does not name the
+  Switch 2, and the Switch page says nothing about rendering. So the
+  Switch 2 answer is likely yes, but it is not written down anywhere
+  public. It can only be confirmed by asking the port's maintainer once
+  Raven is under NDA.
+- **The shader calls and the `gpu` backend.** SDL's documentation says
+  `SDL_SetGPURenderState` "allows using custom shaders with the GPU
+  renderer". It does not say what the call does on another backend. The
+  spike should check the return value on the default renderer too.
+
+Sources: [SDL3 GPU category](https://wiki.libsdl.org/SDL3/CategoryGPU),
+[SDL3 on Nintendo Switch](https://wiki.libsdl.org/SDL3/README-switch),
+[SDL_SetGPURenderState](https://wiki.libsdl.org/SDL3/SDL_SetGPURenderState).
+
+## Risks
+
+### Could stop the proposal
+
+- **Platform support.** As above: no OpenGL path, and the Switch 2 is
+  unconfirmed. The fallback (option B) covers a platform without the `gpu`
+  backend, but then there are two render paths to maintain, and a room
+  designed around moving light will not read the same on the fallback.
+- **Index values corrupted before the resolve.** The resolve pass needs
+  every pixel in the target to be an exact *(ramp, step)* value. Raven does
+  three things today that blend or alter pixel values:
+  `SDL_SCALEMODE_PIXELART` on sprite textures, sub-pixel sprite positions
+  from interpolation, and texture colour and alpha modulation. Any of them
+  can turn an index into a different, wrong index. The index pass will
+  need nearest sampling, whole-pixel positions and no modulation, and that
+  has to be shown to work.
+- **A new API.** The render-state calls arrived in SDL 3.4.0 and are thinly
+  documented. How they behave with render targets and logical presentation
+  is not known.
+
+### Cost time
+
+- **Dependence on unbuilt Pigment work.** The table export, the
+  index-encoded sheets and a way to run them from `just export-art` do not
+  exist, and Pigment's own release is paused. Two solo projects become
+  coupled.
+- **Shader toolchain.** Compiling for three backends needs extra tools in
+  the nix shell, on Windows and in CI. CI machines have no GPU, so anything
+  that renders needs a software Vulkan driver or stays untested.
+- **Scope.** Shaders make many effects possible while the game is still
+  pre-content. The effects listed under Decision are candidates, and each
+  is its own piece of work.
+
+### About the look
+
+- **Stepped light may look harsh.** With ramps of three to five steps, a
+  light is a hard-edged shape one step brighter. It will probably need
+  dithered edges and longer ramps, and may still disappoint.
+- **Readability.** Light that changes the environment's value changes its
+  contrast with bullets and characters. A dark corner or a bright pool
+  could hide a projectile, which works against Readable Chaos.
+- **Stricter drawing.** Indexed colour mode, headroom at both ends of each
+  ramp, no translucent pixels, and final colours visible only after
+  export. A real cost if another artist joins.
+
 ## Open questions
 
-1. Does the `gpu` backend work on the Switch port of SDL3, and on the
-   oldest desktop hardware Raven should support?
+1. Does the `gpu` backend work on the Switch 2 port of SDL3? (Ask the
+   port's maintainer under NDA.) What is the oldest desktop hardware Raven
+   should support, given there is no OpenGL path?
 2. Must the palette change within a room (light pools, dapple), or is a
    change per room enough? If per room is enough, option B does the job
    without shaders.
@@ -180,8 +259,22 @@ to draw for.
 
 ## First step
 
-A spike that needs no new art: create the renderer on the `gpu` backend and
-add one full-screen pass over the existing target that maps colour to
-colour between two variants with a cross-fade. It answers questions 1 and
-5, proves the shader build step, and shows the look on the placeholder
-sprites. If it fails, options A and B are untouched.
+A spike on placeholder art, with no dependence on Pigment:
+
+1. Create the renderer on the `gpu` backend and compile one fragment
+   shader for the backends in use.
+2. Encode one placeholder sheet as *(ramp, step)* values by hand, with a
+   small hand-written lookup table of two variants.
+3. Draw it moving at sub-pixel positions into an index target, with the
+   pixel-art scale mode and colour modulation that Raven uses today, and
+   find out which of them must be turned off.
+4. Resolve through the table in one full-screen pass, and cross-fade
+   between the two variants.
+5. Add one hard-coded light that shifts ramp steps.
+6. Draw the ImGui overlay on top.
+
+Run it on Linux, Windows and the Mac. It answers the three risks that
+could stop the proposal (except the Switch 2, which needs the NDA port),
+answers question 5, and gives a first look at stepped light. A simpler
+spike that only swaps colour to colour would not exercise the index
+problem. If the spike fails, options A and B are untouched.
