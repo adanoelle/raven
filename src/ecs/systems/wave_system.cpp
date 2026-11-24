@@ -37,11 +37,19 @@ bool StageLoader::load_manifest(const std::string& manifest_path) {
     try {
         auto j = nlohmann::json::parse(*text);
         int loaded = 0;
-        for (const auto& path : j.at("stages")) {
+        const auto& listed = j.at("stages");
+        for (const auto& path : listed) {
             // Manifest entries are relative to the install dir, not the CWD
-            if (load_file(paths::asset(path.get<std::string>()))) {
-                ++loaded;
+            const auto file = path.get<std::string>();
+            if (!load_file(paths::asset(file))) {
+                // Stages are played in list order. Skipping this one would
+                // move every later stage up a place without saying so.
+                spdlog::error("Stage file '{}' did not load, so the run ends after stage {}: "
+                              "the {} stage(s) from there on are left out",
+                              file, loaded, listed.size() - static_cast<size_t>(loaded));
+                break;
             }
+            ++loaded;
         }
         spdlog::info("Loaded {} stages from manifest '{}'", loaded, manifest_path);
         return loaded > 0;

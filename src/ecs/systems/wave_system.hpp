@@ -41,6 +41,9 @@ class StageLoader {
   public:
     /// @brief Load a manifest JSON listing stage files.
     /// @param manifest_path Path to the stage_manifest.json file.
+    ///
+    /// Stops at the first stage file that fails to load: stages play in
+    /// list order, and skipping one would shift every later stage.
     /// @return True if at least one stage loaded successfully.
     bool load_manifest(const std::string& manifest_path);
 

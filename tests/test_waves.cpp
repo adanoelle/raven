@@ -1,3 +1,4 @@
+#include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "ecs/components.hpp"
 #include "ecs/systems/damage_system.hpp"
@@ -10,7 +11,10 @@
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <cstdio>
+#include <fstream>
 #include <random>
+#include <string>
 
 using namespace raven;
 using Catch::Approx;
@@ -471,6 +475,36 @@ TEST_CASE("StageLoader parses stage JSON correctly", "[waves]") {
     CHECK(stage->waves[0].enemies[1].enemy == "mid_stalker");
     CHECK(stage->waves[1].enemies[0].spawn_index == 2);
     CHECK(stage->waves[1].enemies[0].enemy == "boss_coward");
+}
+
+TEST_CASE("A stage file that fails to load ends the stage list there", "[waves]") {
+    // Manifest entries resolve next to the executable, like the game's
+    auto write = [](const std::string& name, const std::string& text) {
+        std::ofstream(paths::asset(name)) << text;
+    };
+    auto stage = [](const char* name) {
+        return std::string{R"({"name": ")"} + name + R"(", "level": "Room", "waves": []})";
+    };
+    write("test_stage_a_tmp.json", stage("a"));
+    write("test_stage_b_tmp.json", "{ broken");
+    write("test_stage_c_tmp.json", stage("c"));
+    write("test_stage_manifest_tmp.json",
+          R"({"stages": ["test_stage_a_tmp.json", "test_stage_b_tmp.json",
+                         "test_stage_c_tmp.json"]})");
+
+    StageLoader loader;
+    CHECK(loader.load_manifest(paths::asset("test_stage_manifest_tmp.json")));
+
+    // Stage c is not moved up into b's place
+    CHECK(loader.count() == 1);
+    REQUIRE(loader.get(0) != nullptr);
+    CHECK(loader.get(0)->name == "a");
+    CHECK(loader.get(1) == nullptr);
+
+    for (const char* name : {"test_stage_a_tmp.json", "test_stage_b_tmp.json",
+                             "test_stage_c_tmp.json", "test_stage_manifest_tmp.json"}) {
+        std::remove(paths::asset(name).c_str());
+    }
 }
 
 TEST_CASE("StageLoader skips wave entries that name no enemy", "[waves]") {
