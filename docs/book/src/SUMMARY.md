@@ -114,3 +114,4 @@
 - [ADR-0025: Named Enemy Definitions](decisions/0025-named-enemy-definitions.md)
 - [ADR-0026: Record and Replay for Playtests](decisions/0026-record-and-replay-playtests.md)
 - [ADR-0027: Gamepad Layout](decisions/0027-gamepad-layout.md)
+- [ADR-0028: Shader-Resolved Palette and Lighting](decisions/0028-shader-resolved-palette-lighting.md)
