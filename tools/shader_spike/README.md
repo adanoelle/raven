@@ -5,6 +5,9 @@ Throwaway code for
 It is not part of the game and is off by default in the build. Nothing in
 `src/` depends on it.
 
+Resuming this work? Read [HANDOFF.md](HANDOFF.md) first: decisions, issues,
+open questions and next steps.
+
 It draws a hand-encoded scene as *(ramp, step)* values into a 480x270 index
 target, resolves it to colour in one fragment shader pass through a small
 lookup table, and checks the result against the same arithmetic on the CPU.
