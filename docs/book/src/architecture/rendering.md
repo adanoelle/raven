@@ -9,6 +9,12 @@ Key files: `src/rendering/renderer.hpp`, `src/rendering/renderer.cpp`,
 `src/rendering/sprite_sheet.hpp`, `src/rendering/sprite_sheet.cpp`,
 `src/ecs/systems/render_system.cpp`.
 
+> **Proposed change (2026-11-24).**
+> [ADR-0028](../decisions/0028-shader-resolved-palette-lighting.md) would
+> add a shader pass that resolves the target through a palette table, and
+> move the renderer to SDL's `gpu` backend. This page describes the
+> pipeline as it is today.
+
 ---
 
 ## Virtual Resolution and Logical Presentation

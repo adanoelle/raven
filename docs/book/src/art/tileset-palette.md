@@ -68,6 +68,13 @@ For 16x16 tiles at 480x270 resolution, ramps should be small:
 - More swatches are rarely needed — the limited palette is a feature, not a
   constraint. It forces cohesion.
 
+> **Proposed change (2026-11-24).**
+> [ADR-0028](../decisions/0028-shader-resolved-palette-lighting.md) would
+> have light move pixels up and down these ramps. That needs a spare step
+> or two at each end, so ramps would grow, and a swatch shared between two
+> ramps would have to say which ramp it belongs to. The sizes above stand
+> until the ADR is decided.
+
 ---
 
 ## Material Ramps

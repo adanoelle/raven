@@ -242,6 +242,28 @@ Sources: [SDL3 GPU category](https://wiki.libsdl.org/SDL3/CategoryGPU),
   ramp, no translucent pixels, and final colours visible only after
   export. A real cost if another artist joins.
 
+## Going ahead before Nintendo developer access
+
+Decided 2026-11-24: the spike and the work that follows do not wait for the
+Switch 2 answer. Developer access has no known timeline, desktop and the
+Steam Deck ship first, and the worst case is bounded: if the Switch 2 port
+has no `gpu` backend, that platform runs the fallback and loses
+screen-varying light and cross-fades. The art, the palette and the Pigment
+export are the same on both paths, so nothing is redrawn.
+
+Three rules keep that worst case small:
+
+1. **The fallback is built early and kept running**, with a debug toggle
+   between the two paths.
+2. **Every room must read on the fallback.** Nothing the player needs to
+   know is carried only by shader lighting.
+3. **Developer access is applied for now**, so the answer arrives while the
+   work is in progress
+   ([Switch Port Plan](../guide/switch-port-plan.md), step 3).
+
+This ADR stays Proposed until the spike below has run. Going ahead means
+starting the spike, not accepting option C.
+
 ## Open questions
 
 1. Does the `gpu` backend work on the Switch 2 port of SDL3? (Ask the

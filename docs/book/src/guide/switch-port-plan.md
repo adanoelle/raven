@@ -55,8 +55,15 @@ records the final palette. This step runs in parallel with 3–6.
 ## Step 3 — Toolchain and offline dependencies
 
 1. Register for Nintendo developer access and obtain the NX SDK and
-   its SDL3 port. (SDL3 itself has no public Switch backend; the
-   authorised port ships through the developer portal.)
+   its SDL3 port. (SDL3 itself has no public Switch backend. SDL's
+   [Switch page](https://wiki.libsdl.org/SDL3/README-switch) says the
+   port covers both the Switch and the Switch 2, and is given by its
+   maintainer to developers under Nintendo's NDA.) The Switch 2 is a
+   possible target. When asking for the port, also ask whether SDL's
+   `gpu` backend and its render-state calls work on the Switch 2:
+   [ADR-0028](../decisions/0028-shader-resolved-palette-lighting.md)
+   proposes a shader pass that needs them, and falls back to a
+   shader-free path where they are missing.
 2. Add `cmake/toolchains/switch.cmake` (compiler, sysroot, `find_package`
    hints for SDL3/SDL3_image) and a `just switch` recipe that configures
    with `-DRAVEN_PLATFORM_CONSOLE=ON -DRAVEN_ENABLE_IMGUI=OFF
