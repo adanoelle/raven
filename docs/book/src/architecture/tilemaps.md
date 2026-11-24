@@ -299,14 +299,14 @@ placeholders for real room designs. The three rooms are the levels of
 | Entity        | Fields                   | Used by                                                 |
 | ------------- | ------------------------ | ------------------------------------------------------- |
 | `PlayerStart` | none                     | Where the player appears on entering the room           |
-| `EnemySpawn`  | `index` (Int, optional)  | Enemy positions; a stage's `spawn_index` picks the one with that `index`, or the Nth if none have one |
+| `EnemySpawn`  | `index` (Int)            | Enemy positions; a stage's `spawn_index` picks the one with that `index` (the Nth, in a level where none have one) |
 | `Exit`        | `target_level` (String)  | Opens when the room is cleared; leave the field null on the final room |
 
-The shipped map's `EnemySpawn` has no `index` field yet, so `spawn_index`
-follows LDtk's entity list order, which changes when entities are deleted
-and re-added. To pin it down, add an Int field named `index` to the
-`EnemySpawn` entity definition in LDtk and number each room's spawn points
-from 0. `test_content` then checks that every `spawn_index` a stage uses has
+Every `EnemySpawn` in the shipped map carries its `index`, numbered from 0
+within its room. When you add or move spawn points in LDtk, set the field
+yourself and keep the numbers unique within the room: a stage's
+`spawn_index` refers to that number, not to the entity's place in LDtk's
+list. `test_content` checks that every `spawn_index` a stage uses has
 exactly one spawn point.
 
 ### Tileset
