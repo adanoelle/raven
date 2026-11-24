@@ -13,6 +13,9 @@ void render_tilemap(const Tilemap& tilemap, SDL_Renderer* renderer) {
             continue;
         }
         SDL_Texture* tex = textures[tile.texture];
+        // Layer opacity from LDtk. Set per tile, since layers share
+        // tileset textures; the call only stores the value.
+        SDL_SetTextureAlphaMod(tex, tile.alpha);
         SDL_FRect dest{static_cast<float>(tile.dest_x), static_cast<float>(tile.dest_y),
                        static_cast<float>(tile.src.w), static_cast<float>(tile.src.h)};
 

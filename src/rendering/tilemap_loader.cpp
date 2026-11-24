@@ -5,9 +5,12 @@
 #include <spdlog/spdlog.h>
 
 #include <LDtkLoader/Project.hpp>
+#include <algorithm>
+#include <cmath>
 #include <memory>
 #include <ranges>
 #include <sstream>
+#include <string>
 #include <unordered_map>
 
 namespace raven {
@@ -22,6 +25,53 @@ namespace {
 std::unique_ptr<std::streambuf> ldtk_file_loader(const std::string& path) {
     auto text = fs::read_text(path);
     return std::make_unique<std::stringbuf>(text ? std::move(*text) : std::string{});
+}
+
+/// @brief Copy one LDtk entity field into a spawn point, as text.
+///
+/// Null values are left out. Field types with no text form here (colours,
+/// points, entity references, arrays) are reported, so a field that the
+/// game never sees is not a silent surprise.
+void read_field(const ldtk::Entity& entity, const ldtk::FieldDef& def, SpawnPoint& sp) {
+    // Store a field's value unless it is null
+    auto store = [&](const auto& field, auto to_text) {
+        if (!field.is_null()) {
+            sp.fields[def.name] = to_text(field.value());
+        }
+    };
+    try {
+        switch (def.type) {
+        case ldtk::FieldType::String:
+            store(entity.getField<std::string>(def.name), [](const std::string& v) { return v; });
+            break;
+        case ldtk::FieldType::Int:
+            store(entity.getField<int>(def.name), [](int v) { return std::to_string(v); });
+            break;
+        case ldtk::FieldType::Float:
+            store(entity.getField<float>(def.name), [](float v) { return std::to_string(v); });
+            break;
+        case ldtk::FieldType::Bool:
+            store(entity.getField<bool>(def.name),
+                  [](bool v) { return std::string{v ? "true" : "false"}; });
+            break;
+        case ldtk::FieldType::Enum:
+            store(entity.getField<ldtk::EnumValue>(def.name),
+                  [](const ldtk::EnumValue& v) { return v.name; });
+            break;
+        case ldtk::FieldType::FilePath:
+            store(entity.getField<ldtk::FilePath>(def.name),
+                  [](const ldtk::FilePath& v) { return std::string{v.c_str()}; });
+            break;
+        default:
+            spdlog::warn("LDtk field '{}' on entity '{}' has a type the game does not read "
+                         "(colour, point, entity reference or array), so it is ignored",
+                         def.name, sp.name);
+            break;
+        }
+    } catch (const std::exception& e) {
+        spdlog::warn("LDtk field '{}' on entity '{}' could not be read: {}", def.name, sp.name,
+                     e.what());
+    }
 }
 
 } // anonymous namespace
@@ -103,6 +153,13 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
         if (texture < 0) {
             return;
         }
+        const auto alpha =
+            static_cast<uint8_t>(std::lround(std::clamp(layer.getOpacity(), 0.f, 1.f) * 255.f));
+        if (alpha < 255) {
+            // Alpha only shows on a texture that blends; a tileset image
+            // with no alpha channel of its own starts out opaque
+            SDL_SetTextureBlendMode(textures_[static_cast<size_t>(texture)], SDL_BLENDMODE_BLEND);
+        }
         for (const auto& tile : layer.allTiles()) {
             auto pos = tile.getPosition();
             auto tex_rect = tile.getTextureRect();
@@ -114,6 +171,7 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
             td.flip_x = tile.flipX;
             td.flip_y = tile.flipY;
             td.texture = static_cast<uint16_t>(texture);
+            td.alpha = alpha;
             tiles_.push_back(td);
         }
     };
@@ -163,20 +221,8 @@ bool Tilemap::load(SDL_Renderer* renderer, const std::string& ldtk_path,
                 SpawnPoint sp{
                     entity.getName(), static_cast<float>(pos.x), static_cast<float>(pos.y), {}};
 
-                // Extract string fields from LDtk entity
                 for (const auto& field_def : entity.allFields()) {
-                    if (field_def.type == ldtk::FieldType::String) {
-                        try {
-                            const auto& field = entity.getField<std::string>(field_def.name);
-                            if (!field.is_null()) {
-                                sp.fields[field_def.name] = field.value();
-                            }
-                        } catch (...) {
-                            // Field access can throw on type mismatch; skip the field
-                            spdlog::debug("Skipping LDtk field '{}' on entity '{}': type mismatch",
-                                          field_def.name, sp.name);
-                        }
-                    }
+                    read_field(entity, field_def, sp);
                 }
 
                 spawns_.push_back(std::move(sp));

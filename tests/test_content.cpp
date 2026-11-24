@@ -123,6 +123,43 @@ Tilemap load_modified_test_room(SDL_Renderer* renderer,
     return map;
 }
 
+/// @brief Give an LDtk entity definition a field, and each of its instances
+/// in Test_Room a value for it (in entity list order).
+void add_entity_field(nlohmann::json& project, const std::string& entity, const std::string& name,
+                      const std::string& type, const std::vector<nlohmann::json>& values) {
+    const int uid = project.at("nextUid").get<int>();
+    project["nextUid"] = uid + 1;
+    for (auto& def : project.at("defs").at("entities")) {
+        if (def.at("identifier") == entity) {
+            // Start from the Exit's string field so every key LDtk writes is present
+            nlohmann::json field;
+            for (const auto& other : project.at("defs").at("entities")) {
+                if (!other.at("fieldDefs").empty()) {
+                    field = other.at("fieldDefs")[0];
+                }
+            }
+            REQUIRE_FALSE(field.is_null());
+            field["identifier"] = name;
+            field["__type"] = type;
+            field["type"] = "F_" + type;
+            field["uid"] = uid;
+            def["fieldDefs"].push_back(field);
+        }
+    }
+    size_t next = 0;
+    for (auto& instance : layer_instance(project, "Test_Room", "Entities").at("entityInstances")) {
+        if (instance.at("__identifier") == entity) {
+            REQUIRE(next < values.size());
+            instance["fieldInstances"].push_back({{"__identifier", name},
+                                                  {"__type", type},
+                                                  {"__value", values[next++]},
+                                                  {"__tile", nullptr},
+                                                  {"defUid", uid},
+                                                  {"realEditorValues", nlohmann::json::array()}});
+        }
+    }
+}
+
 /// @brief Whether a spawn point sits inside a solid collision cell.
 bool in_solid_cell(const Tilemap& map, const SpawnPoint& sp) {
     return map.is_cell_solid(static_cast<int>(sp.x) / map.cell_size(),
@@ -400,4 +437,46 @@ TEST_CASE("Only the IntGrid layer named Collision is solid", "[tilemap]") {
 
     CHECK_FALSE(map.is_cell_solid(0, 0));
     CHECK(map.cell_size() == 16);
+}
+
+TEST_CASE("LDtk layer opacity reaches the tiles", "[tilemap]") {
+    SoftwareRenderer sw;
+    auto opaque = load_modified_test_room(sw.renderer, [](nlohmann::json&) {});
+    REQUIRE_FALSE(opaque.tiles().empty());
+    CHECK(opaque.tiles()[0].alpha == 255);
+
+    auto faded = load_modified_test_room(sw.renderer, [](nlohmann::json& project) {
+        layer_instance(project, "Test_Room", "Tiles")["__opacity"] = 0.5;
+    });
+    REQUIRE_FALSE(faded.tiles().empty());
+    for (const auto& tile : faded.tiles()) {
+        CHECK(tile.alpha == 128);
+    }
+}
+
+TEST_CASE("LDtk entity fields other than strings are read", "[tilemap]") {
+    SoftwareRenderer sw;
+    auto map = load_modified_test_room(sw.renderer, [](nlohmann::json& project) {
+        add_entity_field(project, "EnemySpawn", "index", "Int", {3, 2, 1, 0});
+        add_entity_field(project, "EnemySpawn", "elite", "Bool", {true, false, false, false});
+        add_entity_field(project, "EnemySpawn", "delay", "Float", {1.5, nullptr, 0.0, 0.0});
+    });
+
+    const auto spawns = map.find_all_spawns("EnemySpawn");
+    REQUIRE(spawns.size() == 4);
+    CHECK(spawns[0]->field_int("index") == 3);
+    CHECK(spawns[3]->field_int("index") == 0);
+    CHECK(spawns[0]->fields.at("elite") == "true");
+    CHECK(spawns[1]->fields.at("elite") == "false");
+    CHECK(std::stof(spawns[0]->fields.at("delay")) == 1.5f);
+
+    // A null value is left out, and text is not a number
+    CHECK_FALSE(spawns[1]->fields.contains("delay"));
+    CHECK_FALSE(spawns[0]->field_int("elite").has_value());
+    CHECK_FALSE(spawns[0]->field_int("no_such_field").has_value());
+
+    // The Exit's string field still comes through
+    const auto exits = map.find_all_spawns("Exit");
+    REQUIRE_FALSE(exits.empty());
+    CHECK(exits[0]->fields.contains("target_level"));
 }

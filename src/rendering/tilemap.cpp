@@ -1,6 +1,7 @@
 #include "rendering/tilemap.hpp"
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <utility>
 
@@ -120,6 +121,20 @@ bool Tilemap::has_line_of_sight(float x1, float y1, float x2, float y2) const {
         }
     }
     return true;
+}
+
+std::optional<int> SpawnPoint::field_int(const std::string& field) const {
+    const auto it = fields.find(field);
+    if (it == fields.end()) {
+        return std::nullopt;
+    }
+    const std::string& text = it->second;
+    int value = 0;
+    const auto [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+    if (error != std::errc{} || end != text.data() + text.size()) {
+        return std::nullopt;
+    }
+    return value;
 }
 
 const SpawnPoint* Tilemap::find_spawn(const std::string& name) const {
