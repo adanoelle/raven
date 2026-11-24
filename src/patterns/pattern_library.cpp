@@ -76,11 +76,7 @@ bool PatternLibrary::load_file(const std::string& file_path) {
 
     try {
         auto j = nlohmann::json::parse(*text);
-        auto pattern = parse_pattern(j);
-        auto name = pattern.name;
-        patterns_[interner_->intern(name).value] = std::move(pattern);
-        spdlog::debug("Loaded pattern '{}'", name);
-        return true;
+        return add(parse_pattern(j), "file '" + file_path + "'");
     } catch (const nlohmann::json::exception& e) {
         spdlog::error("Failed to parse pattern '{}': {}", file_path, e.what());
         return false;
@@ -93,15 +89,26 @@ bool PatternLibrary::load_from_json(const nlohmann::json& j) {
         return false;
     }
     try {
-        auto pattern = parse_pattern(j);
-        auto name = pattern.name;
-        patterns_[interner_->intern(name).value] = std::move(pattern);
-        spdlog::debug("Loaded pattern '{}' from JSON", name);
-        return true;
+        return add(parse_pattern(j), "JSON");
     } catch (const nlohmann::json::exception& e) {
         spdlog::error("Failed to parse pattern from JSON: {}", e.what());
         return false;
     }
+}
+
+bool PatternLibrary::add(PatternDef pattern, const std::string& source) {
+    const uint16_t key = interner_->intern(pattern.name).value;
+    if (patterns_.contains(key)) {
+        // Usually a copied file whose "name" was never changed. Replacing
+        // the first would silently change every enemy that uses it.
+        spdlog::error("Pattern '{}' from {} has the same name as a pattern already loaded; "
+                      "keeping the first. Give each pattern its own \"name\".",
+                      pattern.name, source);
+        return false;
+    }
+    spdlog::debug("Loaded pattern '{}' from {}", pattern.name, source);
+    patterns_.emplace(key, std::move(pattern));
+    return true;
 }
 
 const PatternDef* PatternLibrary::get(StringId id) const {

@@ -247,6 +247,19 @@ TEST_CASE("A pattern with a mistyped key still loads", "[patterns]") {
     CHECK(pattern->emitters[0].fire_rate == Catch::Approx(0.1f));
 }
 
+TEST_CASE("A second pattern with the same name is refused", "[patterns]") {
+    StringInterner interner;
+    PatternLibrary lib;
+    lib.set_interner(interner);
+
+    REQUIRE(lib.load_from_json({{"name", "burst"}, {"emitters", {{{"count", 3}}}}}));
+    // A copied file whose name was never changed
+    CHECK_FALSE(lib.load_from_json({{"name", "burst"}, {"emitters", {{{"count", 12}}}}}));
+
+    REQUIRE(lib.names().size() == 1);
+    CHECK(lib.get("burst")->emitters[0].count == 3);
+}
+
 TEST_CASE("PatternLibrary load_file", "[patterns]") {
     StringInterner interner;
     PatternLibrary lib;
