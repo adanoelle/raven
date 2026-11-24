@@ -43,23 +43,58 @@ struct InputState {
     bool confirm_pressed = false; ///< Confirm button press edge.
     bool cancel_pressed = false;  ///< Cancel button press edge.
 
-    // Menu navigation edges: a movement axis pushed past half-way. Latched
-    // and consumed like the button edges, so a direction that was already
-    // held when a menu opened does not move its cursor.
+    // Menu navigation edges: a direction key or d-pad press, or the stick
+    // settling on a new direction (see menu_direction). Latched and
+    // consumed like the button edges, so a direction that was already held
+    // when a menu opened does not move its cursor.
     bool up_pressed = false;    ///< Move-up press edge.
     bool down_pressed = false;  ///< Move-down press edge.
     bool left_pressed = false;  ///< Move-left press edge.
     bool right_pressed = false; ///< Move-right press edge.
+
+    /// The gamepad in use was disconnected. Latched and consumed like a
+    /// press edge, so gameplay can pause for it.
+    bool gamepad_lost = false;
 };
 
-/// @brief Whether a movement axis was pushed past the menu threshold this frame.
-/// @param previous Axis value on the previous frame.
-/// @param current Axis value on this frame.
-/// @param direction +1 to test the positive direction, -1 for the negative one.
-/// @return True if the axis is past half-way in that direction now, but was not before.
-[[nodiscard]] constexpr bool axis_pressed(float previous, float current, float direction) {
-    constexpr float THRESHOLD = 0.5f;
-    return current * direction > THRESHOLD && previous * direction <= THRESHOLD;
+/// @brief How far a movement axis must travel to count as a menu direction.
+inline constexpr float MENU_AXIS_THRESHOLD = 0.5f;
+
+/// @brief The one direction a menu reads from the movement axes.
+enum class MenuDirection : uint8_t { None, Up, Down, Left, Right };
+
+/// @brief Reduce the movement axes to a single menu direction.
+///
+/// An axis counts once it is past half-way, and only the leading axis
+/// counts, so a diagonal push is one direction and not two. The direction
+/// already held keeps the lead until the other axis is clearly ahead, which
+/// stops a stick resting near 45 degrees from flickering between the two.
+/// @param x Horizontal movement axis in [-1, 1].
+/// @param y Vertical movement axis in [-1, 1] (positive is down).
+/// @param previous The direction from the last call.
+/// @return The direction now, or None if neither axis is past half-way.
+[[nodiscard]] constexpr MenuDirection menu_direction(float x, float y, MenuDirection previous) {
+    constexpr float THRESHOLD = MENU_AXIS_THRESHOLD;
+    constexpr float LEAD = 0.2f; // how far ahead the other axis must be to take over
+    const float ax = x < 0.f ? -x : x;
+    const float ay = y < 0.f ? -y : y;
+    if (ax <= THRESHOLD && ay <= THRESHOLD) {
+        return MenuDirection::None;
+    }
+
+    bool vertical = ay >= ax; // a tie goes to the vertical axis
+    const bool was_vertical = previous == MenuDirection::Up || previous == MenuDirection::Down;
+    const bool was_horizontal = previous == MenuDirection::Left || previous == MenuDirection::Right;
+    if (was_vertical && ay > THRESHOLD) {
+        vertical = ax <= ay + LEAD;
+    } else if (was_horizontal && ax > THRESHOLD) {
+        vertical = ay > ax + LEAD;
+    }
+
+    if (vertical) {
+        return y < 0.f ? MenuDirection::Up : MenuDirection::Down;
+    }
+    return x < 0.f ? MenuDirection::Left : MenuDirection::Right;
 }
 
 /// @brief Whether an analog trigger counts as pressed, with hysteresis.
@@ -186,10 +221,11 @@ class Input {
     /// @brief Process a single SDL event.
     ///
     /// Handles quit and controller hot-plug, marks the mouse as the aiming
-    /// device when it moves or clicks, and latches presses from key, button
-    /// and trigger events. Latching from events catches a tap that goes
-    /// down and up between two polls, which polling alone misses at low
-    /// frame rates. Call update() after the event loop to poll held state.
+    /// device when it moves or clicks, and latches presses from key, button,
+    /// trigger and stick events, menu directions included. Latching from
+    /// events catches a tap or a stick flick that comes and goes between
+    /// two polls, which polling alone misses at low frame rates. Call update() after the event loop
+    /// to poll held state.
     /// @param event The SDL event to handle.
     void process_event(const SDL_Event& event);
 
@@ -256,12 +292,23 @@ class Input {
         bool down = false;
         bool left = false;
         bool right = false;
+        bool gamepad_lost = false; ///< The gamepad in use went away.
     };
 
     InputState current_;
     InputState previous_;
     EdgeLatch latched_;
-    std::array<bool, ACTION_COUNT> blocked_{}; ///< Held but ignored until released.
+    std::array<bool, ACTION_COUNT> blocked_{};           ///< Held but ignored until released.
+    MenuDirection menu_direction_ = MenuDirection::None; ///< Direction at the last poll.
+
+    /// @brief The left stick as its axis events report it, for menu
+    /// directions that come and go between polls.
+    struct EventStick {
+        float x = 0.f;                                 ///< Raw horizontal position.
+        float y = 0.f;                                 ///< Raw vertical position.
+        MenuDirection direction = MenuDirection::None; ///< Direction after the last event.
+    };
+    EventStick event_stick_;
     bool quit_ = false;
 
     GamepadLayout gamepad_layout_;
@@ -286,6 +333,9 @@ class Input {
 
     /// @brief Whether a gamepad control is down now (updates trigger hysteresis).
     bool pad_control_down(const PadControl& control);
+
+    /// @brief Latch a menu direction press edge.
+    void latch_direction(MenuDirection direction);
 
     /// @brief Latch a press of every action bound to a gamepad control.
     void latch_pad(PadControl::Kind kind, int code);

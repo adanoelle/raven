@@ -4,58 +4,13 @@
 #include "ecs/systems/hitbox_math.hpp"
 #include "ecs/systems/player_utils.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <random>
 
 namespace raven::systems {
 
 namespace {
-
-/// @brief Normalize a 2D vector in-place.
-/// @param x X component (modified in-place).
-/// @param y Y component (modified in-place).
-/// @return The original length of the vector.
-float normalize(float& x, float& y) {
-    float len = std::sqrt(x * x + y * y);
-    if (len > 0.f) {
-        x /= len;
-        y /= len;
-    }
-    return len;
-}
-
-/// @brief Check line-of-sight between two points using the tilemap.
-///
-/// Steps along the line in half-cell increments and checks for solid cells.
-/// @param tilemap The tilemap with collision data.
-/// @param x1 Start X position.
-/// @param y1 Start Y position.
-/// @param x2 End X position.
-/// @param y2 End Y position.
-/// @return True if there is an unobstructed line of sight.
-bool has_line_of_sight(const Tilemap& tilemap, float x1, float y1, float x2, float y2) {
-    if (!tilemap.is_loaded()) {
-        return true;
-    }
-
-    float dx = x2 - x1;
-    float dy = y2 - y1;
-    float dist = normalize(dx, dy);
-
-    float step_size = static_cast<float>(tilemap.cell_size()) * 0.5f;
-    int steps = static_cast<int>(dist / step_size);
-
-    for (int i = 1; i <= steps; ++i) {
-        float px = x1 + dx * step_size * static_cast<float>(i);
-        float py = y1 + dy * step_size * static_cast<float>(i);
-        int gx = static_cast<int>(px) / tilemap.cell_size();
-        int gy = static_cast<int>(py) / tilemap.cell_size();
-        if (tilemap.is_cell_solid(gx, gy)) {
-            return false;
-        }
-    }
-    return true;
-}
 
 /// @brief Update a Chaser enemy: beeline toward the player.
 void update_chaser(Velocity& vel, const AiBehavior& ai, float dir_x, float dir_y) {
@@ -148,13 +103,17 @@ bool is_probe_blocked(const Tilemap& tilemap, float x, float y) {
 }
 
 /// @brief Update a Coward enemy: flee away from the player, wall-sliding to avoid corners.
+/// @param body_reach Distance from the entity's centre to the edge of its wall hitbox.
 void update_coward(Velocity& vel, AiBehavior& ai, float dir_x, float dir_y, float entity_x,
-                   float entity_y, const Tilemap& tilemap) {
+                   float entity_y, float body_reach, const Tilemap& tilemap) {
     float flee_x = -dir_x;
     float flee_y = -dir_y;
 
-    // Probe one cell ahead in the flee direction
-    float probe_dist = tilemap.is_loaded() ? static_cast<float>(tilemap.cell_size()) : 16.f;
+    // Probe one cell beyond the body in the flee direction. Measured from
+    // the centre alone, a probe shorter than a large body (the boss) never
+    // left it, and the boss ran into walls it could not see.
+    float probe_dist =
+        body_reach + (tilemap.is_loaded() ? static_cast<float>(tilemap.cell_size()) : 16.f);
     float probe_x = entity_x + flee_x * probe_dist;
     float probe_y = entity_y + flee_y * probe_dist;
 
@@ -226,6 +185,14 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
             kb->remaining -= dt;
             if (kb->remaining <= 0.f) {
                 reg.remove<Knockback>(entity);
+                // The slide ends here. A drifter only sets its velocity
+                // when its wander timer runs out, so without this it would
+                // keep flying at knockback speed until then.
+                vel.dx = 0.f;
+                vel.dy = 0.f;
+                if (ai.archetype == AiBehavior::Archetype::Drifter) {
+                    ai.phase_timer = 0.f; // pick a new heading next tick
+                }
             }
             continue;
         }
@@ -245,7 +212,7 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
         // Idle: wait for activation
         if (ai.phase == AiBehavior::Phase::Idle) {
             if (dist > ai.activation_range ||
-                !has_line_of_sight(tilemap, tf.x, tf.y, player_x, player_y)) {
+                !tilemap.has_line_of_sight(tf.x, tf.y, player_x, player_y)) {
                 vel.dx = 0.f;
                 vel.dy = 0.f;
                 // Emitter off while idle
@@ -271,9 +238,17 @@ void update_ai(entt::registry& reg, const Tilemap& tilemap, float dt) {
         case AiBehavior::Archetype::Stalker:
             update_stalker(vel, ai, dir_x, dir_y, dist, dt);
             break;
-        case AiBehavior::Archetype::Coward:
-            update_coward(vel, ai, dir_x, dir_y, tf.x, tf.y, tilemap);
+        case AiBehavior::Archetype::Coward: {
+            // Walls stop the rect hitbox; fall back to the circle
+            float body_reach = 0.f;
+            if (const auto* rect = reg.try_get<RectHitbox>(entity)) {
+                body_reach = std::max(rect->width, rect->height) * 0.5f;
+            } else if (const auto* circle = reg.try_get<CircleHitbox>(entity)) {
+                body_reach = circle->radius;
+            }
+            update_coward(vel, ai, dir_x, dir_y, tf.x, tf.y, body_reach, tilemap);
             break;
+        }
         }
 
         // Disarmed enemies become aggressive Chasers

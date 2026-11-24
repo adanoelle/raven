@@ -89,6 +89,7 @@ void Input::consume_pressed() {
     current_.down_pressed = false;
     current_.left_pressed = false;
     current_.right_pressed = false;
+    current_.gamepad_lost = false;
 }
 
 void Input::set_renderer(SDL_Renderer* renderer) {
@@ -130,6 +131,8 @@ void Input::process_event(const SDL_Event& event) {
             SDL_CloseGamepad(gamepad_);
             gamepad_ = nullptr;
             trigger_held_ = {};
+            event_stick_ = {};
+            latched_.gamepad_lost = true;
             spdlog::info("Gamepad disconnected");
         }
         break;
@@ -152,6 +155,26 @@ void Input::process_event(const SDL_Event& event) {
 
     case SDL_EVENT_KEY_DOWN:
         if (!event.key.repeat) {
+            switch (event.key.scancode) {
+            case SDL_SCANCODE_UP:
+            case SDL_SCANCODE_W:
+                latched_.up = true;
+                break;
+            case SDL_SCANCODE_DOWN:
+            case SDL_SCANCODE_S:
+                latched_.down = true;
+                break;
+            case SDL_SCANCODE_LEFT:
+            case SDL_SCANCODE_A:
+                latched_.left = true;
+                break;
+            case SDL_SCANCODE_RIGHT:
+            case SDL_SCANCODE_D:
+                latched_.right = true;
+                break;
+            default:
+                break;
+            }
             for (std::size_t i = 0; i < ACTIONS.size(); ++i) {
                 const auto& keys = keyboard_layout_.*ACTIONS[i].keys;
                 if (std::ranges::find(keys, event.key.scancode) != keys.end()) {
@@ -164,22 +187,56 @@ void Input::process_event(const SDL_Event& event) {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
         if (gamepad_ && event.gbutton.which == SDL_GetGamepadID(gamepad_)) {
             latch_pad(PadControl::Kind::Button, event.gbutton.button);
+            switch (event.gbutton.button) {
+            case SDL_GAMEPAD_BUTTON_DPAD_UP:
+                latched_.up = true;
+                break;
+            case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+                latched_.down = true;
+                break;
+            case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+                latched_.left = true;
+                break;
+            case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+                latched_.right = true;
+                break;
+            default:
+                break;
+            }
         }
         break;
 
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+        if (!gamepad_ || event.gaxis.which != SDL_GetGamepadID(gamepad_)) {
+            break;
+        }
         // Trigger hysteresis follows every axis event, not only the poll, so
         // a release and re-pull inside one frame is a new press, and a
         // trigger wobbling above the release point is not.
-        if (gamepad_ && event.gaxis.which == SDL_GetGamepadID(gamepad_) &&
-            (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ||
-             event.gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) {
+        if (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER ||
+            event.gaxis.axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) {
             bool& held = trigger_held_[event.gaxis.axis];
             const bool now = trigger_pressed(static_cast<float>(event.gaxis.value) / 32767.f, held);
             if (now && !held) {
                 latch_pad(PadControl::Kind::Trigger, event.gaxis.axis);
             }
             held = now;
+        }
+        // The left stick's menu direction follows every axis event too, so
+        // a flick out and back inside one frame still moves the cursor.
+        // Same deadzone as the poll, so both agree on when it is a press.
+        if (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX ||
+            event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY) {
+            const float value = static_cast<float>(event.gaxis.value) / 32767.f;
+            (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX ? event_stick_.x : event_stick_.y) = value;
+            const StickValue stick =
+                apply_radial_deadzone(event_stick_.x, event_stick_.y, STICK_DEADZONE);
+            const MenuDirection direction =
+                menu_direction(stick.x, stick.y, event_stick_.direction);
+            if (direction != event_stick_.direction) {
+                latch_direction(direction);
+            }
+            event_stick_.direction = direction;
         }
         break;
 
@@ -351,6 +408,25 @@ void Input::latch_pad(PadControl::Kind kind, int code) {
     }
 }
 
+void Input::latch_direction(MenuDirection direction) {
+    switch (direction) {
+    case MenuDirection::Up:
+        latched_.up = true;
+        break;
+    case MenuDirection::Down:
+        latched_.down = true;
+        break;
+    case MenuDirection::Left:
+        latched_.left = true;
+        break;
+    case MenuDirection::Right:
+        latched_.right = true;
+        break;
+    case MenuDirection::None:
+        break;
+    }
+}
+
 void Input::compute_edges() {
     // Clamp movement first so axis edges compare like with like
     current_.move_x = std::clamp(current_.move_x, -1.f, 1.f);
@@ -366,15 +442,29 @@ void Input::compute_edges() {
             latched_.actions[i] || (current_.*action.held && !(previous_.*action.held));
         current_.*action.pressed = latched_.actions[i];
     }
-    latched_.up = latched_.up || axis_pressed(previous_.move_y, current_.move_y, -1.f);
-    latched_.down = latched_.down || axis_pressed(previous_.move_y, current_.move_y, 1.f);
-    latched_.left = latched_.left || axis_pressed(previous_.move_x, current_.move_x, -1.f);
-    latched_.right = latched_.right || axis_pressed(previous_.move_x, current_.move_x, 1.f);
+    // The poll backs the events up. It only counts a direction whose axis
+    // crossed half-way since the last poll: with one direction held and a
+    // second pressed, the second's event is its press, and letting go of
+    // the first must not count as pressing the second again.
+    const MenuDirection direction =
+        menu_direction(current_.move_x, current_.move_y, menu_direction_);
+    if (direction != menu_direction_) {
+        const float t = MENU_AXIS_THRESHOLD;
+        const bool crossed = (direction == MenuDirection::Up && previous_.move_y >= -t) ||
+                             (direction == MenuDirection::Down && previous_.move_y <= t) ||
+                             (direction == MenuDirection::Left && previous_.move_x >= -t) ||
+                             (direction == MenuDirection::Right && previous_.move_x <= t);
+        if (crossed) {
+            latch_direction(direction);
+        }
+    }
+    menu_direction_ = direction;
 
     current_.up_pressed = latched_.up;
     current_.down_pressed = latched_.down;
     current_.left_pressed = latched_.left;
     current_.right_pressed = latched_.right;
+    current_.gamepad_lost = latched_.gamepad_lost;
 
     // Resolve mouse_active: mouse movement activates, right stick deactivates
     if (mouse_moved_) {

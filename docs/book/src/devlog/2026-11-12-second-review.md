@@ -94,16 +94,29 @@ follow-up PR):
 4. **The exit opened, and was checked, on the tick of the last kill.**
    Exits open 0.75 s after the room is cleared (`EXIT_OPEN_DELAY`).
 
-Still open:
+The smaller items, fixed on 2026-11-24:
 
-- A drifter keeps its knockback velocity until its next wander timer.
-- The boss coward's wall probe is shorter than its hitbox.
-- Abilities and melee hit through walls.
-- Losing the controller doesn't pause.
-- Adjusting any option re-applies window scale and vsync.
-- A diagonal stick moves two ways in the options menu.
-- Menu direction edges come from the poll, not from events, so a quick
-  flick at a low frame rate can be missed.
+- **A drifter kept its knockback velocity until its next wander timer.**
+  Velocity is zeroed when knockback ends, and a drifter picks a new heading
+  on the next tick.
+- **The boss coward's wall probe was shorter than its hitbox.** The probe
+  now reaches one cell beyond the body.
+- **Abilities and melee hit through walls.** Melee, ground slam and
+  concussion shot skip an enemy with a wall between it and the player
+  (`Tilemap::has_line_of_sight`, moved out of the AI system).
+- **Losing the controller didn't pause.** `InputState::gamepad_lost`
+  pauses the run.
+- **Adjusting any option re-applied window scale and vsync.**
+  `settings_changes()` picks out what differs from what was last applied.
+- **A diagonal stick moved two ways in the options menu.**
+  `menu_direction()` reduces the axes to one of four directions.
+- **Menu direction edges came from the poll only.** Direction keys, the
+  d-pad and the left stick now latch from events, so a flick between two
+  polls counts.
+
+Left for playtesting to judge: the line-of-sight check runs centre to
+centre in half-cell steps, so a swing can still clip the very corner of a
+wall.
 
 ## Open: Authoring Traps
 
@@ -218,7 +231,7 @@ Both questions the review raised were settled the same day.
 | #21 production plan | Rewritten |
 | Boss disarm and disarmed body damage | Decided and built |
 | Gameplay items 1-4 | Done |
-| Smaller gameplay items | Open |
+| Smaller gameplay items | Done |
 | Authoring traps | Open |
 | Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |
 | Out-of-date docs | Done, except `project-tour.md` |

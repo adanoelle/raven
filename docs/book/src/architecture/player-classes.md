@@ -249,7 +249,10 @@ selected `ClassId::Id` to `GameScene`'s constructor via swap.
    `GroundSlam`, and no active `Dash`, emplace `GroundSlam` and reset cooldown.
 3. **Hit check** — on the first tick of an active `GroundSlam` (`!hit_checked`):
    - `collect_enemies_in_circle()` gathers every enemy within `radius` into
-     `AbilityHit` records (entity + radial knockback direction).
+     `AbilityHit` records (entity + radial knockback direction). An enemy
+     with a wall between it and the player
+     (`Tilemap::has_line_of_sight()`) is left out; the same holds for the
+     concussion shot and for melee.
    - `apply_ability_hits()` deals damage and applies knockback (350 px/s for
      the shared `ABILITY_KNOCKBACK_DURATION`, 0.15 s).
    - Set `hit_checked = true`.

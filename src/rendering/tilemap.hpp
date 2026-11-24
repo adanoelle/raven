@@ -75,6 +75,16 @@ class Tilemap {
     /// @return True if the cell is solid, false if empty or out of bounds.
     [[nodiscard]] bool is_cell_solid(int grid_x, int grid_y) const;
 
+    /// @brief Test whether a straight line between two points is free of solid cells.
+    ///
+    /// Steps along the line in half-cell increments.
+    /// @param x1 Start X in world pixels.
+    /// @param y1 Start Y in world pixels.
+    /// @param x2 End X in world pixels.
+    /// @param y2 End Y in world pixels.
+    /// @return True if no solid cell lies on the line, or no map is loaded.
+    [[nodiscard]] bool has_line_of_sight(float x1, float y1, float x2, float y2) const;
+
     /// @brief Find a spawn point by name.
     /// @param name Spawn point identifier.
     /// @return Pointer to the spawn point, or nullptr if not found.

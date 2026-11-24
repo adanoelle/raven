@@ -16,11 +16,26 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <random>
+#include <vector>
 
 using namespace raven;
 using Catch::Approx;
 
 namespace {
+
+/// @brief An unloaded tilemap: nothing blocks an ability.
+const Tilemap no_walls;
+
+/// @brief A map with one wall column between x=96 and x=112.
+Tilemap wall_at_96() {
+    Tilemap tilemap;
+    std::vector<bool> grid(10 * 10, false);
+    for (std::size_t row = 0; row < 10; ++row) {
+        grid[row * 10 + 6] = true;
+    }
+    tilemap.init_collision(10, 10, 16, grid);
+    return tilemap;
+}
 
 /// @brief Create a minimal player entity for melee/dash tests.
 entt::entity make_player(entt::registry& reg, float x, float y) {
@@ -118,11 +133,34 @@ TEST_CASE("Melee arc hits enemy in front of player", "[melee]") {
     auto enemy = make_enemy(reg, 120.f, 100.f); // 20px in front (aim is +x)
 
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     auto& e_hp = reg.get<Health>(enemy);
     REQUIRE(e_hp.current < 3.f); // Took damage
     REQUIRE(reg.any_of<Knockback>(enemy));
+}
+
+TEST_CASE("Melee does not reach through a wall", "[melee]") {
+    entt::registry reg;
+    reg.ctx().emplace<StringInterner>();
+    PatternLibrary patterns;
+    const Tilemap tilemap = wall_at_96();
+
+    make_player(reg, 88.f, 100.f);
+    auto enemy = make_enemy(reg, 120.f, 100.f); // in range, on the far side
+
+    systems::update_melee(reg, melee_input(), tilemap, patterns, 1.f / 120.f);
+
+    CHECK(reg.get<Health>(enemy).current == Approx(3.f));
+    CHECK_FALSE(reg.any_of<Knockback>(enemy));
+
+    // The same swing with no wall in the way lands
+    entt::registry open_reg;
+    open_reg.ctx().emplace<StringInterner>();
+    make_player(open_reg, 88.f, 100.f);
+    auto open_enemy = make_enemy(open_reg, 120.f, 100.f);
+    systems::update_melee(open_reg, melee_input(), no_walls, patterns, 1.f / 120.f);
+    CHECK(open_reg.get<Health>(open_enemy).current < 3.f);
 }
 
 TEST_CASE("Melee arc misses enemy behind player", "[melee]") {
@@ -134,7 +172,7 @@ TEST_CASE("Melee arc misses enemy behind player", "[melee]") {
     auto enemy = make_enemy(reg, 70.f, 100.f); // Behind player (aim is +x)
 
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     auto& e_hp = reg.get<Health>(enemy);
     REQUIRE(e_hp.current == Approx(3.f)); // No damage
@@ -151,7 +189,7 @@ TEST_CASE("Dash-spin: melee during dash hits enemy behind player", "[melee][dash
     reg.emplace<DashFollowUp>(player);         // token: melee widens to 360
 
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     REQUIRE(reg.any_of<MeleeAttack>(player));
     REQUIRE(reg.get<MeleeAttack>(player).half_angle == Approx(3.14159265f));
@@ -174,7 +212,7 @@ TEST_CASE("Melee during the follow-up dash is the aimed cone", "[melee][dash]") 
     reg.emplace<Dash>(player);                 // Follow-up dash: token already spent
 
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     // No token, no spin: the default aimed cone
     REQUIRE(reg.any_of<MeleeAttack>(player));
@@ -193,7 +231,7 @@ TEST_CASE("Melee arc misses enemy outside range", "[melee]") {
     auto enemy = make_enemy(reg, 200.f, 100.f); // 100px away, well beyond range
 
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     auto& e_hp = reg.get<Health>(enemy);
     REQUIRE(e_hp.current == Approx(3.f)); // No damage
@@ -219,7 +257,7 @@ TEST_CASE("Melee disarms enemy and spawns weapon pickup", "[melee]") {
     reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern"), {}, {}});
 
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     // Enemy should be disarmed
     REQUIRE_FALSE(reg.any_of<BulletEmitter>(enemy));
@@ -240,7 +278,7 @@ TEST_CASE("Melee cooldown prevents rapid attacks", "[melee]") {
 
     // First attack
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
     auto& e_hp = reg.get<Health>(enemy);
     float hp_after_first = e_hp.current;
     REQUIRE(hp_after_first < 3.f);
@@ -251,7 +289,7 @@ TEST_CASE("Melee cooldown prevents rapid attacks", "[melee]") {
     }
 
     // Second attack immediately — should be blocked by cooldown
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
     REQUIRE(e_hp.current == Approx(hp_after_first)); // No additional damage
 }
 
@@ -271,7 +309,7 @@ TEST_CASE("Disarmed enemy has no BulletEmitter and has Disarmed tag", "[melee]")
     reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern2"), {}, {}});
 
     auto input = melee_input();
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     REQUIRE_FALSE(reg.any_of<BulletEmitter>(enemy));
     REQUIRE(reg.any_of<Disarmed>(enemy));
@@ -294,7 +332,7 @@ TEST_CASE("A disarmed shooter gains body damage", "[melee]") {
         auto enemy = make_enemy(reg, 120.f, 100.f);
         reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern3"), {}, {}});
 
-        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+        systems::update_melee(reg, melee_input(), no_walls, patterns, 1.f / 120.f);
 
         REQUIRE(reg.any_of<ContactDamage>(enemy));
         const auto& contact = reg.get<ContactDamage>(enemy);
@@ -307,7 +345,7 @@ TEST_CASE("A disarmed shooter gains body damage", "[melee]") {
         reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern3"), {}, {}});
         reg.emplace<Disarmable>(enemy, 1, 35.f);
 
-        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+        systems::update_melee(reg, melee_input(), no_walls, patterns, 1.f / 120.f);
 
         CHECK(reg.get<ContactDamage>(enemy).damage == 35.f);
     }
@@ -317,7 +355,7 @@ TEST_CASE("A disarmed shooter gains body damage", "[melee]") {
         reg.emplace<BulletEmitter>(enemy, BulletEmitter{interner.intern("test_pattern3"), {}, {}});
         reg.emplace<ContactDamage>(enemy, ContactDamage{40.f});
 
-        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+        systems::update_melee(reg, melee_input(), no_walls, patterns, 1.f / 120.f);
 
         CHECK(reg.get<ContactDamage>(enemy).damage == 40.f);
     }
@@ -344,9 +382,9 @@ TEST_CASE("A tough enemy keeps its weapon until its last disarm hit", "[melee]")
     auto swing = [&] {
         reg.get<Transform2D>(enemy) = Transform2D{110.f, 100.f};
         reg.remove<Knockback>(enemy);
-        systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+        systems::update_melee(reg, melee_input(), no_walls, patterns, 1.f / 120.f);
         for (int i = 0; i < 120; ++i) {
-            systems::update_melee(reg, no_input(), patterns, 1.f / 120.f);
+            systems::update_melee(reg, no_input(), no_walls, patterns, 1.f / 120.f);
         }
     };
 
@@ -380,7 +418,7 @@ TEST_CASE("Dash and melee pressed on the same tick give the spin", "[melee][dash
 
     // The order GameScene runs them in
     systems::update_dash(reg, input, 1.f / 120.f);
-    systems::update_melee(reg, input, patterns, 1.f / 120.f);
+    systems::update_melee(reg, input, no_walls, patterns, 1.f / 120.f);
 
     REQUIRE(reg.any_of<Dash>(player));
     REQUIRE(reg.any_of<MeleeAttack>(player));
@@ -546,7 +584,7 @@ TEST_CASE("Dash-spin forfeits the second dash", "[melee][dash]") {
     REQUIRE(reg.any_of<DashFollowUp>(player));
 
     // Spin mid-dash: token spent on the 360
-    systems::update_melee(reg, melee_input(), patterns, 1.f / 120.f);
+    systems::update_melee(reg, melee_input(), no_walls, patterns, 1.f / 120.f);
     REQUIRE(reg.get<MeleeAttack>(player).half_angle == Approx(3.14159265f));
     REQUIRE_FALSE(reg.any_of<DashFollowUp>(player));
 

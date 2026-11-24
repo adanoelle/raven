@@ -94,7 +94,16 @@ Two subtleties:
   `up_pressed`/`down_pressed` (and `left_pressed`/`right_pressed` in options)
   press edges. A direction that was already held when the menu opened is not a
   press, so holding up while pausing doesn't land the cursor on QUIT TO
-  TITLE.
+  TITLE. A diagonal stick push is one direction (see
+  [Input](input.md)), so it can't move the options cursor and change a
+  value at once.
+- **Pausing** — `GameScene` pushes the pause overlay on `pause_pressed`, when
+  the app is suspended, and when the controller in use disconnects
+  (`gamepad_lost`).
+- **Options** — `Game::apply_settings()` compares against what was last
+  applied (`settings_changes()` in `core/settings.hpp`) and only re-applies
+  what differs, so moving a volume slider does not resize the window or
+  reset vsync.
 
 Resume pops the overlay; quit-to-title pops and then swaps the `GameScene`
 beneath to `TitleScene` (two queued operations, applied in order).

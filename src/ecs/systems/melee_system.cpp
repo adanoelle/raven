@@ -15,8 +15,8 @@ namespace {
 constexpr float PI = 3.14159265358979323846f;
 } // namespace
 
-void update_melee(entt::registry& reg, const InputState& input, const PatternLibrary& patterns,
-                  float dt) {
+void update_melee(entt::registry& reg, const InputState& input, const Tilemap& tilemap,
+                  const PatternLibrary& patterns, float dt) {
     auto& interner = reg.ctx().get<StringInterner>();
 
     // Tick melee cooldowns
@@ -81,7 +81,8 @@ void update_melee(entt::registry& reg, const InputState& input, const PatternLib
                 // Use range + enemy hitbox radius for generosity
                 float effective_range = attack.range + e_hb.radius;
                 if (point_in_cone(tf.x, tf.y, attack.aim_x, attack.aim_y, e_tf.x + e_hb.offset_x,
-                                  e_tf.y + e_hb.offset_y, effective_range, attack.half_angle)) {
+                                  e_tf.y + e_hb.offset_y, effective_range, attack.half_angle) &&
+                    tilemap.has_line_of_sight(tf.x, tf.y, e_tf.x, e_tf.y)) {
                     AbilityHit hit{e_ent, 0.f, 0.f};
                     knockback_dir(tf.x, tf.y, e_tf.x, e_tf.y, hit.dir_x, hit.dir_y);
                     hits.push_back(hit);

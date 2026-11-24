@@ -125,20 +125,30 @@ TEST_CASE("Input system movement", "[input]") {
     }
 }
 
-TEST_CASE("Menu direction edges only fire when an axis crosses half-way", "[input]") {
-    // A fresh push past half-way is a press
-    CHECK(axis_pressed(0.f, 1.f, 1.f));
-    CHECK(axis_pressed(0.f, -1.f, -1.f));
-    CHECK(axis_pressed(0.4f, 0.6f, 1.f));
+TEST_CASE("Menu direction is one of four, past half-way", "[input]") {
+    using enum MenuDirection;
 
-    // Holding a direction is not a press: a menu opened while the player
-    // is already moving must not move its cursor
-    CHECK_FALSE(axis_pressed(1.f, 1.f, 1.f));
-    CHECK_FALSE(axis_pressed(-1.f, -1.f, -1.f));
+    // A push past half-way is a direction
+    CHECK(menu_direction(0.f, 1.f, None) == Down);
+    CHECK(menu_direction(0.f, -1.f, None) == Up);
+    CHECK(menu_direction(-0.6f, 0.f, None) == Left);
+    CHECK(menu_direction(0.6f, 0.4f, None) == Right);
 
-    // Wrong direction, or not far enough
-    CHECK_FALSE(axis_pressed(0.f, 1.f, -1.f));
-    CHECK_FALSE(axis_pressed(0.f, 0.5f, 1.f));
+    // Not far enough
+    CHECK(menu_direction(0.5f, 0.5f, None) == None);
+    CHECK(menu_direction(0.f, 0.f, Down) == None);
+
+    // A diagonal is the leading axis only; a tie goes to the vertical
+    CHECK(menu_direction(0.6f, 0.9f, None) == Down);
+    CHECK(menu_direction(0.9f, 0.6f, None) == Right);
+    CHECK(menu_direction(1.f, 1.f, None) == Down);
+
+    // The held direction keeps the lead while the stick wobbles near 45
+    // degrees, and gives it up once the other axis is clearly ahead
+    CHECK(menu_direction(0.75f, 0.7f, Down) == Down);
+    CHECK(menu_direction(0.7f, 0.75f, Right) == Right);
+    CHECK(menu_direction(1.f, 0.6f, Down) == Right);
+    CHECK(menu_direction(1.f, 0.f, Down) == Right);
 }
 
 // ── Device input (Input class) ─────────────────────────────────────
@@ -352,6 +362,69 @@ TEST_CASE("Sticks use a round deadzone", "[input][gamepad]") {
     }
 }
 
+TEST_CASE("A diagonal stick push is one menu direction", "[input][gamepad]") {
+    VirtualPad pad;
+    Input input;
+    input.init();
+
+    // Down-right, leaning down, arriving over two frames
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.8f);
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 0.3f);
+    {
+        const auto& s = frame(input);
+        CHECK(s.down_pressed);
+        CHECK_FALSE(s.right_pressed);
+    }
+    input.consume_pressed();
+
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.75f);
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 0.7f);
+    {
+        const auto& s = frame(input);
+        CHECK_FALSE(s.down_pressed); // still held, not pressed again
+        CHECK_FALSE(s.right_pressed);
+    }
+    input.consume_pressed();
+
+    // Rolling round to the right is a new direction
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.f);
+    pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 1.f);
+    CHECK(frame(input).right_pressed);
+}
+
+TEST_CASE("A menu direction that comes and goes between polls still counts", "[input][gamepad]") {
+    VirtualPad pad;
+    Input input;
+    input.init();
+    tick(input);
+
+    SECTION("a stick flick") {
+        pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 1.f);
+        pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.f);
+        const auto& s = frame(input);
+        CHECK(s.down_pressed);
+        CHECK(s.move_y == 0.f); // the poll never saw it
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).down_pressed);
+    }
+
+    SECTION("a d-pad tap") {
+        pad.button(SDL_GAMEPAD_BUTTON_DPAD_LEFT, true);
+        pad.button(SDL_GAMEPAD_BUTTON_DPAD_LEFT, false);
+        CHECK(frame(input).left_pressed);
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).left_pressed);
+    }
+
+    SECTION("a held push is one press, seen by the events and the poll alike") {
+        pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 1.f);
+        CHECK(frame(input).right_pressed);
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).right_pressed);
+        CHECK(input.state().move_x > 0.9f);
+    }
+}
+
 TEST_CASE("A tap released between polls still counts", "[input][gamepad]") {
     VirtualPad pad;
     Input input;
@@ -452,6 +525,30 @@ TEST_CASE("A button blocked on its press reads as released until let go", "[inpu
     }
 }
 
+TEST_CASE("Losing the gamepad in use is reported once", "[input][gamepad]") {
+    Input input;
+    {
+        VirtualPad pad;
+        input.init();
+        pad.button(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, true);
+        CHECK(frame(input).dash);
+        CHECK_FALSE(input.state().gamepad_lost);
+        input.consume_pressed();
+
+        // Unplug it. The pad's destructor would also quit the gamepad
+        // subsystem, so read the removal while it is still up.
+        SDL_DetachVirtualJoystick(pad.id);
+        SDL_UpdateJoysticks();
+
+        // Reported on the next frame, and held until a tick has seen it
+        CHECK(frame(input).gamepad_lost);
+        CHECK(frame(input).gamepad_lost);
+        CHECK_FALSE(input.state().dash);
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).gamepad_lost);
+    }
+}
+
 TEST_CASE("Keyboard and mouse events latch presses", "[input]") {
     Input input; // no devices: only events reach it
 
@@ -462,6 +559,22 @@ TEST_CASE("Keyboard and mouse events latch presses", "[input]") {
         event.key.repeat = repeat;
         input.process_event(event);
     };
+
+    SECTION("a direction key") {
+        input.begin_frame();
+        key(SDL_SCANCODE_DOWN, false);
+        key(SDL_SCANCODE_A, false);
+        input.update();
+        CHECK(input.state().down_pressed);
+        CHECK(input.state().left_pressed);
+        CHECK_FALSE(input.state().up_pressed);
+
+        input.consume_pressed();
+        input.begin_frame();
+        key(SDL_SCANCODE_DOWN, true); // key repeat is not a new press
+        input.update();
+        CHECK_FALSE(input.state().down_pressed);
+    }
 
     SECTION("a key press") {
         input.begin_frame();

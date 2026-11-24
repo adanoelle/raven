@@ -115,7 +115,8 @@ giving a generous margin so the arc feels good to use.
    (`!hit_checked`):
    - Iterate all enemies with `(Transform2D, CircleHitbox, Enemy, Health)`
      and collect every enemy inside the cone into `AbilityHit` records
-     (entity + knockback direction).
+     (entity + knockback direction). An enemy with a wall between it and
+     the player (`Tilemap::has_line_of_sight()`) is not hit.
    - Apply damage and knockback via the shared `apply_ability_hits()` helper
      (`src/ecs/systems/ability_hits.hpp`) — the same collect/apply pipeline
      used by Ground Slam and Concussion Shot. Knockback runs at the melee's
