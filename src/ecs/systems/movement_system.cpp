@@ -22,11 +22,19 @@ void update_movement(entt::registry& reg, float dt) {
         tf.y += vel.dy * dt;
     }
 
-    // Clamp player to screen bounds
-    auto players = reg.view<Transform2D, Player, Sprite>();
-    for (auto [entity, tf, player, sprite] : players.each()) {
-        float half_w = static_cast<float>(sprite.width) / 2.f;
-        float half_h = static_cast<float>(sprite.height) / 2.f;
+    // Clamp player to screen bounds, by the body's size. The sprite's size
+    // is a fallback only: it may be 0, meaning "the sheet's frame size".
+    auto players = reg.view<Transform2D, Player>();
+    for (auto [entity, tf, player] : players.each()) {
+        float half_w = 0.f;
+        float half_h = 0.f;
+        if (const auto* body = reg.try_get<RectHitbox>(entity)) {
+            half_w = body->width / 2.f;
+            half_h = body->height / 2.f;
+        } else if (const auto* sprite = reg.try_get<Sprite>(entity)) {
+            half_w = static_cast<float>(sprite->width) / 2.f;
+            half_h = static_cast<float>(sprite->height) / 2.f;
+        }
 
         tf.x = std::clamp(tf.x, half_w, static_cast<float>(Renderer::VIRTUAL_WIDTH) - half_w);
         tf.y = std::clamp(tf.y, half_h, static_cast<float>(Renderer::VIRTUAL_HEIGHT) - half_h);

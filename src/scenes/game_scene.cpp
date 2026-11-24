@@ -111,8 +111,9 @@ void GameScene::spawn_player(Game& game) {
     reg.emplace<Health>(player, 1.f, 1.f);
     reg.emplace<CircleHitbox>(player, 6.f, 0.f, 2.f);
     reg.emplace<RectHitbox>(player, 12.f, 14.f, 0.f, 2.f);
-    reg.emplace<Sprite>(player, interner.intern(sheets::PLAYER), 0, 0, 32, 32, 10, false, 0.f,
-                        -5.f);
+    // A size of 0 draws the sheet's frame size (config.json), so a class
+    // sheet with larger frames needs no change here
+    reg.emplace<Sprite>(player, interner.intern(sheets::PLAYER), 0, 0, 0, 0, 10, false, 0.f, -5.f);
     reg.emplace<Animation>(player, Animation{interner.intern(clips::IDLE)});
     reg.emplace<AimDirection>(player, 1.f, 0.f);
     reg.emplace<ShootCooldown>(player, 0.f, 0.2f);

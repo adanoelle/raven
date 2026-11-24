@@ -70,6 +70,18 @@ TEST_CASE("Movement system screen bounds", "[movement]") {
         REQUIRE(tf.y == Catch::Approx(8.f));
     }
 
+    SECTION("A player with a body is clamped by it, not by the sprite") {
+        auto ent = spawn_player(2.f, -5.f);
+        reg.get<Sprite>(ent).width = 0; // drawn at the sheet's frame size
+        reg.get<Sprite>(ent).height = 0;
+        reg.emplace<RectHitbox>(ent, 12.f, 14.f);
+        systems::update_movement(reg, DT);
+
+        auto& tf = reg.get<Transform2D>(ent);
+        REQUIRE(tf.x == Catch::Approx(6.f));
+        REQUIRE(tf.y == Catch::Approx(7.f));
+    }
+
     SECTION("Player is clamped to the right and bottom edges") {
         auto ent = spawn_player(static_cast<float>(Renderer::VIRTUAL_WIDTH) + 20.f,
                                 static_cast<float>(Renderer::VIRTUAL_HEIGHT) + 20.f);
