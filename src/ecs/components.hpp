@@ -61,6 +61,17 @@ struct Animation {
     bool finished = false; ///< A repeat-limited clip has shown its last frame in full.
 };
 
+/// @brief What the player animation last saw of the player's action, so a
+/// new swing or dash can be told from one that is still running.
+///
+/// Added by systems::update_player_animation on first use.
+struct ActionAnimation {
+    /// @brief Which action drives the clip.
+    enum class Kind : uint8_t { None, Melee, GroundSlam, Dash };
+    Kind kind = Kind::None; ///< The action seen on the last tick.
+    float remaining = 0.f;  ///< Its time remaining then, in seconds.
+};
+
 // ── Collision ────────────────────────────────────────────────────
 
 /// @brief Circular hitbox for collision detection (circle-circle checks).

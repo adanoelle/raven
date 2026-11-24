@@ -309,6 +309,36 @@ TEST_CASE("Player animation follows what the player is doing", "[animation]") {
         CHECK(anim.clip == f.id("dash"));
     }
 
+    SECTION("a second swing restarts the attack clip") {
+        systems::update_animation(f.reg, 0.05f);
+        systems::update_player_animation(f.reg);
+        REQUIRE(anim.frame == 1); // still the same swing: the clip carries on
+
+        // The first attack ends and another starts while the clip is playing
+        f.reg.remove<MeleeAttack>(e);
+        systems::update_player_animation(f.reg);
+        f.reg.emplace<MeleeAttack>(e);
+        systems::update_player_animation(f.reg);
+        CHECK(anim.clip == f.id("attack"));
+        CHECK(anim.frame == 0);
+    }
+
+    SECTION("the second dash of a chain restarts the dash clip") {
+        f.reg.remove<MeleeAttack>(e);
+        auto& dash = f.reg.emplace<Dash>(e);
+        systems::update_player_animation(f.reg);
+        dash.remaining = 0.02f; // nearly over
+        systems::update_animation(f.reg, 0.1f);
+        systems::update_player_animation(f.reg);
+        REQUIRE(anim.frame == 2);
+
+        // The follow-up dash replaces the first before it has ended
+        f.reg.emplace_or_replace<Dash>(e);
+        systems::update_player_animation(f.reg);
+        CHECK(anim.clip == f.id("dash"));
+        CHECK(anim.frame == 0);
+    }
+
     SECTION("ground slam uses the attack clip") {
         f.reg.remove<MeleeAttack>(e);
         systems::play_clip(anim, f.id("idle"));

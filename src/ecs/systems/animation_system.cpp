@@ -109,17 +109,28 @@ void update_player_animation(entt::registry& reg) {
 
     auto view = reg.view<Player, Velocity, Animation, Sprite>();
     for (auto [entity, player, vel, anim, sprite] : view.each()) {
+        using Kind = ActionAnimation::Kind;
         StringId wanted = idle;
-        bool action = false;
-        if (reg.any_of<MeleeAttack, GroundSlam>(entity)) {
+        ActionAnimation now;
+        if (const auto* melee = reg.try_get<MeleeAttack>(entity)) {
             wanted = attack;
-            action = true;
-        } else if (reg.any_of<Dash>(entity)) {
+            now = {Kind::Melee, melee->remaining};
+        } else if (const auto* slam = reg.try_get<GroundSlam>(entity)) {
+            wanted = attack;
+            now = {Kind::GroundSlam, slam->remaining};
+        } else if (const auto* dashing = reg.try_get<Dash>(entity)) {
             wanted = dash;
-            action = true;
+            now = {Kind::Dash, dashing->remaining};
         } else if ((vel.dx * vel.dx + vel.dy * vel.dy) > 1.f) {
             wanted = walk;
         }
+        const bool action = now.kind != Kind::None;
+
+        // An action's time only runs down, so more of it than last tick
+        // (or a different action) means a new one has started.
+        auto& seen = reg.get_or_emplace<ActionAnimation>(entity);
+        const bool started = action && (now.kind != seen.kind || now.remaining > seen.remaining);
+        seen = now;
 
         // A one-shot clip plays to its end before walk or idle replaces it
         const auto* current = library->get(sprite.sheet_id, anim.clip);
@@ -132,7 +143,13 @@ void update_player_animation(entt::registry& reg) {
                     break;
                 }
             }
-            play_clip(anim, chosen);
+            if (started && chosen == wanted) {
+                // Restart even if this clip is already playing: a second
+                // swing, or the second dash of a chain, is its own animation
+                anim = Animation{chosen};
+            } else {
+                play_clip(anim, chosen);
+            }
         }
 
         // Face the aim direction
