@@ -1,12 +1,15 @@
+#include "core/json_keys.hpp"
 #include "core/string_id.hpp"
 #include "patterns/pattern_library.hpp"
 
+#include <array>
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <string>
+#include <string_view>
 
 using namespace raven;
 
@@ -218,6 +221,31 @@ void write_file(const std::string& path, const std::string& content) {
 }
 
 } // namespace
+
+TEST_CASE("Unknown keys in data files are counted and reported", "[patterns]") {
+    constexpr std::array<std::string_view, 2> known = {"name", "speed"};
+
+    CHECK(warn_unknown_keys({{"name", "a"}, {"speed", 1}}, known, "test") == 0);
+    // A typo that would silently leave the default in place
+    CHECK(warn_unknown_keys({{"name", "a"}, {"sped", 1}, {"colour", 2}}, known, "test") == 2);
+    // Only objects have keys
+    CHECK(warn_unknown_keys(nlohmann::json::array({1, 2}), known, "test") == 0);
+}
+
+TEST_CASE("A pattern with a mistyped key still loads", "[patterns]") {
+    StringInterner interner;
+    PatternLibrary lib;
+    lib.set_interner(interner);
+
+    // "fire_rat" is reported and the default fire rate stays in place
+    REQUIRE(lib.load_from_json({{"name", "typo"},
+                                {"teir", "rare"},
+                                {"emitters", {{{"type", "radial"}, {"fire_rat", 2.f}}}}}));
+    const auto* pattern = lib.get("typo");
+    REQUIRE(pattern != nullptr);
+    CHECK(pattern->tier == Weapon::Tier::Common);
+    CHECK(pattern->emitters[0].fire_rate == Catch::Approx(0.1f));
+}
 
 TEST_CASE("PatternLibrary load_file", "[patterns]") {
     StringInterner interner;

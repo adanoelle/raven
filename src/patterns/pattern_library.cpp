@@ -1,16 +1,25 @@
 #include "patterns/pattern_library.hpp"
 
 #include "core/fs.hpp"
+#include "core/json_keys.hpp"
 #include "core/paths.hpp"
 #include "rendering/sheet_ids.hpp"
 
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
+#include <string_view>
 
 namespace raven {
 
 namespace {
+
+constexpr std::array<std::string_view, 3> PATTERN_KEYS = {"name", "tier", "emitters"};
+constexpr std::array<std::string_view, 15> EMITTER_KEYS = {
+    "type",         "count",         "speed",        "angular_velocity", "fire_rate",
+    "spread_angle", "start_angle",   "bullet_sheet", "bullet_frame_x",   "bullet_frame_y",
+    "bullet_width", "bullet_height", "lifetime",     "damage",           "hitbox_radius"};
 
 /// @brief Clamp a parsed value to a safe range, warning when out of bounds.
 float clamp_field(const std::string& pattern, const char* field, float value, float min_v,
@@ -122,6 +131,7 @@ std::vector<std::string> PatternLibrary::names() const {
 PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) const {
     PatternDef def;
     def.name = j.at("name").get<std::string>();
+    warn_unknown_keys(j, PATTERN_KEYS, "Pattern '" + def.name + "'");
 
     auto tier_str = j.value("tier", "common");
     if (tier_str == "rare") {
@@ -145,6 +155,7 @@ PatternDef PatternLibrary::parse_pattern(const nlohmann::json& j) const {
 EmitterDef PatternLibrary::parse_emitter(const nlohmann::json& j,
                                          const std::string& pattern_name) const {
     EmitterDef def;
+    warn_unknown_keys(j, EMITTER_KEYS, "Pattern '" + pattern_name + "' emitter");
 
     auto type_str = j.value("type", "radial");
     if (type_str == "aimed") {

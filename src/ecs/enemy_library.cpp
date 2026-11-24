@@ -1,6 +1,7 @@
 #include "ecs/enemy_library.hpp"
 
 #include "core/fs.hpp"
+#include "core/json_keys.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -29,18 +30,6 @@ constexpr std::array<std::string_view, 13> DEF_KEYS = {"tier",
 constexpr std::array<std::string_view, 2> HITBOX_KEYS = {"radius", "rect"};
 constexpr std::array<std::string_view, 5> AI_KEYS = {"archetype", "move_speed", "activation_range",
                                                      "preferred_range", "attack_range"};
-
-/// @brief Report keys that aren't part of the format; usually a typo that
-/// would otherwise silently leave a default in place.
-template <size_t N>
-void warn_unknown_keys(const nlohmann::json& object, const std::array<std::string_view, N>& known,
-                       const std::string& where) {
-    for (const auto& [key, value] : object.items()) {
-        if (std::ranges::find(known, key) == known.end()) {
-            spdlog::warn("{}: unknown key '{}'; is it a typo?", where, key);
-        }
-    }
-}
 
 /// @brief Read a two-number array such as "size": [w, h].
 template <typename T>

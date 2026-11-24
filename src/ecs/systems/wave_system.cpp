@@ -1,6 +1,7 @@
 #include "ecs/systems/wave_system.hpp"
 
 #include "core/fs.hpp"
+#include "core/json_keys.hpp"
 #include "core/paths.hpp"
 #include "core/string_id.hpp"
 #include "ecs/systems/hitbox_math.hpp"
@@ -11,9 +12,18 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
+#include <string_view>
 #include <utility>
 
 namespace raven {
+
+namespace {
+
+constexpr std::array<std::string_view, 3> STAGE_KEYS = {"name", "level", "waves"};
+constexpr std::array<std::string_view, 1> WAVE_KEYS = {"enemies"};
+
+} // namespace
 
 // ── StageLoader ────────────────────────────────────────────────────
 
@@ -85,6 +95,7 @@ StageDef StageLoader::parse_stage(const nlohmann::json& j) const {
     StageDef stage;
     stage.name = j.at("name").get<std::string>();
     stage.level = j.at("level").get<std::string>();
+    warn_unknown_keys(j, STAGE_KEYS, "Stage '" + stage.name + "'");
 
     for (const auto& wj : j.at("waves")) {
         stage.waves.push_back(parse_wave(wj, stage.name));
@@ -95,6 +106,7 @@ StageDef StageLoader::parse_stage(const nlohmann::json& j) const {
 
 WaveDef StageLoader::parse_wave(const nlohmann::json& j, const std::string& stage_name) const {
     WaveDef wave;
+    warn_unknown_keys(j, WAVE_KEYS, "Stage '" + stage_name + "' wave");
     for (const auto& ej : j.at("enemies")) {
         if (auto entry = parse_enemy(ej, stage_name)) {
             wave.enemies.push_back(std::move(*entry));
