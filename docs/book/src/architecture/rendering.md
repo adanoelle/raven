@@ -122,23 +122,23 @@ The render system (`src/ecs/systems/render_system.cpp`) draws all entities with
 
 1. **Collect** — Iterate all `(Transform2D, Sprite)` entities. Interpolate
    position if `PreviousTransform` is present. Look up the `SpriteSheet` by
-   string ID. If not found, draw a coloured placeholder rectangle.
+   its interned `StringId`. If not found, draw a coloured placeholder rectangle.
 2. **Sort** — Sort collected entries by `Sprite::layer` (ascending). Lower
-   layers draw first, higher layers draw on top.
+   layers draw first, higher layers draw on top. Within a layer, entries
+   sort by y, so sprites lower on the screen draw on top.
 3. **Draw** — Iterate sorted entries and call `SpriteSheet::draw()` for each.
    Sprites are centred on the entity position (offset by half frame size).
 
-Layer conventions:
+Layers in use:
 
-| Layer | Usage                        |
-| ----- | ---------------------------- |
-| 0     | Background tiles             |
-| 10    | Floor decorations            |
-| 20    | Items and pickups            |
-| 30    | Enemies and player           |
-| 40    | Projectiles                  |
-| 50    | VFX (explosions, hit sparks) |
-| 60    | UI overlays                  |
+| Layer | Usage                                |
+| ----- | ------------------------------------ |
+| 1     | Room exits                           |
+| 5     | Bullets, weapon pickups, stabilizers |
+| 10    | Player and enemies                   |
+
+The tilemap and the HUD are not sprites: `GameScene::render` draws the
+tilemap before `render_sprites` and the HUD after it.
 
 The sort uses a persistent scratch buffer stored in the EnTT registry context,
 avoiding per-frame allocation.

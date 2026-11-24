@@ -50,13 +50,19 @@ struct Sprite {
 };
 ```
 
-Copies are O(1) — just a 2-byte integer copy instead of a heap allocation. When
-the actual string is needed (e.g. for a sprite sheet lookup), systems resolve it
-through the interner:
+Copies are O(1) — just a 2-byte integer copy instead of a heap allocation.
+Lookups take the ID directly, so the hot path never touches the string:
+
+```cpp
+const auto* sheet = sprites.get(sprite.sheet_id);
+```
+
+The string is only resolved through the interner for things a person reads,
+such as a log message:
 
 ```cpp
 const auto& interner = reg.ctx().get<StringInterner>();
-const auto* sheet = sprites.get(interner.resolve(sprite.sheet_id));
+spdlog::warn("Missing sheet '{}'", interner.resolve(sprite.sheet_id));
 ```
 
 ## System conventions
@@ -101,18 +107,26 @@ Scenes own the system execution order. `GameScene::update()` calls systems in a
 specific sequence where each system's output feeds the next:
 
 ```
+update_charged_shot       Sharpshooter charge + fire on release
 update_input              read keyboard/gamepad → target velocity
+update_dash               dash velocity override, invulnerability
+update_melee              arc hit check, disarm
+update_ground_slam        Brawler area attack
+update_concussion_shot    Sharpshooter area knockback
 update_shooting           aim resolution + bullet spawn
 update_emitters           enemy bullet pattern firing
-animation state logic     velocity → idle/walk switch
+update_ai                 enemy movement + attack phases
+update_player_animation   what the player is doing → clip
 update_animation          tick frames
 update_movement           velocity → position
 update_tile_collision     resolve wall overlaps
+update_bullet_walls       destroy bullets inside solid tiles
 update_collision          circle-circle hit tests
 update_pickups            weapon + stabilizer collection
 update_weapon_decay       tick decay timers, handle explosion
 update_damage             apply DamageOnContact, spawn drops
 update_cleanup            tick lifetimes, despawn expired entities
+update_waves              wave clear check, next wave spawn
 ```
 
 This ordering is not enforced by the framework — it is the scene's

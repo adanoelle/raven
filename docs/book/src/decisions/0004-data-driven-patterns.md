@@ -27,7 +27,7 @@ loading individual files or parsed JSON objects (useful for tests).
   "name": "aimed_burst",
   "emitters": [
     {
-      "type": "Aimed",
+      "type": "aimed",
       "count": 3,
       "speed": 120,
       "fire_rate": 0.5,

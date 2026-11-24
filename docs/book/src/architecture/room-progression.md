@@ -255,24 +255,28 @@ The decay timer only renders when the player has a `WeaponDecay` component
 ## System pipeline order
 
 ```
+update_charged_shot
 update_input
 update_dash
 update_melee
+update_ground_slam
+update_concussion_shot
 update_shooting
 update_emitters
 update_ai
-animation state logic
+update_player_animation
 update_animation
 update_movement
 update_tile_collision
+update_bullet_walls
 update_collision
 update_pickups
 update_weapon_decay
 update_damage           <- score accumulation, game over flag
 update_cleanup
-update_waves            <- wave clear check, next wave spawn
-check_exit_overlap      <- room transition trigger
+update_waves            <- wave clear check, next wave spawn, exit opening
 game_over check         <- scene swap to GameOverScene
+check_exit_overlap      <- room transition trigger
 render_tilemap
 render_sprites
 render_hud              <- HUD overlay on top of gameplay
@@ -280,9 +284,11 @@ render_hud              <- HUD overlay on top of gameplay
 
 `update_waves` runs after `update_damage` so that enemies destroyed in the
 current tick are already gone when the wave-clear check runs.
-`check_exit_overlap` runs after waves so that exits opened this tick can be
-detected immediately. `render_hud` runs last in the render pass to draw on top
-of all gameplay sprites.
+The game over check runs before `check_exit_overlap`, so touching an exit on
+the tick the player dies does not count as clearing the stage.
+`check_exit_overlap` runs after waves so that an exit can be used on the tick
+it opens (0.75 s after the room is cleared, `EXIT_OPEN_DELAY`). `render_hud`
+runs last in the render pass to draw on top of all gameplay sprites.
 
 ## Tests
 

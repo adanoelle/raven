@@ -5,7 +5,7 @@
 </tr>
 </table>
 
-A pixel art roguelike built with C++20, EnTT ECS, and SDL2. Inspired by Blazing
+A pixel art roguelike built with C++20, EnTT ECS, and SDL3. Inspired by Blazing
 Beaks.
 
 ## Quick Start (NixOS)
@@ -34,10 +34,16 @@ just test
 | `just lint`    | Run clang-tidy              |
 | `just clean`   | Remove build directories    |
 
+`just lint-changed` lints only what the branch changes relative to main,
+`just export-art` turns the Aseprite sources in `art/` into sprite sheets, and
+`just watch` rebuilds and runs on every source change. `just --list` shows
+everything.
+
 ### Offline / console builds
 
 CPM fetches EnTT, nlohmann_json, spdlog, LDtkLoader, Dear ImGui, and Catch2
-from GitHub at configure time. For an isolated build machine (a console
+from GitHub at configure time (and SDL3 and SDL3_image when no system package
+is found). For an isolated build machine (a console
 devkit, an air-gapped CI runner), populate a source cache once while online:
 
 ```bash
@@ -75,11 +81,14 @@ See `ARCHITECTURE.md` for full design details.
 
 ```
 src/
-├── core/       # Game loop, clock, input
+├── audio/      # Sound effects on SDL3 audio streams
+├── core/       # Game loop, clock, input, settings, saves
 ├── ecs/        # Components + systems
-├── rendering/  # SDL2 renderer, sprite sheets
-├── scenes/     # Scene state machine
-└── platform/   # Platform abstraction (Steam, Switch)
+├── rendering/  # SDL3 renderer, sprite sheets, tilemaps, bitmap font
+├── scenes/     # Stack-based scene manager and scenes
+├── patterns/   # Bullet pattern library (JSON)
+├── debug/      # Dear ImGui overlay (off in release builds)
+└── platform/   # Optional Steamworks wrapper, console build flag
 ```
 
 ## License

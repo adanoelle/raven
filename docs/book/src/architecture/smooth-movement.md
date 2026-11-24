@@ -141,7 +141,7 @@ The `Input` class splits its work into three phases:
 
 1. **`begin_frame()`** — saves the previous state, zeros the current state.
    Called once at the start of the frame.
-2. **`process_event(event)`** — handles discrete SDL events (quit, controller
+2. **`process_event(event)`** — handles discrete SDL events (quit, gamepad
    hot-plug). Called inside the `SDL_PollEvent` loop.
 3. **`update()`** — polls `SDL_GetKeyboardState` and gamepad axes, computes
    edge-detected button presses. Called once _after_ the event loop.
@@ -172,20 +172,19 @@ render()               interpolated draw
 ## Resize safety
 
 The renderer draws to a fixed-size offscreen texture (`render_target_`, 480x270)
-and blits it to the window at present time. On some platforms (notably Linux
-with SDL2-compat on Wayland), resizing the window can invalidate GPU textures.
-If the game then calls `SDL_RenderCopy` with the stale texture pointer, it
-crashes with SIGSEGV.
+and blits it to the window at present time. On some platforms, resizing the
+window can invalidate GPU textures. If the game then draws the stale texture
+pointer, it crashes with SIGSEGV.
 
 The fix has two parts:
 
 1. **Event-driven recreation** — `Renderer::handle_event()` listens for
-   `SDL_RENDER_TARGETS_RESET`, `SDL_RENDER_DEVICE_RESET`, and
-   `SDL_WINDOWEVENT_SIZE_CHANGED`, and recreates `render_target_` when any of
-   them fires.
-2. **Null guard** — `end_frame()` skips the `SDL_RenderCopy` if `render_target_`
-   is null, so even if recreation fails the game drops a frame instead of
-   crashing.
+   `SDL_EVENT_RENDER_TARGETS_RESET`, `SDL_EVENT_RENDER_DEVICE_RESET`, and
+   `SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED`, and recreates `render_target_` when
+   any of them fires.
+2. **Null guard** — `end_frame()` skips the `SDL_RenderTexture` if
+   `render_target_` is null, so even if recreation fails the game drops a
+   frame instead of crashing.
 
 ## Key files
 

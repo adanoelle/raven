@@ -65,16 +65,22 @@ Work through each group in order. Check every box before moving on.
 
 ### 3. Weapon steal loop
 
-- [ ] Killing an enemy with a `BulletEmitter` drops a weapon pickup at the death
-      position
+- [ ] A melee hit on an enemy with a `BulletEmitter` disarms it and drops a
+      weapon pickup at the enemy's position; the boss needs 3 hits
+      (`disarm_hits` in `assets/data/enemies.json`)
+- [ ] Killing an enemy does not drop a weapon
+- [ ] A disarmed enemy stops shooting, charges the player and deals body
+      damage on contact
 - [ ] Walking over the pickup collects it — player's fire pattern changes
       immediately
 - [ ] A 10 s decay timer starts on collection
-- [ ] When the timer expires: explosion VFX spawns, player takes 1 damage, 2 s
-      invulnerability granted, weapon reverts to default
+- [ ] When the timer expires: explosion VFX spawns, player takes 1 damage,
+      0.5 s invulnerability granted, weapon reverts to default
 - [ ] Collecting a second weapon while decaying resets the timer but preserves
       the original default weapon
 - [ ] After revert the player fires with the original default weapon
+- [ ] Swapping from a slow weapon to a faster one (on pickup or on revert)
+      does not carry the slow weapon's cooldown over
 
 ### 4. Stabilizer pickups
 
@@ -96,6 +102,7 @@ Work through each group in order. Check every box before moving on.
 
 - [ ] Enemies with `BulletEmitter` fire patterns matching their JSON definitions
 - [ ] Bullet count, spread angle, speed, and fire rate match the pattern data
+- [ ] A freshly spawned enemy holds its fire for 1 s
 - [ ] Enemy bullets have correct `Owner::Enemy` — they damage the player, not
       other enemies
 
@@ -103,7 +110,8 @@ Work through each group in order. Check every box before moving on.
 
 - [ ] Player bullets damage enemies on overlap (circle-circle hitbox)
 - [ ] Enemy bullets damage the player on overlap
-- [ ] Invulnerability frames prevent repeated damage for 2 s after a hit
+- [ ] Invulnerability frames prevent repeated damage for 0.5 s after a hit
+- [ ] Losing a life refills health and grants 3 s of invulnerability
 - [ ] Damage numbers and HP changes are consistent
 
 ### 8. Edge cases
@@ -117,6 +125,10 @@ Work through each group in order. Check every box before moving on.
       collected per frame
 - [ ] Entity cleanup: bullets, pickups, and VFX despawn correctly — no entity
       leaks over a long session
+- [ ] Run start: confirming the class with Z does not fire a shot on the
+      first gameplay tick
+- [ ] Room clear: exits open 0.75 s after the last enemy dies, not instantly
+- [ ] Dash and melee pressed on the same tick as the Knight gives the spin
 
 ## What to look for
 

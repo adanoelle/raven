@@ -70,8 +70,8 @@ Free tools for generating and designing sound effects:
 
 ## Middleware (Future Reference)
 
-If Raven outgrows SDL_mixer (see
-[ADR-0010](decisions/0010-sdl2-mixer-audio.md)), these middleware solutions
+If Raven outgrows its own SDL3 audio engine (see
+[ADR-0019](decisions/0019-sdl3-native-audio.md)), these middleware solutions
 support adaptive audio:
 
 - **[FMOD](https://www.fmod.com/)** — Free for indie projects under $200K
@@ -125,7 +125,8 @@ Practical pointers tying the resources back to the project's
   for how music reinforces emotional beats.
 - Follow the naming conventions in the audio spec (`sfx_` / `mus_` prefixes)
   from the start to avoid renaming later.
-- Export SFX as WAV and music as OGG — matching the formats SDL_mixer expects
-  (see the [integration guide](audio-integration.md)).
+- Export SFX as WAV — the engine loads effects with `SDL_LoadWAV`, and music
+  playback is not implemented yet (see the
+  [integration guide](audio-integration.md)).
 - Keep a placeholder music loop (even a simple 4-bar chip loop) running during
   development. It dramatically changes how the game _feels_ during playtesting.

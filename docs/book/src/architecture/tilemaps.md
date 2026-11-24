@@ -33,15 +33,15 @@ entities either — they are pre-baked render data iterated in a tight loop.
 
 ### Members
 
-| Member                    | Type                 | Purpose                                               |
-| ------------------------- | -------------------- | ----------------------------------------------------- |
-| `tiles_`                  | `vector<TileData>`   | Pre-computed source rects, dest positions, flip flags |
-| `collision_grid_`         | `vector<bool>`       | Row-major flat grid. `true` = solid                   |
-| `spawns_`                 | `vector<SpawnPoint>` | Named positions from the LDtk entity layer            |
-| `texture_`                | `SDL_Texture*`       | Tileset texture loaded from the PNG                   |
-| `grid_w_`, `grid_h_`      | `int`                | Grid dimensions in cells                              |
-| `cell_size_`              | `int`                | Cell size in pixels (16)                              |
-| `width_px_`, `height_px_` | `int`                | Level dimensions in pixels                            |
+| Member                    | Type                   | Purpose                                               |
+| ------------------------- | ---------------------- | ----------------------------------------------------- |
+| `tiles_`                  | `vector<TileData>`     | Pre-computed source rects, dest positions, flip flags |
+| `collision_grid_`         | `vector<bool>`         | Row-major flat grid. `true` = solid                   |
+| `spawns_`                 | `vector<SpawnPoint>`   | Named positions from the LDtk entity layer            |
+| `textures_`               | `vector<SDL_Texture*>` | One texture per tileset PNG the level uses            |
+| `grid_w_`, `grid_h_`      | `int`                  | Grid dimensions in cells                              |
+| `cell_size_`              | `int`                  | Cell size in pixels (16)                              |
+| `width_px_`, `height_px_` | `int`                  | Level dimensions in pixels                            |
 
 ### TileData
 
@@ -52,6 +52,7 @@ struct TileData {
     int dest_y;     // Destination Y in world pixels.
     bool flip_x;    // Flip horizontally.
     bool flip_y;    // Flip vertically.
+    uint16_t texture; // Index into Tilemap::textures().
 };
 ```
 
@@ -73,9 +74,10 @@ The `Tilemap` implementation is split across two `.cpp` files for testability:
 | `tilemap.cpp`        | `is_solid()`, `is_cell_solid()`, `find_spawn()`, `init_collision()`, destructor, move ops | Link only                    |
 | `tilemap_loader.cpp` | `Tilemap::load()` — LDtk parsing, texture loading                                         | Yes (LDtkLoader + SDL_image) |
 
-Tests link `tilemap.cpp` (and SDL2 for the destructor) but not
-`tilemap_loader.cpp`. The `init_collision()` method lets tests inject collision
-grids directly without needing `.ldtk` files on disk.
+The test binary links both files (with SDL3, SDL3_image and LDtkLoader), since
+`test_content.cpp` loads the shipped map. The `init_collision()` method lets
+the other tests inject collision grids directly without needing `.ldtk` files
+on disk.
 
 ## Loading a level
 
@@ -84,7 +86,7 @@ a level name:
 
 ```cpp
 tilemap_.load(game.renderer().sdl_renderer(),
-              "assets/maps/raven.ldtk", "Test_Room");
+              paths::asset("assets/maps/raven.ldtk"), "Test_Room");
 ```
 
 ### Parsing steps
@@ -162,8 +164,9 @@ void render_tilemap(const Tilemap& tilemap, SDL_Renderer* renderer);
 ```
 
 The implementation iterates the pre-baked `tiles_` vector and calls
-`SDL_RenderCopyEx` for each tile, with flip flags applied via
-`SDL_RendererFlip`. No interpolation is needed because tiles are static.
+`SDL_RenderTextureRotated` for each tile, with float `SDL_FRect` source and
+destination rects and flip flags applied via `SDL_FlipMode`. No interpolation
+is needed because tiles are static.
 
 ### Render order in GameScene
 
@@ -239,14 +242,26 @@ Tile collision runs immediately after movement, before entity-vs-entity
 collision:
 
 ```
+update_charged_shot      Sharpshooter charge + fire on release
 update_input             input → velocity
-animation state          velocity → idle/walk
+update_dash              dash velocity override
+update_melee             arc hit check, disarm
+update_ground_slam       Brawler area attack
+update_concussion_shot   Sharpshooter area knockback
+update_shooting          aim + bullet spawn
+update_emitters          enemy bullet patterns
+update_ai                enemy movement (uses the tilemap)
+update_player_animation  what the player is doing → clip
 update_animation         tick frames
 update_movement          velocity → position (snapshots PreviousTransform)
 update_tile_collision    push out of solid tiles, zero blocked velocity
+update_bullet_walls      destroy bullets inside solid tiles
 update_collision         entity-vs-entity (circle-circle)
+update_pickups           weapon + stabilizer collection
+update_weapon_decay      tick decay timers
 update_damage            apply damage
 update_cleanup           tick lifetimes, despawn off-screen / expired entities
+update_waves             wave clear check, next wave spawn
 ```
 
 ## LDtk project structure

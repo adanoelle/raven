@@ -37,7 +37,8 @@ SDL_Renderer → screen          480×270 virtual resolution, SDL_SCALEMODE_PIXE
 
 | File                                | Role                                                  |
 | ----------------------------------- | ----------------------------------------------------- |
-| `assets/data/config.json`           | Sprite sheet and sprite definition registry           |
+| `assets/data/config.json`           | Sprite sheet registry (`sprite_sheets`)               |
+| `src/rendering/sheet_ids.hpp`       | Sheet ids and frame indices that C++ refers to        |
 | `src/rendering/sprite_sheet.hpp`    | `SpriteSheet` and `SpriteSheetManager` classes        |
 | `src/rendering/animation_library.hpp` | `AnimationLibrary`: clips from Aseprite JSON        |
 | `src/ecs/components.hpp`            | `Sprite`, `Animation`, and all other components       |
@@ -82,18 +83,16 @@ too. `tests/test_content.cpp` fails if any id there is missing from
 addresses by index is outside the image. A sheet that is used but not
 registered draws as a grey rectangle and logs a warning once.
 
-### Step 3: Optionally add sprite definitions
+### Step 3: Address frames by column and row
 
-Named sprite definitions map a human-readable name to a specific frame:
+There are no named frames. Code and data refer to a frame by its column and
+row in the sheet's grid (`Sprite::frame_x`, `Sprite::frame_y`; see
+[Frame Addressing](#4-frame-addressing)). Frames the code picks by index get
+a named constant in `sheet_ids.hpp`, such as `PICKUP_FRAME_STABILIZER`.
+Animated sheets don't need this: their frames come from Aseprite tags (see
+[Animation Clips](#6-animation-clips)).
 
-```json
-"sprite_defs": {
-    "projectile_small_red": { "sheet": "projectiles", "frame_x": 0, "frame_y": 0 }
-}
-```
-
-These are for convenience — you can also reference frames directly by column/row
-index in the `Sprite` component.
+`config.json` still has a `sprite_defs` block, but the game never reads it.
 
 ### Step 4: Loading
 
@@ -157,25 +156,21 @@ reg.emplace<Sprite>(entity, interner.intern("player"), 0, 0, 32, 32, 10, false, 
 | `offset_y` | Vertical draw offset — negative shifts the visual up so feet align with the collision center |
 
 When `width`/`height` differ from the sheet's frame size, the engine scales
-the frame at draw time. This is reserved for placeholder art (the current
-16x16 grunt sheet drawn at 24x24); final art is always authored at its
-rendered size and drawn 1:1 — see the
-[Art Specification](art-spec.md).
+the frame at draw time. Nothing in the game does this today: every sprite is
+drawn at its sheet's frame size. Art is always authored at its rendered size
+and drawn 1:1 — see the [Art Specification](art-spec.md).
 
-### Layer conventions
+### Layers in use
 
-| Layer | Usage                        |
-| ----- | ---------------------------- |
-| 0     | Background tiles             |
-| 10    | Floor decorations            |
-| 20    | Items and pickups            |
-| 30    | Enemies and player           |
-| 40    | Projectiles                  |
-| 50    | VFX (explosions, hit sparks) |
-| 60    | UI overlays                  |
+| Layer | Usage                                |
+| ----- | ------------------------------------ |
+| 1     | Room exits                           |
+| 5     | Bullets, weapon pickups, stabilizers |
+| 10    | Player and enemies                   |
 
-These are conventions, not hard rules. Use intermediate values for fine-grained
-ordering within a category.
+These are the values the code passes today, not hard rules. Use values in
+between for finer ordering. The tilemap and the HUD are not sprites: the
+tilemap is drawn before all sprites and the HUD after them.
 
 ---
 
@@ -232,7 +227,8 @@ that occurred with SDL2's integer `SDL_Rect` on slow-moving entities.
 ### Draw order
 
 Entities are sorted by `Sprite::layer` (ascending). Lower layers draw first,
-higher layers draw on top.
+higher layers draw on top. Within a layer they are sorted by y, so a sprite
+lower on the screen draws on top.
 
 ### Centering
 
@@ -379,7 +375,7 @@ reg.emplace<Sprite>(goblin, interner.intern("goblin"),
     0,      // frame_x: first frame
     0,      // frame_y: idle row
     24, 24, // width, height (match frame_w/frame_h — drawn 1:1)
-    30,     // layer: enemy layer
+    10,     // layer: characters (player and enemies)
     false,  // flip_x
     0.f,    // offset_x
     -3.f    // offset_y: feet alignment (bottom-center anchor)

@@ -8,7 +8,10 @@ just build    # Debug, Ninja, creates compile_commands.json
 just test     # Catch2 via ctest
 just run      # Build + launch (build/bin/raven)
 just fmt      # clang-format all src/ and tests/
-just lint     # clang-tidy
+just lint     # clang-tidy on all of src/
+just lint-changed   # clang-tidy on what the branch changes vs origin/main
+just release  # Release build in build-release/ (no tests, no ImGui)
+just export-art     # Aseprite sources in art/ -> assets/sprites/
 
 ## Layout
 
@@ -20,8 +23,10 @@ src/rendering/   SDL_Renderer wrapper, 480x270 virtual res, sprite sheets
 src/scenes/      Stack-based scene manager
 src/patterns/    Bullet pattern library (JSON emitter defs, used by tests)
 src/debug/       ImGui overlay (RAVEN_ENABLE_IMGUI)
-tests/           Catch2 (test_collision, test_patterns, test_ecs)
-docs/            mdBook, devlog, ADRs
+tests/           Catch2, one test_<area>.cpp per system or area; each must be
+                 listed in tests/CMakeLists.txt (with the src/ files it needs)
+tools/           Art export, lint file picker, placeholder asset generators
+docs/            mdBook (docs/book/), Doxyfile, devlog, ADRs
 
 ## Conventions
 

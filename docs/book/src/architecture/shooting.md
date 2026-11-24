@@ -64,10 +64,10 @@ tick.
 ## Mouse coordinate conversion
 
 The `Input` class converts raw window-space mouse coordinates to the 480x270
-virtual resolution manually in `update_mouse()`. This is necessary because
-`SDL_RenderWindowToLogical` gives incorrect results when a render-target texture
-is combined with `SDL_RenderSetLogicalSize` (the engine renders to an offscreen
-texture, then scales to the window).
+virtual resolution manually in `update_mouse()` instead of asking SDL to do
+it. The engine renders to an offscreen texture, then scales it to the window
+with `SDL_SetRenderLogicalPresentation` in letterbox mode, so the conversion
+only needs the window size from `SDL_GetWindowSize`.
 
 The conversion is letterbox-aware:
 
@@ -124,23 +124,34 @@ button is merged in `Input::update_mouse()`.
 
 ## System execution order
 
-`update_shooting()` runs second in the `GameScene::update()` pipeline,
-immediately after input:
+`update_shooting()` runs in the first half of the `GameScene::update()`
+pipeline, after input and the other player actions and before movement:
 
 ```
+update_charged_shot     Sharpshooter charge + fire on release
 update_input            read keyboard/gamepad → target velocity
+update_dash             dash velocity override, invulnerability
+update_melee            arc hit check, disarm
+update_ground_slam      Brawler area attack
+update_concussion_shot  Sharpshooter area knockback
 update_shooting         aim resolution + bullet spawn
-animation state logic   velocity → idle/walk switch
+update_emitters         enemy bullet pattern firing
+update_ai               enemy movement + attack phases
+update_player_animation what the player is doing → clip
 update_animation        tick frames
 update_movement         velocity → position
 update_tile_collision   resolve wall overlaps
+update_bullet_walls     destroy bullets inside solid tiles
 update_collision        circle-circle hit tests
+update_pickups          weapon + stabilizer collection
+update_weapon_decay     tick decay timers, handle explosion
 update_damage           apply DamageOnContact
 update_cleanup          tick lifetimes, despawn off-screen / expired entities
+update_waves            wave clear check, next wave spawn
 ```
 
-Running shooting right after input ensures the aim direction reflects the
-current tick's input. Bullets spawned this tick are moved by `update_movement`
+Shooting reads the same tick's `InputState` as the systems before it, so the
+aim direction reflects the current tick's input. Bullets spawned this tick are moved by `update_movement`
 on the same tick, so they never appear at the player's position for more than
 one frame.
 

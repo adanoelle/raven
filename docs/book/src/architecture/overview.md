@@ -14,12 +14,30 @@ Raven is a pixel art roguelike built on three pillars:
 ```
 Input → Fixed Update (120 Hz) → Render (vsync)
           │
-          ├─ input_system      (InputState → Velocity)
-          ├─ movement_system   (Velocity → Transform2D)
-          ├─ collision_system  (Hitbox checks → flags)
-          ├─ damage_system     (Health reduction, death)
-          └─ cleanup_system    (Lifetime tick, off-screen despawn)
+          ├─ update_charged_shot      (Sharpshooter charge, fire on release)
+          ├─ update_input             (InputState → Velocity)
+          ├─ update_dash              (Dash velocity, invulnerability)
+          ├─ update_melee             (Arc hit check, disarm)
+          ├─ update_ground_slam       (Brawler area attack)
+          ├─ update_concussion_shot   (Sharpshooter area knockback)
+          ├─ update_shooting          (Aim, player bullet spawn)
+          ├─ update_emitters          (Enemy bullet patterns)
+          ├─ update_ai                (Enemy movement)
+          ├─ update_player_animation  (Player state → clip)
+          ├─ update_animation         (Clip → Sprite frame)
+          ├─ update_movement          (Velocity → Transform2D)
+          ├─ update_tile_collision    (Push out of solid tiles)
+          ├─ update_bullet_walls      (Bullets stop at walls)
+          ├─ update_collision         (Hitbox checks → flags)
+          ├─ update_pickups           (Weapon, stabilizer collection)
+          ├─ update_weapon_decay      (Stolen weapon timer)
+          ├─ update_damage            (Health reduction, death)
+          ├─ update_cleanup           (Lifetime tick, off-screen despawn)
+          └─ update_waves             (Wave clear, next wave, exits)
 ```
+
+This is the order `GameScene::update` calls them in
+(`src/scenes/game_scene.cpp`).
 
 ## Ownership
 
