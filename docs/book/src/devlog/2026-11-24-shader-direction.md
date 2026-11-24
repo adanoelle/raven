@@ -45,7 +45,8 @@ From SDL's public documentation; nothing was run.
 - How the render-state calls behave with render targets and logical
   presentation, and what they do on a renderer that is not `gpu`.
 - Whether the ImGui overlay draws correctly on the `gpu` renderer.
-- The book build, after these pages were added.
+
+The book builds with these pages added.
 
 ## The plan
 
