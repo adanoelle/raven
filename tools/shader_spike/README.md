@@ -30,11 +30,12 @@ cmake --build build-spike --target raven_shader_spike
 lines are findings, not failures: several are expected to be bad. With
 `--out DIR` it writes numbered PNGs of each case.
 
-Four of them from the Linux run are in `results/linux/`.
+Five of them from the Linux run are in `results/linux/`.
 
 Interactive keys: `1` `2` pick a variant, `C` auto cross-fade, `L` light,
 mouse moves the light, the wheel changes its radius, `[` `]` change its
-number of zones, `D` switches between a dithered falloff and flat bands,
+number of zones, `D` cycles the zone edges through a narrow dithered seam,
+a fully dithered falloff and flat rings, `-` `=` set the seam width,
 `S` whole-pixel snapping, `P` pixel-art scale mode,
 `M` colour modulation, `F` the shader-free CPU path, `E` emissives, `Esc`
 quits. The top line shows how many index values are invalid.
@@ -43,11 +44,18 @@ quits. The top line shows how many index values are invalid.
 
 The light raises each pixel along its ramp by up to `zones` steps at the
 centre, falling off as (1 - (d/r)²)². The level is worked out in whole
-numbers, in sixteenths of a step. The whole part is the step shift and the
-remainder is ordered-dithered, so each zone fades into the next and no
-in-between colour is ever produced. With dither off (`D`) the level is
-rounded and the zones show as flat rings: compare `4-light.png` with
-`4b-light-banded.png`.
+numbers, in sixteenths of a step. The whole part is the step shift. The
+remainder decides the edge between two zones, in one of three ways:
+
+| Dither band | Look | Still |
+| ----------- | ---- | ----- |
+| 0 | Flat rings with hard edges | `4b-light-banded.png` |
+| 1 to 7 | Flat zones with a dithered seam where they meet; 2 is the default | `4c-light-narrow-band.png` |
+| 8 | Every zone fades into the next; grain across the whole light | `4-light.png` |
+
+The band is measured in light level, not in pixels, so a seam is wider
+where the falloff is shallow (near the centre and the rim) and narrower
+where it is steep. No in-between colour is produced in any mode.
 
 Because it is all whole-number arithmetic, the shader and the CPU reference
 agree on every pixel.
@@ -71,7 +79,7 @@ All must-pass checks passed.
 | Question | Result |
 | -------- | ------ |
 | Does the `gpu` renderer take a custom fragment shader? | Yes, from SPIR-V, with the lookup table bound as a second sampler |
-| Does the resolve match the CPU reference? | Exactly, 0 of 129,600 pixels differ, in all six cases (two variants, dithered cross-fade, a four-zone light dithered and banded, cross-fade with light) |
+| Does the resolve match the CPU reference? | Exactly, 0 of 129,600 pixels differ, in all seven cases (two variants, dithered cross-fade, a four-zone light in three edge styles, cross-fade with light) |
 | Does lighting stay on the palette? | Yes, 0 pixels off the table with cross-fade and light together |
 | Do render targets and logical presentation work with it? | Yes |
 | Does ordinary drawing work after the state is cleared? | Yes, additive emissives draw on top |
