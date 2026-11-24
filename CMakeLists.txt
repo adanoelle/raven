@@ -170,7 +170,9 @@ endif()
 # The game resolves assets relative to the executable (SDL_GetBasePath),
 # so the assets directory must sit next to the binary in packages.
 install(TARGETS raven RUNTIME DESTINATION .)
-install(DIRECTORY assets/ DESTINATION assets PATTERN ".gitkeep" EXCLUDE)
+install(DIRECTORY assets/ DESTINATION assets
+        PATTERN ".gitkeep" EXCLUDE
+        PATTERN ".exported" EXCLUDE) # the art export script's list of its outputs
 if(WIN32)
     # Dependencies are excluded from install, so ship their DLLs explicitly.
     install(FILES $<TARGET_RUNTIME_DLLS:raven> DESTINATION .)
