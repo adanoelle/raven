@@ -206,8 +206,8 @@ Refreshed against the code:
   smooth-movement, shooting and audio-resources pages.
 - `CLAUDE.md`: the test list, `just` recipes and `tools/`.
 
-Still stale: `guide/project-tour.md` (test list, docs tree, system and
-component lists) needs a pass of its own. The doc pass also turned up things
+`guide/project-tour.md` was rewritten against the tree on 2026-11-24.
+The doc pass also turned up things
 in the code:
 
 - The decay explosion takes 1 HP from a player with 60 to 150
@@ -248,4 +248,4 @@ Both questions the review raised were settled the same day.
 | Smaller gameplay items | Done |
 | Authoring traps | Done; the shipped map still needs the `index` field on its spawn points |
 | Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |
-| Out-of-date docs | Done, except `project-tour.md` |
+| Out-of-date docs | Done |
