@@ -392,6 +392,39 @@ TEST_CASE("A diagonal stick push is one menu direction", "[input][gamepad]") {
     CHECK(frame(input).right_pressed);
 }
 
+TEST_CASE("A menu direction that comes and goes between polls still counts", "[input][gamepad]") {
+    VirtualPad pad;
+    Input input;
+    input.init();
+    tick(input);
+
+    SECTION("a stick flick") {
+        pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 1.f);
+        pad.stick(SDL_GAMEPAD_AXIS_LEFTY, 0.f);
+        const auto& s = frame(input);
+        CHECK(s.down_pressed);
+        CHECK(s.move_y == 0.f); // the poll never saw it
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).down_pressed);
+    }
+
+    SECTION("a d-pad tap") {
+        pad.button(SDL_GAMEPAD_BUTTON_DPAD_LEFT, true);
+        pad.button(SDL_GAMEPAD_BUTTON_DPAD_LEFT, false);
+        CHECK(frame(input).left_pressed);
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).left_pressed);
+    }
+
+    SECTION("a held push is one press, seen by the events and the poll alike") {
+        pad.stick(SDL_GAMEPAD_AXIS_LEFTX, 1.f);
+        CHECK(frame(input).right_pressed);
+        input.consume_pressed();
+        CHECK_FALSE(frame(input).right_pressed);
+        CHECK(input.state().move_x > 0.9f);
+    }
+}
+
 TEST_CASE("A tap released between polls still counts", "[input][gamepad]") {
     VirtualPad pad;
     Input input;
@@ -526,6 +559,22 @@ TEST_CASE("Keyboard and mouse events latch presses", "[input]") {
         event.key.repeat = repeat;
         input.process_event(event);
     };
+
+    SECTION("a direction key") {
+        input.begin_frame();
+        key(SDL_SCANCODE_DOWN, false);
+        key(SDL_SCANCODE_A, false);
+        input.update();
+        CHECK(input.state().down_pressed);
+        CHECK(input.state().left_pressed);
+        CHECK_FALSE(input.state().up_pressed);
+
+        input.consume_pressed();
+        input.begin_frame();
+        key(SDL_SCANCODE_DOWN, true); // key repeat is not a new press
+        input.update();
+        CHECK_FALSE(input.state().down_pressed);
+    }
 
     SECTION("a key press") {
         input.begin_frame();
