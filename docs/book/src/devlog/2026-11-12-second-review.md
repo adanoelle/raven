@@ -130,8 +130,7 @@ Fixed on 2026-11-24:
   stage list now ends at the broken file, with an error saying so.
 - **`spawn_index` followed LDtk's entity list order.** An `EnemySpawn` can
   carry an Int field `index`, and `spawn_index` is matched against it. The
-  shipped map does not have the field yet; adding it is a job for the LDtk
-  editor.
+  shipped map's spawn points are numbered in the order they had.
 - **A one-shot clip didn't restart when the same clip was requested
   again.** A new swing or dash restarts it.
 - **`export_art.sh` overwrote and never cleaned up.** It refuses two
@@ -246,6 +245,6 @@ Both questions the review raised were settled the same day.
 | Boss disarm and disarmed body damage | Decided and built |
 | Gameplay items 1-4 | Done |
 | Smaller gameplay items | Done |
-| Authoring traps | Done; the shipped map still needs the `index` field on its spawn points |
+| Authoring traps | Done |
 | Shipping build and CI | Log level, LTO and strip, package contents, Windows Release job, parallel lint, docs check and the clang-format pin done; the rest open |
 | Out-of-date docs | Done |
