@@ -197,4 +197,3 @@ wait for it.
   in Pigment.
 - `~/.cache/CPM` was created by the spike build and is safe to delete.
 - `build-spike/` in this checkout is ignored by git.
-- A live spike window may still be open from this session.
