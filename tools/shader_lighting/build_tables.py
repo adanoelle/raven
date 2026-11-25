@@ -46,7 +46,7 @@ OUT_DIR = ROOT / "assets" / "data" / "lighting"
 
 # Art that light acts on. Bullets are left out on purpose: they are light.
 SHEETS = [
-    "assets/tilesets/dungeon.png",
+    "assets/tilesets/ruins.png",
     "assets/sprites/player.png",
     "assets/sprites/knight.png",
     "assets/sprites/enemies.png",
