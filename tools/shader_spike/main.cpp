@@ -12,6 +12,7 @@
 // Run with --check for the automated report, or with no arguments for the
 // interactive view. See README.md next to this file.
 
+#include "dungeon_art.h"
 #include "pigment_lut.h"
 #include "shaders/resolve.frag.dxil.h"
 #include "shaders/resolve.frag.msl.h"
@@ -24,6 +25,7 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -53,10 +55,12 @@ static_assert(PIGMENT_RAMPS == RAMPS && PIGMENT_VARIANTS == VARIANTS,
 // The table in use. The defaults are the built-in table's; --lut replaces
 // them with a table from pigment_lut.h.
 const PigmentTable* g_table = nullptr; // null: the built-in table from make_lut()
-int g_steps = 8;                       // steps per ramp, including headroom at both ends
-int g_base = 3;                        // the step the placeholder art sits on
-int g_zones = 4;                       // steps the main light adds at its centre
-int g_ambient = -2;                    // ambient shift of the main light case
+bool g_dungeon = false;                // --lut dungeon: tiles and rooms from dungeon_art.h
+int g_room = 0;
+int g_steps = 8;    // steps per ramp, including headroom at both ends
+int g_base = 3;     // the step the placeholder art sits on
+int g_zones = 4;    // steps the main light adds at its centre
+int g_ambient = -2; // ambient shift of the main light case
 
 struct Rgba {
     Uint8 r, g, b, a;
@@ -188,6 +192,13 @@ Uint8 noise(int x, int y) {
 
 /// Three 16x16 tiles: stone, vegetation, earth. R = ramp, G = step.
 Image make_tile_sheet() {
+    if (g_dungeon) { // a real tileset, encoded by art_from_tileset.py
+        Image sheet(DUNGEON_SHEET_W, DUNGEON_SHEET_H);
+        for (size_t i = 0; i < sheet.px.size(); ++i) {
+            sheet.px[i] = {DUNGEON_SHEET[i * 2], DUNGEON_SHEET[i * 2 + 1], 0, 255};
+        }
+        return sheet;
+    }
     Image sheet(TILE * 3, TILE);
     for (int t = 0; t < 3; ++t) {
         for (int y = 0; y < TILE; ++y) {
@@ -234,6 +245,11 @@ Image make_sprite_sheet() {
 }
 
 int tile_at(int tx, int ty) {
+    if (g_dungeon) {
+        tx = std::min(tx, DUNGEON_ROOM_W - 1);
+        ty = std::min(ty, DUNGEON_ROOM_H - 1);
+        return DUNGEON_ROOM_TILES[(g_room * DUNGEON_ROOM_H + ty) * DUNGEON_ROOM_W + tx];
+    }
     if (ty == 8 || ty == 9) {
         return 2; // an earth path
     }
@@ -1023,6 +1039,9 @@ void run_interactive(Spike& s) {
                 case SDLK_G:
                     actor_lights = !actor_lights;
                     break;
+                case SDLK_R:
+                    g_room = (g_room + 1) % DUNGEON_ROOMS;
+                    break;
                 default:
                     break;
                 }
@@ -1099,8 +1118,9 @@ void run_interactive(Spike& s) {
             line, sizeof(line), "[ ] zones %d  wheel: radius %d  [D] [-][=] dither %s %d/8", zones,
             static_cast<int>(radius), band == 0 ? "OFF" : (band >= 8 ? "full" : "seam"), band);
         SDL_RenderDebugText(s.renderer, 4, 24, line);
-        std::snprintf(line, sizeof(line), "[,][.] ambient %+d  table %s (%d steps)", ambient,
-                      g_table ? g_table->name : "builtin", g_steps);
+        std::snprintf(line, sizeof(line), "[,][.] ambient %+d  table %s (%d steps)%s%s", ambient,
+                      g_table ? g_table->name : "builtin", g_steps, g_dungeon ? "  [R]oom " : "",
+                      g_dungeon ? DUNGEON_ROOM_NAMES[g_room] : "");
         SDL_RenderDebugText(s.renderer, 4, 34, line);
         SDL_RenderDebugText(s.renderer, 4, VH - 22, "[1][2] variant  [C] auto fade  [F] CPU path");
         SDL_RenderDebugText(s.renderer, 4, VH - 12,
@@ -1127,6 +1147,8 @@ int main(int argc, char** argv) {
             out_dir = argv[++i];
         } else if (arg == "--driver" && i + 1 < argc) {
             driver = argv[++i];
+        } else if (arg == "--room" && i + 1 < argc) {
+            g_room = std::clamp(std::atoi(argv[++i]), 0, DUNGEON_ROOMS - 1);
         } else if (arg == "--lut" && i + 1 < argc) {
             std::string name = argv[++i];
             for (const PigmentTable& table : PIGMENT_TABLES) {
@@ -1134,17 +1156,21 @@ int main(int argc, char** argv) {
                     g_table = &table;
                 }
             }
+            g_dungeon = (name == DUNGEON_TABLE.name);
+            if (g_dungeon) {
+                g_table = &DUNGEON_TABLE;
+            }
             if (!g_table && name != "builtin") {
                 std::printf("unknown table \"%s\". Tables: builtin", name.c_str());
                 for (const PigmentTable& table : PIGMENT_TABLES) {
                     std::printf(", %s", table.name);
                 }
-                std::printf("\n");
+                std::printf(", %s\n", DUNGEON_TABLE.name);
                 return 2;
             }
         } else {
             std::printf("usage: raven_shader_spike [--check [--out DIR] [--show]] "
-                        "[--driver vulkan|direct3d12|metal] [--lut NAME]\n");
+                        "[--driver vulkan|direct3d12|metal] [--lut NAME] [--room N]\n");
             return 2;
         }
     }

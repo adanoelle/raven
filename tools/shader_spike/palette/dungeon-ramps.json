@@ -1,0 +1,23 @@
+{
+  "comment": "Ramps built around the colours of assets/tilesets/dungeon.png. 'art' holds the tileset's own colours, kept exactly, starting at step 'art_first_step'. 'fitted' is Pigment's fit_ramp output (12 swatches) for end colours extrapolated from the art; only its steps outside the art are used, as headroom. 'actors' are trial-palette rows for the demo's placeholder sprites.",
+  "tileset": "../../../assets/tilesets/dungeon.png",
+  "map": "../../../assets/maps/raven.ldtk",
+  "tile": 16,
+  "base": 5, "zones": 6, "ambient": -3,
+  "rows": ["Brick", "Vegetation", "Dark stone", "Character"],
+  "ramps": {
+    "Brick": {
+      "art": ["#502828", "#603030", "#703838", "#804040", "#905050"],
+      "art_first_step": 3,
+      "fit_ends": ["#280914", "#be8c75"],
+      "fitted": ["#280914", "#37111c", "#441b24", "#51262c", "#5f3234", "#6c3d3c", "#7a4a45", "#88564e", "#956357", "#a37061", "#b07e6b", "#be8c75"]
+    },
+    "Dark stone": {
+      "art": ["#202030", "#282838"],
+      "art_first_step": 3,
+      "fit_ends": ["#060410", "#757f8b"],
+      "fitted": ["#060410", "#0d0c1a", "#161525", "#1f2030", "#282b3b", "#323646", "#3c4152", "#464d5e", "#515969", "#5c6675", "#677281", "#757f8b"]
+    }
+  },
+  "actors": {"build": "trial-build-12.json", "variant": "Dark Ruins", "ramps": ["Vegetation", "Character"]}
+}

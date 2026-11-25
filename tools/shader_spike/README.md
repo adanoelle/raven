@@ -26,6 +26,10 @@ just shader-spike --lut pigment    # a table from Pigment; works with --check to
 `pigment-fixed`, `pigment-5` or `pigment-12`. See
 [Trial palette from Pigment](#trial-palette-from-pigment-2026-11-24).
 
+`--lut dungeon` draws the game's own tileset and rooms instead of the
+generated tiles. See [An existing tileset](#an-existing-tileset-2026-11-24).
+`--room N` (0 to 2) picks the room; `R` cycles them in the live view.
+
 Without `just`:
 
 ```sh
@@ -315,6 +319,34 @@ palette.
 11. Material presets are far from the art pages: stone is warm (hue 40),
     vegetation peaks at chroma 0.22 (`#3bb800`).
 12. No groups (decision 3). Not needed for four ramps.
+
+### An existing tileset, 2026-11-24
+
+`assets/tilesets/dungeon.png` (four tiles, seven colours) and the three
+rooms of `assets/maps/raven.ldtk`, lit by the same shader. Nothing in the
+art was changed.
+
+- `analyze_sprite` groups the tileset's colours into two materials: a red
+  brick of five colours and a dark blue-grey of two.
+- Each material becomes a 12-step ramp. The tileset's own colours sit in
+  the middle, exactly as drawn (steps 3 to 7, and 3 to 4). The steps below
+  and above them are headroom from Pigment's `fit_ramp`, fitted to end
+  colours extrapolated from the art, turning cooler into shadow and warmer
+  into light. Those headroom colours are a guess at the artist's style.
+- `palette/dungeon-ramps.json` holds the ramps. `art_from_tileset.py` reads
+  it with the PNG and the map and writes `dungeon_art.h` (committed). It
+  needs Pillow. A tileset colour that is in no ramp stops it.
+- With no shift, every tile pixel resolves to the colour it was drawn in.
+- The placeholder actors use the trial palette's 12-step rows.
+
+`--check --lut dungeon` passes for all three rooms. Stills of the first
+room are in `results/dungeon/`.
+
+Limits: one environment (both variant rows are the same, so `1`, `2` and
+the cross-fade do nothing); one tile layer; no flipped tiles; the rooms use
+only two of the four tiles. The brick's own steps are about 0.044 in
+lightness against 0.068 for the actors' rows, so one step of light
+brightens an actor more than the floor.
 
 ### Windows
 
