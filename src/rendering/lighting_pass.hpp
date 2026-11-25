@@ -24,6 +24,8 @@ struct LightingSettings {
                                 ///< strength, sixteenths of a step; 0 is steady.
     int light_ceiling = 72;     ///< Most light one pixel takes however many lights
                                 ///< overlap, in sixteenths of a step.
+    int cool_full = 24;         ///< Cool light at which a pixel is fully tinted,
+                                ///< sixteenths of a step; 0 turns the tint off.
     bool light_sprites = false; ///< Light sprites as well as tiles. Off, the pass
                                 ///< runs before sprites are drawn: players,
                                 ///< enemies and bullets keep their drawn colours.
@@ -40,6 +42,7 @@ struct Light {
     float y = 0.f;      ///< Centre Y.
     float radius = 0.f; ///< Reach in pixels.
     int level = 0;      ///< Light added at the centre, in sixteenths of a ramp step.
+    bool cool = false;  ///< Cool light: tints what it lights blue-white.
 };
 
 /// @brief Resolves the drawn world through the lighting shader.
@@ -98,6 +101,7 @@ class LightingPass {
     SDL_Texture* light_buffer_ = nullptr;
     SDL_Texture* white_ = nullptr; ///< One white pixel: the texture a light square draws.
     int steps_ = 0;                ///< Width of the ramps table.
+    int ramps_count_ = 0;          ///< Ramps in one layer of the table (half its height).
 
     /// @brief Create a fragment shader from whichever format the device takes.
     SDL_GPUShader* create_shader(const unsigned char* spv, size_t spv_size,

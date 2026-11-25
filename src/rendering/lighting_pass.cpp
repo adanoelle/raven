@@ -22,6 +22,7 @@ struct Uniforms {
     float frame[4]; // target w, target h, ambient shift, step count
     float extra[4]; // x: dither band, y: lights in the loop, z: read the light buffer,
                     // w: light ceiling
+    float tint[4];  // x: ramps in one layer, y: cool light for a full tint
     float lights[raven::LightingPass::MAX_LOOP_LIGHTS][4];
 };
 
@@ -116,6 +117,7 @@ bool LightingPass::init(SDL_Renderer* renderer, const std::string& ramps_path,
         return false;
     }
     steps_ = ramps_->w;
+    ramps_count_ = ramps_->h / 2; // the ramps, then the ramps under cool light
     const Uint32 white_pixel = 0xFFFFFFFF;
     SDL_UpdateTexture(white_, nullptr, &white_pixel, sizeof(white_pixel));
     SDL_SetTextureScaleMode(white_, SDL_SCALEMODE_NEAREST);
@@ -157,7 +159,7 @@ bool LightingPass::init(SDL_Renderer* renderer, const std::string& ramps_path,
         return false;
     }
     spdlog::info("Lighting pass ready on GPU driver '{}': {} ramps of {} steps",
-                 SDL_GetGPUDeviceDriver(device_), ramps_->h, steps_);
+                 SDL_GetGPUDeviceDriver(device_), ramps_count_, steps_);
     return true;
 }
 
@@ -205,9 +207,9 @@ void LightingPass::draw_light_buffer(const std::vector<Light>& lights) {
         if (x + reach <= 0.f || y + reach <= 0.f || x - reach >= width || y - reach >= height) {
             continue; // wholly off the frame
         }
-        // Red carries the strength; green and blue are free for later use
-        SDL_SetTextureColorModFloat(
-            white_, static_cast<float>(std::min(light.level, MAX_LEVEL)) / 255.f, 0.f, 0.f);
+        // Red carries the strength, green the part of it that is cool light
+        const float strength = static_cast<float>(std::min(light.level, MAX_LEVEL)) / 255.f;
+        SDL_SetTextureColorModFloat(white_, strength, light.cool ? strength : 0.f, 0.f);
         const SDL_FRect square{x - reach, y - reach, 2.f * reach, 2.f * reach};
         SDL_RenderTexture(renderer_, white_, nullptr, &square);
     }
@@ -233,6 +235,8 @@ void LightingPass::apply(SDL_Texture* source, SDL_Texture* target, const Lightin
     u.extra[1] = static_cast<float>(count);
     u.extra[2] = settings.use_loop ? 0.f : 1.f;
     u.extra[3] = static_cast<float>(std::clamp(settings.light_ceiling, 0, MAX_LEVEL));
+    u.tint[0] = static_cast<float>(ramps_count_);
+    u.tint[1] = static_cast<float>(std::max(settings.cool_full, 0));
     for (size_t i = 0; i < count; ++i) {
         u.lights[i][0] = std::floor(lights[i].x);
         u.lights[i][1] = std::floor(lights[i].y);

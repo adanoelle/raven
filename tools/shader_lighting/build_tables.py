@@ -29,6 +29,9 @@ choice:
   below the darkest it turns cooler and greyer, above the lightest warmer
   and paler.
 - Near-black colours are left out so outlines stay black under light.
+- ramps.png holds every ramp twice. The lower half is the ramp under the
+  cool light: each colour moved most of the way to one blue and made a
+  little lighter. The shader picks it where cool light falls.
 - With no light and no ambient shift the shader passes the drawn colour
   through, so the art is unchanged where nothing acts on it.
 
@@ -66,6 +69,10 @@ SNAP_DISTANCE = 0.035 # OKLab distance within which a blended pixel snaps to an 
 COOL_HUE = 280.0      # shadows turn towards this
 WARM_HUE = 85.0       # highlights turn towards this
 MAX_TURN = 40.0       # degrees, at the far end of the headroom
+TINT_HUE = 242.0      # the cool light's colour: an electric blue
+TINT_AMOUNT = 0.7     # how far a colour moves to it, 0 to 1
+TINT_CHROMA = 0.09    # the chroma it moves to
+TINT_LIFT = 0.04      # lightness added: cool light reads as whiter
 
 
 def to_linear(c):
@@ -112,6 +119,15 @@ def srgb_bytes(lab):
         c = min(max(c, 0.0), 1.0)
         out.append(round(255 * (12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055)))
     return tuple(out)
+
+
+def cool_tint(rgb):
+    """The colour as it looks under the cool light (see the lower half of ramps.png)."""
+    L, a, b = oklab(rgb)
+    hue = math.radians(TINT_HUE)
+    a = a + (TINT_CHROMA * math.cos(hue) - a) * TINT_AMOUNT
+    b = b + (TINT_CHROMA * math.sin(hue) - b) * TINT_AMOUNT
+    return srgb_bytes((L + TINT_LIFT * (1.0 - L), a, b))
 
 
 def step_of(lightness):
@@ -217,11 +233,13 @@ def main():
     if len(groups) > 255:
         sys.exit("build_tables: more than 255 ramps")
 
-    ramps = Image.new("RGBA", (STEPS, len(groups)))
+    # Two layers: the ramps, then the same ramps under the cool light
+    ramps = Image.new("RGBA", (STEPS, 2 * len(groups)))
     entries = []  # (rgb, lab, ramp, step)
     for row, group in enumerate(groups):
         for step, colour in enumerate(ramp_colours(group, counts)):
             ramps.putpixel((step, row), colour + (255,))
+            ramps.putpixel((step, len(groups) + row), cool_tint(colour) + (255,))
         for rgb, lab in group:
             entries.append((rgb, lab, row, step_of(lab[0])))
         hue = "grey"

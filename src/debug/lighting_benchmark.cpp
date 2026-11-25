@@ -57,7 +57,7 @@ void place_lights(std::vector<raven::Light>& lights, int count, int radius, int 
         };
         lights.push_back({fold(x0 + vx * t, raven::Renderer::VIRTUAL_WIDTH),
                           fold(y0 + vy * t, raven::Renderer::VIRTUAL_HEIGHT),
-                          static_cast<float>(radius), 48});
+                          static_cast<float>(radius), 48, (i % 2) == 0});
     }
 }
 

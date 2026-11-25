@@ -130,6 +130,7 @@ void DebugOverlay::panel_lighting(entt::registry& reg) {
     ImGui::SliderInt("Bullet strength /16", &settings.bullet_level, 0, 96);
     ImGui::SliderInt("Bullet crackle /16", &settings.bullet_crackle, 0, 32);
     ImGui::SliderInt("Light ceiling /16", &settings.light_ceiling, 0, 255);
+    ImGui::SliderInt("Cool tint full at /16", &settings.cool_full, 0, 96);
     ImGui::Checkbox("Light sprites too", &settings.light_sprites);
     ImGui::SliderInt("Fire radius", &settings.fire_radius, 0, 160);
     ImGui::SliderInt("Fire strength /16", &settings.fire_level, 0, 96);

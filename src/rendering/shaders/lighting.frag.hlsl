@@ -3,10 +3,11 @@
 // Input texture: the world as the game drew it, in ordinary colour.
 // u_reverse: colour to (ramp, step). A 64x64x64 colour cube as 8x8 slices;
 //   R = ramp, G = step, A = 1 where the colour is known.
-// u_ramps: one texel per (step, ramp).
+// u_ramps: one texel per (step, ramp). The ramps appear twice: rows
+//   0..ramps-1 as they are, then the same ramps under the cool light.
 // u_light: the light buffer, the size of the frame. Red is the light at
 //   that pixel in sixteenths of a step, summed over the lights stamped
-//   into it (light.frag.hlsl).
+//   into it (light.frag.hlsl). Green is the part of it that is cool light.
 //
 // A known colour is moved along its ramp by the ambient shift plus the
 // light at that pixel. An unknown colour is left as drawn. All arithmetic
@@ -20,6 +21,8 @@ cbuffer Context : register(b0, space3) {
                   // y: number of lights in the loop below
                   // z: 1 to read the light buffer
                   // w: most light one pixel takes, in sixteenths of a step
+    float4 tint;  // x: number of ramps (rows in one layer of u_ramps)
+                  // y: cool light for a full tint, sixteenths of a step; 0 is no tint
     float4 lights[MAX_LIGHTS]; // each: x, y, radius (whole target pixels),
                                // strength at the centre in sixteenths of a step
 };
@@ -74,8 +77,11 @@ PSOutput main(PSInput input) {
     // strength at the centre. The sum is in sixteenths of a step: the
     // whole part shifts the step and the remainder is dithered.
     int level16 = 0;
+    int cool16 = 0;
     if (extra.z > 0.5) {
-        level16 = int(round(u_light.Load(int3(px, 0)).r * 255.0));
+        float4 light = u_light.Load(int3(px, 0));
+        level16 = int(round(light.r * 255.0));
+        cool16 = int(round(light.g * 255.0));
     }
     int count = min(int(extra.y), MAX_LIGHTS);
     for (int i = 0; i < count; ++i) {
@@ -107,12 +113,23 @@ PSOutput main(PSInput input) {
             shift += (float(f) > threshold) ? 1 : 0;
         }
     }
-    if (shift == 0) {
+    // Cool light picks the tinted layer. How much of it there is decides
+    // how many pixels take the tint, dithered on a pattern offset from the
+    // one above so the two do not line up.
+    int row = ramp;
+    int full = int(tint.y);
+    if (cool16 > 0 && full > 0) {
+        float cool_threshold = bayer[((px.y + 2) & 3) * 4 + ((px.x + 1) & 3)];
+        if (float(min(cool16 * 16 / full, 16)) > cool_threshold) {
+            row += int(tint.x);
+        }
+    }
+    if (shift == 0 && row == ramp) {
         return output; // nothing acts on this pixel: the art as drawn
     }
 
     int step_out = clamp(step_in + shift, 0, int(frame.w) - 1);
-    float4 colour = u_ramps.Load(int3(step_out, ramp, 0));
+    float4 colour = u_ramps.Load(int3(step_out, row, 0));
     output.o_color = float4(colour.rgb, 1.0);
     return output;
 }

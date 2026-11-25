@@ -372,7 +372,7 @@ void GameScene::apply_lighting(Game& game, float alpha) {
             x = prev->x + (tf.x - prev->x) * alpha;
             y = prev->y + (tf.y - prev->y) * alpha;
         }
-        return Light{x, y, static_cast<float>(radius), level};
+        return Light{x, y, static_cast<float>(radius), level, false};
     };
 
     // Fires placed in the room ("Fire" entities in LDtk). The light swells
@@ -392,7 +392,8 @@ void GameScene::apply_lighting(Game& game, float alpha) {
         const auto flicker = static_cast<float>(settings.fire_flicker);
         lights.push_back({fires[i]->x + 1.5f * sway, fires[i]->y + 0.8f * breath,
                           static_cast<float>(settings.fire_radius) + 0.5f * flicker * breath,
-                          settings.fire_level + static_cast<int>(std::lround(flicker * breath))});
+                          settings.fire_level + static_cast<int>(std::lround(flicker * breath)),
+                          false});
     }
 
     // Then players, then bullets: when the loop is in use and there are
@@ -417,8 +418,11 @@ void GameScene::apply_lighting(Game& game, float alpha) {
         const Uint64 h = (crackle_beat + static_cast<Uint64>(entt::to_integral(entity)) * 7919u) *
                          0x9E3779B97F4A7C15ull;
         const int jump = static_cast<int>((h >> 58) % 5) - 2; // -2..2
-        lights.push_back(light_at(entity, tf, settings.bullet_radius,
-                                  settings.bullet_level + jump * settings.bullet_crackle / 2));
+        Light light = light_at(entity, tf, settings.bullet_radius,
+                               settings.bullet_level + jump * settings.bullet_crackle / 2);
+        // Enemy fire is electric: its light is the cool one
+        light.cool = bullet.owner == Bullet::Owner::Enemy;
+        lights.push_back(light);
     }
     game.renderer().apply_lighting(settings, lights);
 }
