@@ -4,6 +4,9 @@
 // u_reverse: colour to (ramp, step). A 64x64x64 colour cube as 8x8 slices;
 //   R = ramp, G = step, A = 1 where the colour is known.
 // u_ramps: one texel per (step, ramp).
+// u_light: the light buffer, the size of the frame. Red is the light at
+//   that pixel in sixteenths of a step, summed over the lights stamped
+//   into it (light.frag.hlsl).
 //
 // A known colour is moved along its ramp by the ambient shift plus the
 // light at that pixel. An unknown colour is left as drawn. All arithmetic
@@ -14,8 +17,10 @@
 cbuffer Context : register(b0, space3) {
     float4 frame; // target w, target h, ambient shift (steps), step count
     float4 extra; // x: dither band half-width, sixteenths of a step (0..8)
-                  // y: number of lights in use
-    float4 lights[MAX_LIGHTS]; // each: x, y, radius (whole target pixels), zones
+                  // y: number of lights in the loop below
+                  // z: 1 to read the light buffer
+    float4 lights[MAX_LIGHTS]; // each: x, y, radius (whole target pixels),
+                               // strength at the centre in sixteenths of a step
 };
 
 Texture2D u_texture : register(t0, space2);
@@ -24,6 +29,8 @@ Texture2D u_reverse : register(t1, space2);
 SamplerState u_reverse_sampler : register(s1, space2);
 Texture2D u_ramps : register(t2, space2);
 SamplerState u_ramps_sampler : register(s2, space2);
+Texture2D u_light : register(t3, space2);
+SamplerState u_light_sampler : register(s3, space2);
 
 struct PSInput {
     float4 v_color : COLOR0;
@@ -59,21 +66,27 @@ PSOutput main(PSInput input) {
     int ramp = int(round(entry.r * 255.0));
     int step_in = int(round(entry.g * 255.0));
 
-    // Each light is a smooth falloff, (1 - (d/r)^2)^2, scaled to `zones`
-    // steps at its centre, and the lights add. The sum is in sixteenths of
-    // a step: the whole part shifts the step and the remainder is dithered.
+    // Light arrives two ways, and both add. The light buffer holds any
+    // number of lights, drawn into it beforehand. The loop computes up to
+    // MAX_LIGHTS here; it is the first version, kept to compare cost.
+    // Each light is a smooth falloff, (1 - (d/r)^2)^2, scaled to its
+    // strength at the centre. The sum is in sixteenths of a step: the
+    // whole part shifts the step and the remainder is dithered.
     int level16 = 0;
+    if (extra.z > 0.5) {
+        level16 = int(round(u_light.Load(int3(px, 0)).r * 255.0));
+    }
     int count = min(int(extra.y), MAX_LIGHTS);
     for (int i = 0; i < count; ++i) {
         int radius = int(lights[i].z);
-        int zones = int(lights[i].w);
-        if (radius > 0 && zones > 0) {
+        int strength = int(lights[i].w);
+        if (radius > 0 && strength > 0) {
             int2 dd = px * 2 + 1 - int2(lights[i].xy) * 2;
             int d2x4 = dd.x * dd.x + dd.y * dd.y;
             int r2x4 = 4 * radius * radius;
             if (d2x4 < r2x4) {
                 int t = ((r2x4 - d2x4) * 256) / r2x4;
-                level16 += (zones * 16 * t * t) >> 16;
+                level16 += (strength * t * t) >> 16;
             }
         }
     }

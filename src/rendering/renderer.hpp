@@ -72,7 +72,15 @@ class Renderer {
     /// nothing when the lighting pass is unavailable.
     /// @param settings Ambient shift and dither band.
     /// @param lights This frame's lights, in virtual-resolution pixels.
-    void apply_lighting(const LightingSettings& settings, const std::vector<Light>& lights);
+    /// @param passes Times to run the pass. More than one is only for the
+    ///        benchmark, which finds the cost of a pass from the difference.
+    void apply_lighting(const LightingSettings& settings, const std::vector<Light>& lights,
+                        int passes = 1);
+
+    /// @brief Block until the GPU has finished everything submitted so far.
+    ///
+    /// For the benchmark, so a frame's time includes the GPU's work.
+    void wait_for_gpu();
 
     /// @brief Whether the lighting pass is available.
     /// @return True when apply_lighting() has an effect.

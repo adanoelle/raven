@@ -10,7 +10,8 @@ replaces only what is drawn:
 - every walkable cell gets a stone floor tile, with a few 2x2 large slabs;
 - a solid cell directly below a floor cell gets the cliff face;
 - every other solid cell is left empty (the void);
-- moss goes on a second tile layer, "Overlay", mostly along the edges.
+- moss goes on a second tile layer, "Overlay", mostly along the edges;
+- two "Fire" entities per room, for the shader lighting prototype to light.
 
 The choice of tiles is random with a fixed seed, so a rerun gives the same
 rooms. Rooms painted this way are not a level design.
@@ -102,6 +103,56 @@ def paint(level, rng):
     return len(stone), len(moss)
 
 
+# Where the fires stand, in cells: one toward each of two opposite corners.
+FIRE_CELLS = [(6, 4), (23, 12)]
+
+
+def place_fires(project, level, number):
+    """Replace the level's Fire entities with one at each of FIRE_CELLS."""
+    entity_defs = project["defs"]["entities"]
+    fire_def = next((d for d in entity_defs if d["identifier"] == "Fire"), None)
+    if fire_def is None:
+        fire_def = copy.deepcopy(next(d for d in entity_defs if d["identifier"] == "PlayerStart"))
+        fire_def.update(identifier="Fire", uid=project["nextUid"], color="#F6CD6E")
+        fire_def["doc"] = "A fire. With shader lighting it lights the floor around it."
+        project["nextUid"] += 1
+        entity_defs.append(fire_def)
+
+    layer = next(i for i in level["layerInstances"] if i["__identifier"] == "Entities")
+    kept = [e for e in layer["entityInstances"] if e["__identifier"] != "Fire"]
+    collision = next(i for i in level["layerInstances"] if i["__identifier"] == "Collision")
+    width, height = collision["__cWid"], collision["__cHei"]
+    floor = [
+        (x, y)
+        for y in range(height)
+        for x in range(width)
+        if collision["intGridCsv"][y * width + x] == 0
+    ]
+    for index, wanted in enumerate(FIRE_CELLS):
+        # The nearest walkable cell, in case the wanted one is solid here
+        cell_x, cell_y = min(floor, key=lambda c: (c[0] - wanted[0]) ** 2 + (c[1] - wanted[1]) ** 2)
+        px = [cell_x * TILE + TILE // 2, cell_y * TILE + TILE // 2]
+        kept.append(
+            {
+                "__identifier": "Fire",
+                "__grid": [cell_x, cell_y],
+                "__pivot": [0.5, 0.5],
+                "__tags": [],
+                "__smartColor": "#F6CD6E",
+                "__worldX": level["worldX"] + px[0],
+                "__worldY": level["worldY"] + px[1],
+                "iid": f"f1{number:02d}{index:04d}-0000-0000-0000-0000000000f1",
+                "width": TILE,
+                "height": TILE,
+                "defUid": fire_def["uid"],
+                "px": px,
+                "fieldInstances": [],
+                "__tile": None,
+            }
+        )
+    layer["entityInstances"] = kept
+
+
 def main():
     project = json.loads(MAP.read_text(encoding="utf-8"))
     defs = project["defs"]
@@ -139,6 +190,7 @@ def main():
             overlay["iid"] = f"c00000{number + 1:02d}-0000-0000-0000-0000000000a0"
             instances.insert(instances.index(tiles), overlay)
         stone, moss = paint(level, rng)
+        place_fires(project, level, number)
         print(f"{level['identifier']}: {stone} stone tiles, {moss} moss tiles")
 
     MAP.write_text(json.dumps(project, indent="\t") + "\n", encoding="utf-8")

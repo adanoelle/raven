@@ -128,6 +128,10 @@ void DebugOverlay::panel_lighting(entt::registry& reg) {
     ImGui::SliderInt("Player zones", &settings.player_zones, 0, 14);
     ImGui::SliderInt("Bullet radius", &settings.bullet_radius, 0, 80);
     ImGui::SliderInt("Bullet zones", &settings.bullet_zones, 0, 8);
+    ImGui::SliderInt("Fire radius", &settings.fire_radius, 0, 160);
+    ImGui::SliderInt("Fire strength /16", &settings.fire_level, 0, 96);
+    ImGui::SliderInt("Fire flicker /16", &settings.fire_flicker, 0, 16);
+    ImGui::Checkbox("Shader loop (max 32 lights)", &settings.use_loop);
     ImGui::End();
 }
 #endif

@@ -11,7 +11,7 @@
 	"iid": "a0000001-0000-0000-0000-000000000001",
 	"jsonVersion": "1.5.3",
 	"appBuildId": 473702,
-	"nextUid": 27,
+	"nextUid": 28,
 	"identifierStyle": "Capitalize",
 	"toc": [],
 	"worldLayout": "Free",
@@ -370,6 +370,41 @@
 						"tilesetUid": null
 					}
 				]
+			},
+			{
+				"identifier": "Fire",
+				"uid": 27,
+				"tags": [],
+				"exportToToc": false,
+				"allowOutOfBounds": false,
+				"doc": "A fire. With shader lighting it lights the floor around it.",
+				"width": 16,
+				"height": 16,
+				"resizableX": false,
+				"resizableY": false,
+				"minWidth": null,
+				"maxWidth": null,
+				"minHeight": null,
+				"maxHeight": null,
+				"keepAspectRatio": false,
+				"tileOpacity": 1,
+				"fillOpacity": 1,
+				"lineOpacity": 1,
+				"hollow": false,
+				"color": "#F6CD6E",
+				"renderMode": "Rectangle",
+				"showName": true,
+				"tilesetId": null,
+				"tileRenderMode": "FitInside",
+				"tileRect": null,
+				"uiTileRect": null,
+				"nineSliceBorders": [],
+				"maxCount": 0,
+				"limitScope": "PerLevel",
+				"limitBehavior": "MoveLastOne",
+				"pivotX": 0.5,
+				"pivotY": 0.5,
+				"fieldDefs": []
 			}
 		],
 		"tilesets": [
@@ -671,6 +706,56 @@
 									]
 								}
 							],
+							"__tile": null
+						},
+						{
+							"__identifier": "Fire",
+							"__grid": [
+								6,
+								4
+							],
+							"__pivot": [
+								0.5,
+								0.5
+							],
+							"__tags": [],
+							"__smartColor": "#F6CD6E",
+							"__worldX": 104,
+							"__worldY": 72,
+							"iid": "f1000000-0000-0000-0000-0000000000f1",
+							"width": 16,
+							"height": 16,
+							"defUid": 27,
+							"px": [
+								104,
+								72
+							],
+							"fieldInstances": [],
+							"__tile": null
+						},
+						{
+							"__identifier": "Fire",
+							"__grid": [
+								23,
+								12
+							],
+							"__pivot": [
+								0.5,
+								0.5
+							],
+							"__tags": [],
+							"__smartColor": "#F6CD6E",
+							"__worldX": 376,
+							"__worldY": 200,
+							"iid": "f1000001-0000-0000-0000-0000000000f1",
+							"width": 16,
+							"height": 16,
+							"defUid": 27,
+							"px": [
+								376,
+								200
+							],
+							"fieldInstances": [],
 							"__tile": null
 						}
 					]
@@ -9379,6 +9464,56 @@
 									]
 								}
 							],
+							"__tile": null
+						},
+						{
+							"__identifier": "Fire",
+							"__grid": [
+								6,
+								4
+							],
+							"__pivot": [
+								0.5,
+								0.5
+							],
+							"__tags": [],
+							"__smartColor": "#F6CD6E",
+							"__worldX": 648,
+							"__worldY": 72,
+							"iid": "f1010000-0000-0000-0000-0000000000f1",
+							"width": 16,
+							"height": 16,
+							"defUid": 27,
+							"px": [
+								104,
+								72
+							],
+							"fieldInstances": [],
+							"__tile": null
+						},
+						{
+							"__identifier": "Fire",
+							"__grid": [
+								23,
+								12
+							],
+							"__pivot": [
+								0.5,
+								0.5
+							],
+							"__tags": [],
+							"__smartColor": "#F6CD6E",
+							"__worldX": 920,
+							"__worldY": 200,
+							"iid": "f1010001-0000-0000-0000-0000000000f1",
+							"width": 16,
+							"height": 16,
+							"defUid": 27,
+							"px": [
+								376,
+								200
+							],
+							"fieldInstances": [],
 							"__tile": null
 						}
 					]
@@ -18144,6 +18279,56 @@
 									"realEditorValues": []
 								}
 							],
+							"__tile": null
+						},
+						{
+							"__identifier": "Fire",
+							"__grid": [
+								6,
+								3
+							],
+							"__pivot": [
+								0.5,
+								0.5
+							],
+							"__tags": [],
+							"__smartColor": "#F6CD6E",
+							"__worldX": 1192,
+							"__worldY": 56,
+							"iid": "f1020000-0000-0000-0000-0000000000f1",
+							"width": 16,
+							"height": 16,
+							"defUid": 27,
+							"px": [
+								104,
+								56
+							],
+							"fieldInstances": [],
+							"__tile": null
+						},
+						{
+							"__identifier": "Fire",
+							"__grid": [
+								24,
+								12
+							],
+							"__pivot": [
+								0.5,
+								0.5
+							],
+							"__tags": [],
+							"__smartColor": "#F6CD6E",
+							"__worldX": 1480,
+							"__worldY": 200,
+							"iid": "f1020001-0000-0000-0000-0000000000f1",
+							"width": 16,
+							"height": 16,
+							"defUid": 27,
+							"px": [
+								392,
+								200
+							],
+							"fieldInstances": [],
 							"__tile": null
 						}
 					]

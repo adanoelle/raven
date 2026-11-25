@@ -89,7 +89,8 @@ bool Renderer::init(const std::string& title, int window_scale, bool fullscreen,
     current_target_ = render_target_;
     if (lit_target_) {
         lighting_.init(renderer_, paths::asset("assets/data/lighting/ramps.png"),
-                       paths::asset("assets/data/lighting/reverse.png"));
+                       paths::asset("assets/data/lighting/reverse.png"), VIRTUAL_WIDTH,
+                       VIRTUAL_HEIGHT);
     }
 #endif
 
@@ -191,15 +192,26 @@ void Renderer::begin_frame() {
 }
 
 #ifdef RAVEN_ENABLE_SHADER_LIGHTING
-void Renderer::apply_lighting(const LightingSettings& settings, const std::vector<Light>& lights) {
+void Renderer::apply_lighting(const LightingSettings& settings, const std::vector<Light>& lights,
+                              int passes) {
     if (!lighting_.ready() || !render_target_ || !lit_target_ ||
         current_target_ != render_target_) {
         return;
     }
-    lighting_.apply(render_target_, lit_target_, settings, lights);
+    for (int pass = 0; pass < passes; ++pass) {
+        lighting_.apply(render_target_, lit_target_, settings, lights);
+    }
     // The rest of the frame (HUD, overlays) draws on top of the lit world.
     current_target_ = lit_target_;
     SDL_SetRenderTarget(renderer_, lit_target_);
+}
+#endif
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+void Renderer::wait_for_gpu() {
+    if (SDL_GPUDevice* device = SDL_GetGPURendererDevice(renderer_)) {
+        SDL_WaitForGPUIdle(device);
+    }
 }
 #endif
 

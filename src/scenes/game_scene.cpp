@@ -360,17 +360,34 @@ void GameScene::apply_lighting(Game& game, float alpha) {
             x = prev->x + (tf.x - prev->x) * alpha;
             y = prev->y + (tf.y - prev->y) * alpha;
         }
-        lights.push_back({x, y, radius, zones});
+        lights.push_back({x, y, radius, zones * 16});
     };
-    // Players first: when there are more lights than the shader takes,
-    // it is bullets that go without.
+
+    // Fires placed in the room ("Fire" entities in LDtk). The light wavers
+    // between three strengths, changing about five times a second, each
+    // fire on its own rhythm: steps, not a smooth pulse, so the dithered
+    // edge does not shimmer.
+    const auto fires = tilemap_.find_all_spawns("Fire");
+    const Uint64 beat = SDL_GetTicks() / 190;
+    for (size_t i = 0; i < fires.size(); ++i) {
+        Uint64 h = (beat + i * 7919u) * 0x9E3779B97F4A7C15ull;
+        const int waver = static_cast<int>((h >> 60) % 3) - 1; // -1, 0 or 1
+        if (settings.fire_level > 0) {
+            lights.push_back({fires[i]->x, fires[i]->y, settings.fire_radius + waver,
+                              settings.fire_level + waver * settings.fire_flicker});
+        }
+    }
+
+    // Then players, then bullets: when the loop is in use and there are
+    // more lights than it takes, it is bullets that go without.
     for (auto [entity, player, tf] : reg.view<Player, Transform2D>().each()) {
         if (settings.player_zones > 0) {
             add(entity, tf, settings.player_radius, settings.player_zones);
         }
     }
     for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
-        if (lights.size() >= static_cast<size_t>(LightingPass::MAX_LIGHTS)) {
+        if (settings.use_loop &&
+            lights.size() >= static_cast<size_t>(LightingPass::MAX_LOOP_LIGHTS)) {
             break;
         }
         if (settings.bullet_zones <= 0) {
@@ -379,6 +396,23 @@ void GameScene::apply_lighting(Game& game, float alpha) {
         add(entity, tf, settings.bullet_radius, settings.bullet_zones);
     }
     game.renderer().apply_lighting(settings, lights);
+
+    // A stand-in flame until there is art for one: drawn after the lighting
+    // pass, so it is not lit itself.
+    auto* r = game.renderer().sdl_renderer();
+    for (const auto* fire : fires) {
+        const float x = std::floor(fire->x);
+        const float y = std::floor(fire->y);
+        SDL_SetRenderDrawColor(r, 58, 40, 44, 255);
+        const SDL_FRect bowl{x - 3.f, y + 1.f, 6.f, 3.f};
+        SDL_RenderFillRect(r, &bowl);
+        SDL_SetRenderDrawColor(r, 214, 120, 54, 255);
+        const SDL_FRect flame{x - 2.f, y - 3.f, 4.f, 4.f};
+        SDL_RenderFillRect(r, &flame);
+        SDL_SetRenderDrawColor(r, 246, 205, 110, 255);
+        const SDL_FRect core{x - 1.f, y - 1.f, 2.f, 2.f};
+        SDL_RenderFillRect(r, &core);
+    }
 }
 #endif
 
