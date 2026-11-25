@@ -39,3 +39,4 @@ build-docs/
 *.AppImage
 *.zip
 *.tar.gz
+lighting-benchmark.csv

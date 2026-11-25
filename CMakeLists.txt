@@ -129,7 +129,8 @@ endif()
 
 if(RAVEN_ENABLE_SHADER_LIGHTING)
     target_compile_definitions(raven PRIVATE RAVEN_ENABLE_SHADER_LIGHTING)
-    target_sources(raven PRIVATE src/rendering/lighting_pass.cpp)
+    target_sources(raven PRIVATE src/rendering/lighting_pass.cpp
+                                 src/debug/lighting_benchmark.cpp)
 endif()
 
 if(RAVEN_ENABLE_STEAM)

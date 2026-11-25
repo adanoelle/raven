@@ -28,6 +28,13 @@ run-lit:
     cmake --build build-lit -j$(nproc)
     ./build-lit/bin/raven
 
+# Time the shader lighting prototype on this machine (Release build).
+# Prints a table and writes lighting-benchmark.csv.
+bench-lit:
+    cmake -B build-bench -G Ninja -DCMAKE_BUILD_TYPE=Release -DRAVEN_ENABLE_SHADER_LIGHTING=ON -DRAVEN_ENABLE_TESTS=OFF
+    cmake --build build-bench -j$(nproc)
+    ./build-bench/bin/raven --bench-lighting lighting-benchmark.csv
+
 # Run tests
 test: build
     cd build && ctest --output-on-failure
