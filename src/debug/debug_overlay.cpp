@@ -3,6 +3,7 @@
 #include "debug/debug_overlay.hpp"
 
 #include "ecs/components.hpp"
+#include "rendering/lighting_pass.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -55,6 +56,9 @@ void DebugOverlay::render(SDL_Renderer* renderer, entt::registry& reg) {
     panel_fps();
     panel_entities(reg);
     panel_player(reg);
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    panel_lighting(reg);
+#endif
 
     ImGui::Render();
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
@@ -110,6 +114,23 @@ void DebugOverlay::panel_entities(entt::registry& reg) {
     ImGui::Text("Enemies: %zu", enemy_count);
     ImGui::End();
 }
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+void DebugOverlay::panel_lighting(entt::registry& reg) {
+    auto& settings = reg.ctx().emplace<LightingSettings>();
+    ImGui::SetNextWindowPos(ImVec2(10, 300), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(260, 0), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Lighting (prototype)");
+    ImGui::Checkbox("Enabled", &settings.enabled);
+    ImGui::SliderInt("Ambient", &settings.ambient, -12, 6);
+    ImGui::SliderInt("Dither band", &settings.dither_band, 0, 8);
+    ImGui::SliderInt("Player radius", &settings.player_radius, 0, 240);
+    ImGui::SliderInt("Player zones", &settings.player_zones, 0, 14);
+    ImGui::SliderInt("Bullet radius", &settings.bullet_radius, 0, 80);
+    ImGui::SliderInt("Bullet zones", &settings.bullet_zones, 0, 8);
+    ImGui::End();
+}
+#endif
 
 void DebugOverlay::panel_player(entt::registry& reg) {
     auto view = reg.view<Transform2D, Velocity, Player>();

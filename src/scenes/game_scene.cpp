@@ -334,9 +334,48 @@ void GameScene::render(Game& game) {
     float alpha = game.scenes().is_top(this) ? game.clock().interpolation_alpha : 1.f;
     systems::render_sprites(game.registry(), r, game.sprites(), alpha);
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    apply_lighting(game, alpha);
+#endif
+
     // HUD overlay
     render_hud(game);
 }
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+void GameScene::apply_lighting(Game& game, float alpha) {
+    auto& reg = game.registry();
+    const auto& settings = reg.ctx().emplace<LightingSettings>();
+    if (!settings.enabled) {
+        return;
+    }
+
+    // Persistent scratch buffer, as the sprite renderer keeps.
+    auto& lights = reg.ctx().emplace<std::vector<Light>>();
+    lights.clear();
+    auto add = [&](entt::entity entity, const Transform2D& tf, int radius, int zones) {
+        float x = tf.x;
+        float y = tf.y;
+        if (const auto* prev = reg.try_get<PreviousTransform>(entity)) {
+            x = prev->x + (tf.x - prev->x) * alpha;
+            y = prev->y + (tf.y - prev->y) * alpha;
+        }
+        lights.push_back({x, y, radius, zones});
+    };
+    // Players first: when there are more lights than the shader takes,
+    // it is bullets that go without.
+    for (auto [entity, player, tf] : reg.view<Player, Transform2D>().each()) {
+        add(entity, tf, settings.player_radius, settings.player_zones);
+    }
+    for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
+        if (lights.size() >= static_cast<size_t>(LightingPass::MAX_LIGHTS)) {
+            break;
+        }
+        add(entity, tf, settings.bullet_radius, settings.bullet_zones);
+    }
+    game.renderer().apply_lighting(settings, lights);
+}
+#endif
 
 void GameScene::render_hud(Game& game) {
     systems::render_hud(game.registry(), game.renderer().sdl_renderer(), game.font());

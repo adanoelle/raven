@@ -1,6 +1,23 @@
 #include "rendering/renderer.hpp"
 
+#include "core/paths.hpp"
+
 #include <spdlog/spdlog.h>
+
+namespace {
+
+/// @brief Create the 480x270 texture the game draws into.
+SDL_Texture* create_virtual_target(SDL_Renderer* renderer) {
+    SDL_Texture* target =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+                          raven::Renderer::VIRTUAL_WIDTH, raven::Renderer::VIRTUAL_HEIGHT);
+    if (target) {
+        SDL_SetTextureScaleMode(target, SDL_SCALEMODE_PIXELART);
+    }
+    return target;
+}
+
+} // namespace
 
 namespace raven {
 
@@ -25,7 +42,24 @@ bool Renderer::init(const std::string& title, int window_scale, bool fullscreen,
         return false;
     }
 
-    renderer_ = SDL_CreateRenderer(window_, nullptr);
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    // The lighting shader needs SDL's "gpu" renderer. If it cannot be
+    // created, fall through to the default renderer and run unlit.
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetStringProperty(props, SDL_PROP_RENDERER_CREATE_NAME_STRING, SDL_GPU_RENDERER);
+    SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, window_);
+    SDL_SetBooleanProperty(props, SDL_PROP_RENDERER_CREATE_GPU_SHADERS_SPIRV_BOOLEAN, true);
+    SDL_SetBooleanProperty(props, SDL_PROP_RENDERER_CREATE_GPU_SHADERS_DXIL_BOOLEAN, true);
+    SDL_SetBooleanProperty(props, SDL_PROP_RENDERER_CREATE_GPU_SHADERS_MSL_BOOLEAN, true);
+    renderer_ = SDL_CreateRendererWithProperties(props);
+    SDL_DestroyProperties(props);
+    if (!renderer_) {
+        spdlog::warn("No gpu renderer ({}); shader lighting is off", SDL_GetError());
+    }
+#endif
+    if (!renderer_) {
+        renderer_ = SDL_CreateRenderer(window_, nullptr);
+    }
 
     if (!renderer_) {
         spdlog::error("Failed to create renderer: {}", SDL_GetError());
@@ -43,15 +77,21 @@ bool Renderer::init(const std::string& title, int window_scale, bool fullscreen,
     }
 
     // Set up virtual resolution render target
-    render_target_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
-                                       SDL_TEXTUREACCESS_TARGET, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+    render_target_ = create_virtual_target(renderer_);
 
     if (!render_target_) {
         spdlog::error("Failed to create render target: {}", SDL_GetError());
         return false;
     }
 
-    SDL_SetTextureScaleMode(render_target_, SDL_SCALEMODE_PIXELART);
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    lit_target_ = create_virtual_target(renderer_);
+    current_target_ = render_target_;
+    if (lit_target_) {
+        lighting_.init(renderer_, paths::asset("assets/data/lighting/ramps.png"),
+                       paths::asset("assets/data/lighting/reverse.png"));
+    }
+#endif
 
     // Set logical size for proper scaling on window resize
     SDL_SetRenderLogicalPresentation(renderer_, VIRTUAL_WIDTH, VIRTUAL_HEIGHT,
@@ -91,6 +131,14 @@ void Renderer::set_vsync(bool vsync) {
 }
 
 void Renderer::shutdown() {
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    lighting_.shutdown();
+    if (lit_target_) {
+        SDL_DestroyTexture(lit_target_);
+        lit_target_ = nullptr;
+    }
+    current_target_ = nullptr;
+#endif
     if (render_target_) {
         SDL_DestroyTexture(render_target_);
         render_target_ = nullptr;
@@ -120,27 +168,52 @@ void Renderer::recreate_target() {
         SDL_DestroyTexture(render_target_);
         render_target_ = nullptr;
     }
-    render_target_ = SDL_CreateTexture(renderer_, SDL_PIXELFORMAT_RGBA8888,
-                                       SDL_TEXTUREACCESS_TARGET, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+    render_target_ = create_virtual_target(renderer_);
     if (!render_target_) {
         spdlog::error("Failed to recreate render target: {}", SDL_GetError());
-    } else {
-        SDL_SetTextureScaleMode(render_target_, SDL_SCALEMODE_PIXELART);
     }
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    if (lit_target_) {
+        SDL_DestroyTexture(lit_target_);
+    }
+    lit_target_ = create_virtual_target(renderer_);
+    current_target_ = render_target_;
+#endif
 }
 
 void Renderer::begin_frame() {
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    current_target_ = render_target_;
+#endif
     SDL_SetRenderTarget(renderer_, render_target_);
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
     SDL_RenderClear(renderer_);
 }
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+void Renderer::apply_lighting(const LightingSettings& settings, const std::vector<Light>& lights) {
+    if (!lighting_.ready() || !render_target_ || !lit_target_ ||
+        current_target_ != render_target_) {
+        return;
+    }
+    lighting_.apply(render_target_, lit_target_, settings, lights);
+    // The rest of the frame (HUD, overlays) draws on top of the lit world.
+    current_target_ = lit_target_;
+    SDL_SetRenderTarget(renderer_, lit_target_);
+}
+#endif
+
 void Renderer::end_frame() {
     SDL_SetRenderTarget(renderer_, nullptr);
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);
     SDL_RenderClear(renderer_);
-    if (render_target_) {
-        SDL_RenderTexture(renderer_, render_target_, nullptr, nullptr);
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    SDL_Texture* frame = current_target_ ? current_target_ : render_target_;
+#else
+    SDL_Texture* frame = render_target_;
+#endif
+    if (frame) {
+        SDL_RenderTexture(renderer_, frame, nullptr, nullptr);
     }
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rendering/lighting_pass.hpp"
+
 #include <SDL3/SDL.h>
 
 #include <memory>
@@ -62,6 +64,21 @@ class Renderer {
     /// @brief End the frame by scaling the virtual target to the window. Does not present.
     void end_frame();
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// @brief Light everything drawn so far this frame.
+    ///
+    /// Call after the world is drawn and before the HUD. What is drawn
+    /// afterwards lands on top of the lit frame and is not lit. Does
+    /// nothing when the lighting pass is unavailable.
+    /// @param settings Ambient shift and dither band.
+    /// @param lights This frame's lights, in virtual-resolution pixels.
+    void apply_lighting(const LightingSettings& settings, const std::vector<Light>& lights);
+
+    /// @brief Whether the lighting pass is available.
+    /// @return True when apply_lighting() has an effect.
+    [[nodiscard]] bool lighting_ready() const { return lighting_.ready(); }
+#endif
+
     /// @brief Present the rendered frame. Call after any overlays have drawn.
     void present();
 
@@ -90,6 +107,11 @@ class Renderer {
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* render_target_ = nullptr; ///< Virtual resolution render target.
     bool vsync_enabled_ = false;           ///< True if the driver accepted vsync.
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    LightingPass lighting_;                 ///< Prototype lighting shader (ADR-0028).
+    SDL_Texture* lit_target_ = nullptr;     ///< Receives the lit world; the HUD draws onto it.
+    SDL_Texture* current_target_ = nullptr; ///< The target end_frame() presents.
+#endif
 
     /// @brief Destroy and recreate the virtual resolution render target.
     void recreate_target();

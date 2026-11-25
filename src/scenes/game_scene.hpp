@@ -56,6 +56,13 @@ class GameScene : public Scene {
     /// @param game The Game instance.
     void render_hud(Game& game);
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// @brief Gather this frame's lights and light the world drawn so far.
+    /// @param game The game, for the registry and the renderer.
+    /// @param alpha Interpolation factor, as passed to the sprite renderer.
+    void apply_lighting(Game& game, float alpha);
+#endif
+
     ClassId::Id selected_class_; ///< Player class chosen at character select.
     Tilemap tilemap_;            ///< Tilemap loaded from LDtk for the current room.
     PatternLibrary pattern_lib_; ///< Bullet pattern definitions for enemy emitters.
