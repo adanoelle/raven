@@ -18,9 +18,11 @@ struct LightingSettings {
     int dither_band = 8;        ///< 0 flat rings, 8 fully dithered falloff.
     int player_radius = 80;     ///< Radius of the light a player carries, in pixels.
     int player_zones = 0;       ///< Ramp steps that light adds at its centre; 0 is no light.
-    int bullet_radius = 16;     ///< Radius of the light a bullet carries, in pixels.
-    int bullet_level = 24;      ///< That light's strength at its centre, sixteenths of a step.
-    int light_ceiling = 56;     ///< Most light one pixel takes however many lights
+    int bullet_radius = 18;     ///< Radius of the light a bullet carries, in pixels.
+    int bullet_level = 40;      ///< That light's strength at its centre, sixteenths of a step.
+    int bullet_crackle = 10;    ///< How far each bullet's light jumps about that
+                                ///< strength, sixteenths of a step; 0 is steady.
+    int light_ceiling = 72;     ///< Most light one pixel takes however many lights
                                 ///< overlap, in sixteenths of a step.
     bool light_sprites = false; ///< Light sprites as well as tiles. Off, the pass
                                 ///< runs before sprites are drawn: players,

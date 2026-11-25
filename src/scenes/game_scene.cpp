@@ -403,6 +403,7 @@ void GameScene::apply_lighting(Game& game, float alpha) {
                 light_at(entity, tf, settings.player_radius, settings.player_zones * 16));
         }
     }
+    const Uint64 crackle_beat = SDL_GetTicks() / 83;
     for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
         if (settings.use_loop &&
             lights.size() >= static_cast<size_t>(LightingPass::MAX_LOOP_LIGHTS)) {
@@ -411,7 +412,13 @@ void GameScene::apply_lighting(Game& game, float alpha) {
         if (settings.bullet_level <= 0) {
             break;
         }
-        lights.push_back(light_at(entity, tf, settings.bullet_radius, settings.bullet_level));
+        // Each bullet's light jumps between strengths about twelve times a
+        // second, on its own rhythm: a crackle, like a spark
+        const Uint64 h = (crackle_beat + static_cast<Uint64>(entt::to_integral(entity)) * 7919u) *
+                         0x9E3779B97F4A7C15ull;
+        const int jump = static_cast<int>((h >> 58) % 5) - 2; // -2..2
+        lights.push_back(light_at(entity, tf, settings.bullet_radius,
+                                  settings.bullet_level + jump * settings.bullet_crackle / 2));
     }
     game.renderer().apply_lighting(settings, lights);
 }
