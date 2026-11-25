@@ -46,9 +46,10 @@ number of zones, `D` cycles the zone edges through a fully dithered falloff,
 flat rings and a narrow dithered seam, `-` `=` set the seam width,
 `S` whole-pixel snapping, `P` pixel-art scale mode,
 `M` colour modulation, `F` the shader-free CPU path, `E` emissives,
-`,` `.` move the ambient shift down and up a step, `Esc` quits. `L`
-switches only the light; the ambient shift stays where the keys put it. The
-top line shows how many index values are invalid.
+`,` `.` move the ambient shift down and up a step, `G` lights carried by
+actors, `Esc` quits. `L` switches only the light; the ambient shift stays
+where the keys put it. The top line shows how many index values are
+invalid.
 
 ## The light
 
@@ -74,6 +75,13 @@ tiles suit it better than large flat fills.
 
 Because it is all whole-number arithmetic, the shader and the CPU reference
 agree on every pixel.
+
+There can be up to eight lights, passed as uniforms. Their levels are added
+before the step and the dither are worked out, so overlapping lights give a
+brighter area and still no in-between colour. Every third moving actor
+carries a small light (radius 44, half the main light's zones); the mouse
+light is one more. Stills: `14-actor-lights.png` and
+`15-actor-lights-main.png` under `results/trial-palette/`.
 
 ## Shaders
 
@@ -320,8 +328,8 @@ Not run yet. This is the only place the MSL shader is exercised.
 
 - The Switch 2. That needs the NDA port of SDL3.
 - Performance. One pass at 480x270 was not measured.
-- A light mask texture, and more than one light. The one light here is a
-  position, a radius and a zone count in uniforms.
+- A light mask texture. Lights here are up to eight positions, radii and
+  zone counts in uniforms; a room with many lights would need a mask.
 - Real art. The art is generated in `make_tile_sheet()` and
   `make_sprite_sheet()`. The table can now come from Pigment (`--lut`), by
   way of a script and not a Pigment export.

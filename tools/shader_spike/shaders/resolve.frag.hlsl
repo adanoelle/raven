@@ -7,11 +7,14 @@
 // All arithmetic that decides a colour uses whole numbers held in
 // floats, so the CPU reference in main.cpp can match it exactly.
 
+#define MAX_LIGHTS 8
+
 cbuffer Context : register(b0, space3) {
     float4 size_variants; // target w, target h, variant A, variant B
-    float4 light;         // x, y, radius (whole target pixels), zones
     float4 params;        // mix (0..16), ambient shift, ramp count, step count
     float4 extra;         // x: dither band half-width, in sixteenths of a step (0..8)
+                          // y: number of lights in use
+    float4 lights[MAX_LIGHTS]; // each: x, y, radius (whole target pixels), zones
 };
 
 Texture2D u_texture : register(t0, space2);
@@ -49,31 +52,38 @@ PSOutput main(PSInput input) {
 
     float threshold = bayer[(px.y & 3) * 4 + (px.x & 3)];
 
-    // Light: a smooth falloff, (1 - (d/r)^2)^2, scaled to `zones` ramp steps
-    // at the centre. It is worked out in whole numbers, in sixteenths of a
-    // step. The whole part is the step shift; the remainder decides the edge
+    // Light: each light is a smooth falloff, (1 - (d/r)^2)^2, scaled to
+    // `zones` ramp steps at its centre, and the lights add. The sum is
+    // worked out in whole numbers, in sixteenths of a step. The whole part
+    // is the step shift; the remainder decides the edge
     // between two zones. Band 0 rounds it, giving flat rings. Band 8 dithers
     // all of it, so each zone fades into the next. Anything between dithers
     // only the remainders within `band` of the half-way point: flat zones
     // with a narrow dithered seam.
     float shift = params.y;
-    int radius = int(light.z);
-    int zones = int(light.w);
-    if (radius > 0 && zones > 0) {
-        int2 dd = px * 2 + 1 - int2(light.xy) * 2; // twice the offset from the light
-        int d2x4 = dd.x * dd.x + dd.y * dd.y;
-        int r2x4 = 4 * radius * radius;
-        if (d2x4 < r2x4) {
-            int t = ((r2x4 - d2x4) * 256) / r2x4;     // 1 - (d/r)^2, as 0..256
-            int level16 = (zones * 16 * t * t) >> 16; // sixteenths of a step
-            int band = int(extra.x);
-            if (band <= 0) {
-                shift += float((level16 + 8) >> 4);
-            } else {
-                int f = clamp((((level16 & 15) - (8 - band)) * 16) / (2 * band), 0, 16);
-                shift += float(level16 >> 4);
-                shift += (float(f) > threshold) ? 1.0 : 0.0;
+    int level16 = 0; // sixteenths of a step, summed over the lights
+    int count = min(int(extra.y), MAX_LIGHTS);
+    for (int i = 0; i < count; ++i) {
+        int radius = int(lights[i].z);
+        int zones = int(lights[i].w);
+        if (radius > 0 && zones > 0) {
+            int2 dd = px * 2 + 1 - int2(lights[i].xy) * 2; // twice the offset from the light
+            int d2x4 = dd.x * dd.x + dd.y * dd.y;
+            int r2x4 = 4 * radius * radius;
+            if (d2x4 < r2x4) {
+                int t = ((r2x4 - d2x4) * 256) / r2x4; // 1 - (d/r)^2, as 0..256
+                level16 += (zones * 16 * t * t) >> 16;
             }
+        }
+    }
+    if (level16 > 0) {
+        int band = int(extra.x);
+        if (band <= 0) {
+            shift += float((level16 + 8) >> 4);
+        } else {
+            int f = clamp((((level16 & 15) - (8 - band)) * 16) / (2 * band), 0, 16);
+            shift += float(level16 >> 4);
+            shift += (float(f) > threshold) ? 1.0 : 0.0;
         }
     }
     if (unlit) {

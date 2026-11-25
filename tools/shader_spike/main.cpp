@@ -43,6 +43,10 @@ constexpr int TILE = 16;
 constexpr int SPR = 16;
 constexpr int SPRITE_KINDS = 2;
 constexpr int MOVERS = 14;
+constexpr int MAX_LIGHTS = 8;    // matches resolve.frag.hlsl
+constexpr int EMITTER_EVERY = 3; // every third mover carries a light
+constexpr int EMITTER_RADIUS = 44;
+
 static_assert(PIGMENT_RAMPS == RAMPS && PIGMENT_VARIANTS == VARIANTS,
               "pigment_lut.h does not have the ramps and variants the spike expects");
 
@@ -72,10 +76,11 @@ struct Image {
 
 /// Matches the cbuffer in resolve.frag.hlsl.
 struct ResolveUniforms {
-    float size_variants[4]; // target w, target h, variant A, variant B
-    float light[4];         // x, y, radius (whole pixels), zones
-    float params[4];        // mix (0..16), ambient shift, ramp count, step count
-    float extra[4];         // x: dither band half-width, sixteenths of a step (0..8)
+    float size_variants[4];      // target w, target h, variant A, variant B
+    float params[4];             // mix (0..16), ambient shift, ramp count, step count
+    float extra[4];              // x: dither band half-width, sixteenths of a step (0..8)
+                                 // y: number of lights in use
+    float lights[MAX_LIGHTS][4]; // each: x, y, radius (whole pixels), zones
 };
 
 constexpr std::array<int, 16> BAYER = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
@@ -393,15 +398,34 @@ ResolveUniforms make_uniforms(float variant_a, float variant_b, float mix16, flo
     u.size_variants[1] = VH;
     u.size_variants[2] = variant_a;
     u.size_variants[3] = variant_b;
-    u.light[0] = std::floor(light_x);
-    u.light[1] = std::floor(light_y);
-    u.light[2] = radius;
-    u.light[3] = zones;
+    u.lights[0][0] = std::floor(light_x);
+    u.lights[0][1] = std::floor(light_y);
+    u.lights[0][2] = radius;
+    u.lights[0][3] = zones;
     u.extra[0] = static_cast<float>(dither_band);
+    u.extra[1] = 1.0f;
     u.params[0] = mix16;
     u.params[1] = ambient;
     u.params[2] = RAMPS;
     u.params[3] = static_cast<float>(g_steps);
+    return u;
+}
+
+/// Adds a light at the centre of every mover that carries one. The light
+/// follows the pixel the sprite is drawn on when `snap` is set.
+ResolveUniforms with_actor_lights(ResolveUniforms u, const std::vector<Mover>& movers, bool snap) {
+    auto count = static_cast<int>(u.extra[1]);
+    float zones = static_cast<float>(std::max(1, g_zones / 2));
+    for (size_t i = 0; i < movers.size() && count < MAX_LIGHTS; i += EMITTER_EVERY) {
+        float x = snap ? std::round(movers[i].x) : movers[i].x;
+        float y = snap ? std::round(movers[i].y) : movers[i].y;
+        u.lights[count][0] = std::floor(x + SPR / 2.0f);
+        u.lights[count][1] = std::floor(y + SPR / 2.0f);
+        u.lights[count][2] = EMITTER_RADIUS;
+        u.lights[count][3] = zones;
+        ++count;
+    }
+    u.extra[1] = static_cast<float>(count);
     return u;
 }
 
@@ -415,25 +439,30 @@ Image cpu_resolve(const Image& index, const Image& lut, const ResolveUniforms& u
             auto threshold = static_cast<float>(BAYER[static_cast<size_t>((y & 3) * 4 + (x & 3))]);
 
             float shift = u.params[1];
-            int radius = static_cast<int>(u.light[2]);
-            int zones = static_cast<int>(u.light[3]);
-            if (radius > 0 && zones > 0) {
-                int ddx = x * 2 + 1 - static_cast<int>(u.light[0]) * 2;
-                int ddy = y * 2 + 1 - static_cast<int>(u.light[1]) * 2;
-                int d2x4 = ddx * ddx + ddy * ddy;
-                int r2x4 = 4 * radius * radius;
-                if (d2x4 < r2x4) {
-                    int t = ((r2x4 - d2x4) * 256) / r2x4;
-                    int level16 = (zones * 16 * t * t) >> 16;
-                    int band = static_cast<int>(u.extra[0]);
-                    if (band <= 0) {
-                        shift += static_cast<float>((level16 + 8) >> 4);
-                    } else {
-                        int f =
-                            std::clamp((((level16 & 15) - (8 - band)) * 16) / (2 * band), 0, 16);
-                        shift += static_cast<float>(level16 >> 4);
-                        shift += (static_cast<float>(f) > threshold) ? 1.0f : 0.0f;
+            int level16 = 0; // sixteenths of a step, summed over the lights
+            int count = std::min(static_cast<int>(u.extra[1]), MAX_LIGHTS);
+            for (int i = 0; i < count; ++i) {
+                int radius = static_cast<int>(u.lights[i][2]);
+                int zones = static_cast<int>(u.lights[i][3]);
+                if (radius > 0 && zones > 0) {
+                    int ddx = x * 2 + 1 - static_cast<int>(u.lights[i][0]) * 2;
+                    int ddy = y * 2 + 1 - static_cast<int>(u.lights[i][1]) * 2;
+                    int d2x4 = ddx * ddx + ddy * ddy;
+                    int r2x4 = 4 * radius * radius;
+                    if (d2x4 < r2x4) {
+                        int t = ((r2x4 - d2x4) * 256) / r2x4;
+                        level16 += (zones * 16 * t * t) >> 16;
                     }
+                }
+            }
+            if (level16 > 0) {
+                int band = static_cast<int>(u.extra[0]);
+                if (band <= 0) {
+                    shift += static_cast<float>((level16 + 8) >> 4);
+                } else {
+                    int f = std::clamp((((level16 & 15) - (8 - band)) * 16) / (2 * band), 0, 16);
+                    shift += static_cast<float>(level16 >> 4);
+                    shift += (static_cast<float>(f) > threshold) ? 1.0f : 0.0f;
                 }
             }
             if (in.b & 1) {
@@ -734,7 +763,7 @@ bool run_checks(Spike& s, const std::string& out_dir) {
     };
     auto ambient = static_cast<float>(g_ambient);
     auto zones = static_cast<float>(g_zones);
-    const std::array<Case, 11> cases = {{
+    const std::array<Case, 13> cases = {{
         {"variant A (daylight)", "1-daylight.png", make_uniforms(0, 1, 0, 0, 0, 0, 0, 0)},
         {"variant B (dark ruins)", "2-dark-ruins.png", make_uniforms(0, 1, 16, 0, 0, 0, 0, 0)},
         {"dithered cross-fade, half way", "3-crossfade.png", make_uniforms(0, 1, 8, 0, 0, 0, 0, 0)},
@@ -754,6 +783,11 @@ bool run_checks(Spike& s, const std::string& out_dir) {
          make_uniforms(1, 1, 0, -2, 0, 0, 0, 0)},
         {"daylight row, ambient down, the main light", "13-daylight-light.png",
          make_uniforms(0, 0, 0, ambient, 150, 120, 90, zones)},
+        // Lights carried by actors; they add where they overlap.
+        {"dark ruins, ambient down, lights carried by actors", "14-actor-lights.png",
+         with_actor_lights(make_uniforms(1, 1, 0, ambient, 0, 0, 0, 0), s.movers, true)},
+        {"the same with the main light", "15-actor-lights-main.png",
+         with_actor_lights(make_uniforms(1, 1, 0, ambient, 150, 120, 90, zones), s.movers, true)},
     }};
     draw_index_scene(s.renderer, s.index_target, s.tiles, s.sprites, s.movers, SAFE);
     for (const Case& c : cases) {
@@ -908,6 +942,7 @@ void run_interactive(Spike& s) {
     bool auto_fade = true;
     bool cpu_path = false;
     bool emissives = true;
+    bool actor_lights = true;
     int band = 8; // dither band half-width: 0 flat rings, 8 fully dithered
     int zones = g_zones;
     int ambient = g_ambient;
@@ -985,6 +1020,9 @@ void run_interactive(Spike& s) {
                 case SDLK_E:
                     emissives = !emissives;
                     break;
+                case SDLK_G:
+                    actor_lights = !actor_lights;
+                    break;
                 default:
                     break;
                 }
@@ -1025,6 +1063,10 @@ void run_interactive(Spike& s) {
                 : make_uniforms(0, 1, std::floor(mix), static_cast<float>(ambient), light_x,
                                 light_y, light_on ? radius : 0.0f, static_cast<float>(zones), band);
 
+        if (actor_lights && !cpu_path) {
+            u = with_actor_lights(u, s.movers, snap);
+        }
+
         SDL_Texture* shown = s.colour_target;
         if (cpu_path || frame % 20 == 0) {
             Image index = read_pixels(s.renderer, s.index_target);
@@ -1061,7 +1103,8 @@ void run_interactive(Spike& s) {
                       g_table ? g_table->name : "builtin", g_steps);
         SDL_RenderDebugText(s.renderer, 4, 34, line);
         SDL_RenderDebugText(s.renderer, 4, VH - 22, "[1][2] variant  [C] auto fade  [F] CPU path");
-        SDL_RenderDebugText(s.renderer, 4, VH - 12, "[E]missives  mouse: light  Esc: quit");
+        SDL_RenderDebugText(s.renderer, 4, VH - 12,
+                            "[E]missives  [G]low on actors  mouse: light  Esc: quit");
         SDL_RenderPresent(s.renderer);
         ++frame;
     }
