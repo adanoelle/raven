@@ -1,0 +1,23 @@
+knight.png against the trial palette, Open Daylight row
+Matching by OKLab distance, computed outside Pigment. exact = same colour; near = under 0.02 (not visible).
+
+colour   pixels  result     nearest (ramp, step)   colour   distance
+#fb6565    364  NO MATCH   Character, 5           #d87b80  0.071
+#787171    300  NO MATCH   Stone, 4               #677f81  0.043
+#9c2828    262  NO MATCH   Character, 3           #953a2d  0.031
+#9e9fae    230  NO MATCH   Stone, 5               #89a09b  0.043
+#000000    220  NO MATCH   Stone, 0               #060b18  0.155
+#f4e9e9    210  NO MATCH   Stone, 7               #dbe0d8  0.047
+#cdcdcd    170  NO MATCH   Stone, 7               #dbe0d8  0.054
+#ffa7b7    118  NO MATCH   Character, 6           #f8a09b  0.039
+#4e506a     92  NO MATCH   Stone, 3               #4a5f66  0.049
+#0714f1     90  NO MATCH   Character, 2           #601d5f  0.275
+#767895     80  NO MATCH   Stone, 4               #677f81  0.048
+#0a0a0b     72  NO MATCH   Stone, 0               #060b18  0.028
+#f11650     60  NO MATCH   Character, 4           #b55868  0.123
+#f83030     52  NO MATCH   Character, 5           #d87b80  0.131
+#b15767     20  near       Character, 4           #b55868  0.008
+#ea8f9f     10  NO MATCH   Character, 6           #f8a09b  0.052
+
+15 of 16 colours match nothing, covering 2330 of 2350 opaque pixels.
+An export should fail here and not use the nearest colour (ADR-0028, open question 4).

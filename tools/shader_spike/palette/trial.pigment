@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "ramps": [
+    {
+      "id": "00000000-0000-4000-8001-000000000001",
+      "name": "Stone",
+      "preset": null,
+      "params": {
+        "ambientLight": "#b8e8e0",
+        "centerHue": 215.0,
+        "curveAccent": 0.3,
+        "curveMethod": "lame",
+        "gamutMask": null,
+        "harveyHue": false,
+        "hueCycle": -0.45,
+        "maxLightness": 0.9,
+        "maxSaturation": 0.08,
+        "minLightness": 0.15,
+        "minSaturation": 0.03,
+        "saturationCurvePreset": null,
+        "tintShadeHueShift": 0.0,
+        "total": 8
+      },
+      "pinnedShapeId": null
+    },
+    {
+      "id": "00000000-0000-4000-8001-000000000002",
+      "name": "Vegetation",
+      "preset": null,
+      "params": {
+        "ambientLight": "#b8e8e0",
+        "centerHue": 142.0,
+        "curveAccent": 0.3,
+        "curveMethod": "lame",
+        "gamutMask": null,
+        "harveyHue": false,
+        "hueCycle": -0.22,
+        "maxLightness": 0.9,
+        "maxSaturation": 0.2,
+        "minLightness": 0.15,
+        "minSaturation": 0.12,
+        "saturationCurvePreset": null,
+        "tintShadeHueShift": 0.0,
+        "total": 8
+      },
+      "pinnedShapeId": null
+    },
+    {
+      "id": "00000000-0000-4000-8001-000000000003",
+      "name": "Earth",
+      "preset": null,
+      "params": {
+        "ambientLight": "#b8e8e0",
+        "centerHue": 62.0,
+        "curveAccent": 0.3,
+        "curveMethod": "lame",
+        "gamutMask": null,
+        "harveyHue": false,
+        "hueCycle": 0.15,
+        "maxLightness": 0.9,
+        "maxSaturation": 0.2,
+        "minLightness": 0.15,
+        "minSaturation": 0.12,
+        "saturationCurvePreset": null,
+        "tintShadeHueShift": 0.0,
+        "total": 8
+      },
+      "pinnedShapeId": null
+    },
+    {
+      "id": "00000000-0000-4000-8001-000000000004",
+      "name": "Character",
+      "preset": null,
+      "params": {
+        "ambientLight": "#b8e8e0",
+        "centerHue": 8.0,
+        "curveAccent": 0.3,
+        "curveMethod": "lame",
+        "gamutMask": null,
+        "harveyHue": false,
+        "hueCycle": 0.12,
+        "maxLightness": 0.9,
+        "maxSaturation": 0.35,
+        "minLightness": 0.15,
+        "minSaturation": 0.15,
+        "saturationCurvePreset": null,
+        "tintShadeHueShift": 0.0,
+        "total": 8
+      },
+      "pinnedShapeId": null
+    }
+  ],
+  "gamutMask": {
+    "enabled": false,
+    "harmonyMode": "analogous",
+    "baseHue": 0.0,
+    "spread": 60.0,
+    "chromaDepth": 0.5,
+    "shapes": []
+  },
+  "ambientLight": {
+    "enabled": true,
+    "color": "#b8e8e0"
+  },
+  "variants": [
+    {
+      "id": "00000000-0000-4000-8003-000000000001",
+      "name": "Open Daylight",
+      "ambientLight": {
+        "enabled": true,
+        "color": "#b8e8e0"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8003-000000000002",
+      "name": "Dark Ruins",
+      "ambientLight": {
+        "enabled": true,
+        "color": "#6a5acd"
+      }
+    }
+  ],
+  "activeVariantId": "00000000-0000-4000-8003-000000000001"
+}

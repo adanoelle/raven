@@ -1,0 +1,28 @@
+{
+  "comment": "Which saved build_palette outputs become lookup tables in the spike. Read by ../lut_from_pigment.py. Paths are relative to this file.",
+  "ramps": ["Stone", "Vegetation", "Earth", "Character"],
+  "variants": ["Open Daylight", "Dark Ruins"],
+  "tables": [
+    {
+      "name": "pigment",
+      "build": "trial-build.json",
+      "base": 3, "zones": 4, "ambient": -2
+    },
+    {
+      "name": "pigment-fixed",
+      "build": "trial-build.json",
+      "base": 3, "zones": 4, "ambient": -2,
+      "fixed": {"ramps": ["Character"], "build": "trial-build-no-light.json"}
+    },
+    {
+      "name": "pigment-5",
+      "build": "trial-build-5.json",
+      "base": 2, "zones": 2, "ambient": -1
+    },
+    {
+      "name": "pigment-12",
+      "build": "trial-build-12.json",
+      "base": 5, "zones": 6, "ambient": -3
+    }
+  ]
+}

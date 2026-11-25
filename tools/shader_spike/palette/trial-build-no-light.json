@@ -1,0 +1,16 @@
+{
+  "colorBudget": null,
+  "uniqueColors": [32],
+  "variants": [
+    {
+      "ambientLight": null,
+      "ramps": [
+        {"colors": ["#0c0816", "#1e2232", "#33404d", "#4b5f68", "#677f81", "#89a09b", "#b0c0b5", "#dbe0d8"], "name": "Stone"},
+        {"colors": ["#00130d", "#002e1e", "#114a30", "#3e6643", "#67845a", "#90a273", "#bbc191", "#e3e0be"], "name": "Vegetation"},
+        {"colors": ["#220000", "#3f1401", "#5c3117", "#7a5130", "#97714c", "#b4946a", "#d1b88c", "#eaddbd"], "name": "Earth"},
+        {"colors": ["#290015", "#4b0029", "#6e143d", "#923752", "#b55868", "#d87b80", "#f8a09b", "#ffd1c9"], "name": "Character"}
+      ],
+      "variant": null
+    }
+  ]
+}

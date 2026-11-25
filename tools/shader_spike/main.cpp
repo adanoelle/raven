@@ -12,6 +12,7 @@
 // Run with --check for the automated report, or with no arguments for the
 // interactive view. See README.md next to this file.
 
+#include "pigment_lut.h"
 #include "shaders/resolve.frag.dxil.h"
 #include "shaders/resolve.frag.msl.h"
 #include "shaders/resolve.frag.spv.h"
@@ -37,12 +38,21 @@ namespace {
 constexpr int VW = 480; // Raven's virtual resolution
 constexpr int VH = 270;
 constexpr int RAMPS = 4;    // stone, vegetation, earth, character
-constexpr int STEPS = 8;    // steps per ramp, including headroom at both ends
 constexpr int VARIANTS = 2; // open daylight, dark ruins
 constexpr int TILE = 16;
 constexpr int SPR = 16;
 constexpr int SPRITE_KINDS = 2;
 constexpr int MOVERS = 14;
+static_assert(PIGMENT_RAMPS == RAMPS && PIGMENT_VARIANTS == VARIANTS,
+              "pigment_lut.h does not have the ramps and variants the spike expects");
+
+// The table in use. The defaults are the built-in table's; --lut replaces
+// them with a table from pigment_lut.h.
+const PigmentTable* g_table = nullptr; // null: the built-in table from make_lut()
+int g_steps = 8;                       // steps per ramp, including headroom at both ends
+int g_base = 3;                        // the step the placeholder art sits on
+int g_zones = 4;                       // steps the main light adds at its centre
+int g_ambient = -2;                    // ambient shift of the main light case
 
 struct Rgba {
     Uint8 r, g, b, a;
@@ -131,11 +141,11 @@ Image make_lut() {
         {348.0f, 0.62f}, // character (burgundy)
     }};
 
-    Image lut(STEPS, RAMPS * VARIANTS);
+    Image lut(g_steps, RAMPS * VARIANTS);
     for (int variant = 0; variant < VARIANTS; ++variant) {
         for (int ramp = 0; ramp < RAMPS; ++ramp) {
-            for (int step = 0; step < STEPS; ++step) {
-                float t = static_cast<float>(step) / static_cast<float>(STEPS - 1);
+            for (int step = 0; step < g_steps; ++step) {
+                float t = static_cast<float>(step) / static_cast<float>(g_steps - 1);
                 const Material& m = materials[static_cast<size_t>(ramp)];
                 // Shadows pull toward blue-purple, highlights toward yellow.
                 float hue =
@@ -154,6 +164,15 @@ Image make_lut() {
     return lut;
 }
 
+/// A table exported from Pigment by lut_from_pigment.py, in the same layout.
+Image lut_from_table(const PigmentTable& table) {
+    Image lut(table.steps, RAMPS * VARIANTS);
+    for (size_t i = 0; i < lut.px.size(); ++i) {
+        lut.px[i] = {table.rgb[i * 3], table.rgb[i * 3 + 1], table.rgb[i * 3 + 2], 255};
+    }
+    return lut;
+}
+
 // ── Index art, encoded by hand ───────────────────────────────────────
 
 Uint8 noise(int x, int y) {
@@ -168,10 +187,10 @@ Image make_tile_sheet() {
     for (int t = 0; t < 3; ++t) {
         for (int y = 0; y < TILE; ++y) {
             for (int x = 0; x < TILE; ++x) {
-                int step = 3 + (noise(x + t * 31, y) % 5 == 0 ? 1 : 0) -
+                int step = g_base + (noise(x + t * 31, y) % 5 == 0 ? 1 : 0) -
                            (noise(x, y + t * 17) % 7 == 0 ? 1 : 0);
                 if (t == 0 && (y % 8 == 0 || (x + (y / 8) * 4) % 8 == 0)) {
-                    step = 2; // seams between stone blocks
+                    step = g_base - 1; // seams between stone blocks
                 }
                 sheet.at(t * TILE + x, y) = {static_cast<Uint8>(t), static_cast<Uint8>(step), 0,
                                              255};
@@ -197,7 +216,9 @@ Image make_sprite_sheet() {
                     p = {ramp, 0, 1, 255}; // outline: darkest step, never lit
                 } else if (d <= 6.4f) {
                     float lit = (-dx - dy) / 9.0f; // light from the top left
-                    int step = std::clamp(static_cast<int>(std::lround(3.5f + lit * 2.0f)), 2, 5);
+                    int step = std::clamp(static_cast<int>(std::lround(static_cast<float>(g_base) +
+                                                                       0.5f + lit * 2.0f)),
+                                          g_base - 1, g_base + 2);
                     p = {ramp, static_cast<Uint8>(step), 0, 255};
                 }
                 sheet.at(k * SPR + x, y) = p;
@@ -343,7 +364,7 @@ Image cpu_index_scene(const Image& tiles, const Image& sprites, const std::vecto
 }
 
 bool valid_index(Rgba p) {
-    return p.a == 255 && p.r < RAMPS && p.g < STEPS && p.b <= 1;
+    return p.a == 255 && p.r < RAMPS && p.g < g_steps && p.b <= 1;
 }
 
 int count_invalid(const Image& image) {
@@ -380,7 +401,7 @@ ResolveUniforms make_uniforms(float variant_a, float variant_b, float mix16, flo
     u.params[0] = mix16;
     u.params[1] = ambient;
     u.params[2] = RAMPS;
-    u.params[3] = STEPS;
+    u.params[3] = static_cast<float>(g_steps);
     return u;
 }
 
@@ -554,7 +575,7 @@ bool init(Spike& s, bool hidden, const char* driver) {
 
     s.tile_image = make_tile_sheet();
     s.sprite_image = make_sprite_sheet();
-    s.lut_image = make_lut();
+    s.lut_image = g_table ? lut_from_table(*g_table) : make_lut();
     s.movers = make_movers();
     s.tiles = texture_from(s.renderer, s.tile_image);
     s.sprites = texture_from(s.renderer, s.sprite_image);
@@ -704,23 +725,35 @@ bool run_checks(Spike& s, const std::string& out_dir) {
 
     // 2. Resolve. The shader must match the CPU arithmetic exactly.
     std::printf("\n-- Resolve pass against the CPU reference --\n");
+    std::printf("[INFO] table \"%s\": %d steps, art on step %d, main light %d zones, ambient %d\n",
+                g_table ? g_table->name : "builtin", g_steps, g_base, g_zones, g_ambient);
     struct Case {
         const char* name;
         const char* file;
         ResolveUniforms u;
     };
-    const std::array<Case, 7> cases = {{
+    auto ambient = static_cast<float>(g_ambient);
+    auto zones = static_cast<float>(g_zones);
+    const std::array<Case, 11> cases = {{
         {"variant A (daylight)", "1-daylight.png", make_uniforms(0, 1, 0, 0, 0, 0, 0, 0)},
         {"variant B (dark ruins)", "2-dark-ruins.png", make_uniforms(0, 1, 16, 0, 0, 0, 0, 0)},
         {"dithered cross-fade, half way", "3-crossfade.png", make_uniforms(0, 1, 8, 0, 0, 0, 0, 0)},
-        {"dark ruins, ambient -2, one light of four zones", "4-light.png",
-         make_uniforms(1, 1, 0, -2, 150, 120, 90, 4)},
+        {"dark ruins, ambient down, the main light", "4-light.png",
+         make_uniforms(1, 1, 0, ambient, 150, 120, 90, zones)},
         {"cross-fade and light together", "5-crossfade-light.png",
          make_uniforms(0, 1, 6, -1, 300, 150, 70, 3)},
         {"the same light as flat bands, no dither", "4b-light-banded.png",
-         make_uniforms(1, 1, 0, -2, 150, 120, 90, 4, 0)},
+         make_uniforms(1, 1, 0, ambient, 150, 120, 90, zones, 0)},
         {"the same light, flat zones with a narrow dithered seam", "4c-light-narrow-band.png",
-         make_uniforms(1, 1, 0, -2, 150, 120, 90, 4, 2)},
+         make_uniforms(1, 1, 0, ambient, 150, 120, 90, zones, 2)},
+        // Environments as a variant row plus an ambient shift, with no light.
+        {"daylight row, ambient +1", "10-daylight-up1.png", make_uniforms(0, 1, 0, 1, 0, 0, 0, 0)},
+        {"dark ruins row, ambient -1", "11-ruins-down1.png",
+         make_uniforms(1, 1, 0, -1, 0, 0, 0, 0)},
+        {"dark ruins row, ambient -2", "12-ruins-down2.png",
+         make_uniforms(1, 1, 0, -2, 0, 0, 0, 0)},
+        {"daylight row, ambient down, the main light", "13-daylight-light.png",
+         make_uniforms(0, 0, 0, ambient, 150, 120, 90, zones)},
     }};
     draw_index_scene(s.renderer, s.index_target, s.tiles, s.sprites, s.movers, SAFE);
     for (const Case& c : cases) {
@@ -876,7 +909,8 @@ void run_interactive(Spike& s) {
     bool cpu_path = false;
     bool emissives = true;
     int band = 8; // dither band half-width: 0 flat rings, 8 fully dithered
-    int zones = 4;
+    int zones = g_zones;
+    int ambient = g_ambient;
     float radius = 90.0f;
     float mix = 0.0f; // 0..16
     float mix_target = 0.0f;
@@ -913,7 +947,13 @@ void run_interactive(Spike& s) {
                     zones = std::max(1, zones - 1);
                     break;
                 case SDLK_RIGHTBRACKET:
-                    zones = std::min(6, zones + 1);
+                    zones = std::min(g_steps - 1, zones + 1);
+                    break;
+                case SDLK_COMMA:
+                    ambient = std::max(-(g_steps - 1), ambient - 1);
+                    break;
+                case SDLK_PERIOD:
+                    ambient = std::min(g_steps - 1, ambient + 1);
                     break;
                 case SDLK_ESCAPE:
                     running = false;
@@ -982,8 +1022,8 @@ void run_interactive(Spike& s) {
         ResolveUniforms u =
             cpu_path
                 ? make_uniforms(0, 1, mix >= 8.0f ? 16.0f : 0.0f, 0, 0, 0, 0, 0)
-                : make_uniforms(0, 1, std::floor(mix), light_on ? -2.0f : 0.0f, light_x, light_y,
-                                light_on ? radius : 0.0f, static_cast<float>(zones), band);
+                : make_uniforms(0, 1, std::floor(mix), static_cast<float>(ambient), light_x,
+                                light_y, light_on ? radius : 0.0f, static_cast<float>(zones), band);
 
         SDL_Texture* shown = s.colour_target;
         if (cpu_path || frame % 20 == 0) {
@@ -1017,6 +1057,9 @@ void run_interactive(Spike& s) {
             line, sizeof(line), "[ ] zones %d  wheel: radius %d  [D] [-][=] dither %s %d/8", zones,
             static_cast<int>(radius), band == 0 ? "OFF" : (band >= 8 ? "full" : "seam"), band);
         SDL_RenderDebugText(s.renderer, 4, 24, line);
+        std::snprintf(line, sizeof(line), "[,][.] ambient %+d  table %s (%d steps)", ambient,
+                      g_table ? g_table->name : "builtin", g_steps);
+        SDL_RenderDebugText(s.renderer, 4, 34, line);
         SDL_RenderDebugText(s.renderer, 4, VH - 22, "[1][2] variant  [C] auto fade  [F] CPU path");
         SDL_RenderDebugText(s.renderer, 4, VH - 12, "[E]missives  mouse: light  Esc: quit");
         SDL_RenderPresent(s.renderer);
@@ -1041,11 +1084,33 @@ int main(int argc, char** argv) {
             out_dir = argv[++i];
         } else if (arg == "--driver" && i + 1 < argc) {
             driver = argv[++i];
+        } else if (arg == "--lut" && i + 1 < argc) {
+            std::string name = argv[++i];
+            for (const PigmentTable& table : PIGMENT_TABLES) {
+                if (name == table.name) {
+                    g_table = &table;
+                }
+            }
+            if (!g_table && name != "builtin") {
+                std::printf("unknown table \"%s\". Tables: builtin", name.c_str());
+                for (const PigmentTable& table : PIGMENT_TABLES) {
+                    std::printf(", %s", table.name);
+                }
+                std::printf("\n");
+                return 2;
+            }
         } else {
             std::printf("usage: raven_shader_spike [--check [--out DIR] [--show]] "
-                        "[--driver vulkan|direct3d12|metal]\n");
+                        "[--driver vulkan|direct3d12|metal] [--lut NAME]\n");
             return 2;
         }
+    }
+
+    if (g_table) {
+        g_steps = g_table->steps;
+        g_base = g_table->base;
+        g_zones = g_table->zones;
+        g_ambient = g_table->ambient;
     }
 
     Spike spike;

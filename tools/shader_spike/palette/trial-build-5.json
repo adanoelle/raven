@@ -1,0 +1,101 @@
+{
+  "colorBudget": null,
+  "uniqueColors": [
+    20,
+    20
+  ],
+  "variants": [
+    {
+      "ambientLight": "#b8e8e0",
+      "ramps": [
+        {
+          "colors": [
+            "#060b18",
+            "#273b43",
+            "#586f75",
+            "#93a8a1",
+            "#dbe0d8"
+          ],
+          "name": "Stone"
+        },
+        {
+          "colors": [
+            "#00130f",
+            "#004333",
+            "#52754e",
+            "#9ba97a",
+            "#e3e0be"
+          ],
+          "name": "Vegetation"
+        },
+        {
+          "colors": [
+            "#1e0100",
+            "#4c3200",
+            "#88613e",
+            "#bb9d73",
+            "#eaddbd"
+          ],
+          "name": "Earth"
+        },
+        {
+          "colors": [
+            "#1e002d",
+            "#571558",
+            "#a4475d",
+            "#e08486",
+            "#ffd1c9"
+          ],
+          "name": "Character"
+        }
+      ],
+      "variant": "Open Daylight"
+    },
+    {
+      "ambientLight": "#6a5acd",
+      "ramps": [
+        {
+          "colors": [
+            "#0a0917",
+            "#313747",
+            "#586f75",
+            "#93a8a1",
+            "#dbe0d8"
+          ],
+          "name": "Stone"
+        },
+        {
+          "colors": [
+            "#00111d",
+            "#004341",
+            "#52754e",
+            "#9ba97a",
+            "#e3e0be"
+          ],
+          "name": "Vegetation"
+        },
+        {
+          "colors": [
+            "#210007",
+            "#572628",
+            "#88613e",
+            "#bb9d73",
+            "#eaddbd"
+          ],
+          "name": "Earth"
+        },
+        {
+          "colors": [
+            "#1e002d",
+            "#571558",
+            "#a4475d",
+            "#e08486",
+            "#ffd1c9"
+          ],
+          "name": "Character"
+        }
+      ],
+      "variant": "Dark Ruins"
+    }
+  ]
+}
