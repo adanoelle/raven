@@ -365,10 +365,15 @@ void GameScene::apply_lighting(Game& game, float alpha) {
     // Players first: when there are more lights than the shader takes,
     // it is bullets that go without.
     for (auto [entity, player, tf] : reg.view<Player, Transform2D>().each()) {
-        add(entity, tf, settings.player_radius, settings.player_zones);
+        if (settings.player_zones > 0) {
+            add(entity, tf, settings.player_radius, settings.player_zones);
+        }
     }
     for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
         if (lights.size() >= static_cast<size_t>(LightingPass::MAX_LIGHTS)) {
+            break;
+        }
+        if (settings.bullet_zones <= 0) {
             break;
         }
         add(entity, tf, settings.bullet_radius, settings.bullet_zones);

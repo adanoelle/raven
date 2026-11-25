@@ -17,7 +17,7 @@ struct LightingSettings {
     int ambient = -4;       ///< Ramp steps added to every lit pixel; negative darkens.
     int dither_band = 8;    ///< 0 flat rings, 8 fully dithered falloff.
     int player_radius = 80; ///< Radius of the light a player carries, in pixels.
-    int player_zones = 7;   ///< Ramp steps that light adds at its centre.
+    int player_zones = 0;   ///< Ramp steps that light adds at its centre; 0 is no light.
     int bullet_radius = 20; ///< Radius of the light a bullet carries, in pixels.
     int bullet_zones = 3;   ///< Ramp steps that light adds at its centre.
 };
