@@ -127,7 +127,9 @@ void DebugOverlay::panel_lighting(entt::registry& reg) {
     ImGui::SliderInt("Player radius", &settings.player_radius, 0, 240);
     ImGui::SliderInt("Player zones", &settings.player_zones, 0, 14);
     ImGui::SliderInt("Bullet radius", &settings.bullet_radius, 0, 80);
-    ImGui::SliderInt("Bullet zones", &settings.bullet_zones, 0, 8);
+    ImGui::SliderInt("Bullet strength /16", &settings.bullet_level, 0, 96);
+    ImGui::SliderInt("Light ceiling /16", &settings.light_ceiling, 0, 255);
+    ImGui::Checkbox("Light sprites too", &settings.light_sprites);
     ImGui::SliderInt("Fire radius", &settings.fire_radius, 0, 160);
     ImGui::SliderInt("Fire strength /16", &settings.fire_level, 0, 96);
     ImGui::SliderInt("Fire flicker /16", &settings.fire_flicker, 0, 16);

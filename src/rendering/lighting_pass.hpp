@@ -13,18 +13,23 @@ namespace raven {
 ///
 /// Lives in the registry context so the debug overlay can change it.
 struct LightingSettings {
-    bool enabled = true;    ///< Run the lighting pass at all.
-    int ambient = -4;       ///< Ramp steps added to every lit pixel; negative darkens.
-    int dither_band = 8;    ///< 0 flat rings, 8 fully dithered falloff.
-    int player_radius = 80; ///< Radius of the light a player carries, in pixels.
-    int player_zones = 0;   ///< Ramp steps that light adds at its centre; 0 is no light.
-    int bullet_radius = 20; ///< Radius of the light a bullet carries, in pixels.
-    int bullet_zones = 3;   ///< Ramp steps that light adds at its centre.
-    int fire_radius = 54;   ///< Radius of the light a placed fire gives, in pixels.
-    int fire_level = 44;    ///< That light's strength at its centre, sixteenths of a step.
-    int fire_flicker = 6;   ///< How far the strength swells and sinks, sixteenths of a step.
-    bool use_loop = false;  ///< Compute lights in the shader loop (at most
-                            ///< MAX_LOOP_LIGHTS) instead of the light buffer.
+    bool enabled = true;        ///< Run the lighting pass at all.
+    int ambient = -4;           ///< Ramp steps added to every lit pixel; negative darkens.
+    int dither_band = 8;        ///< 0 flat rings, 8 fully dithered falloff.
+    int player_radius = 80;     ///< Radius of the light a player carries, in pixels.
+    int player_zones = 0;       ///< Ramp steps that light adds at its centre; 0 is no light.
+    int bullet_radius = 16;     ///< Radius of the light a bullet carries, in pixels.
+    int bullet_level = 24;      ///< That light's strength at its centre, sixteenths of a step.
+    int light_ceiling = 56;     ///< Most light one pixel takes however many lights
+                                ///< overlap, in sixteenths of a step.
+    bool light_sprites = false; ///< Light sprites as well as tiles. Off, the pass
+                                ///< runs before sprites are drawn: players,
+                                ///< enemies and bullets keep their drawn colours.
+    int fire_radius = 54;       ///< Radius of the light a placed fire gives, in pixels.
+    int fire_level = 44;        ///< That light's strength at its centre, sixteenths of a step.
+    int fire_flicker = 6;       ///< How far the strength swells and sinks, sixteenths of a step.
+    bool use_loop = false;      ///< Compute lights in the shader loop (at most
+                                ///< MAX_LOOP_LIGHTS) instead of the light buffer.
 };
 
 /// @brief One light for one frame, in virtual-resolution pixels.

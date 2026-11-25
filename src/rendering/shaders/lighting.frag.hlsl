@@ -19,6 +19,7 @@ cbuffer Context : register(b0, space3) {
     float4 extra; // x: dither band half-width, sixteenths of a step (0..8)
                   // y: number of lights in the loop below
                   // z: 1 to read the light buffer
+                  // w: most light one pixel takes, in sixteenths of a step
     float4 lights[MAX_LIGHTS]; // each: x, y, radius (whole target pixels),
                                // strength at the centre in sixteenths of a step
 };
@@ -90,6 +91,9 @@ PSOutput main(PSInput input) {
             }
         }
     }
+
+    // Where many lights overlap, stop short of the top of the ramp
+    level16 = min(level16, int(extra.w));
 
     int shift = int(frame.z);
     if (level16 > 0) {

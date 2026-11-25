@@ -20,7 +20,8 @@ namespace {
 /// Matches the cbuffer in lighting.frag.hlsl.
 struct Uniforms {
     float frame[4]; // target w, target h, ambient shift, step count
-    float extra[4]; // x: dither band, y: lights in the loop, z: read the light buffer
+    float extra[4]; // x: dither band, y: lights in the loop, z: read the light buffer,
+                    // w: light ceiling
     float lights[raven::LightingPass::MAX_LOOP_LIGHTS][4];
 };
 
@@ -231,6 +232,7 @@ void LightingPass::apply(SDL_Texture* source, SDL_Texture* target, const Lightin
         settings.use_loop ? std::min(lights.size(), static_cast<size_t>(MAX_LOOP_LIGHTS)) : 0;
     u.extra[1] = static_cast<float>(count);
     u.extra[2] = settings.use_loop ? 0.f : 1.f;
+    u.extra[3] = static_cast<float>(std::clamp(settings.light_ceiling, 0, MAX_LEVEL));
     for (size_t i = 0; i < count; ++i) {
         u.lights[i][0] = std::floor(lights[i].x);
         u.lights[i][1] = std::floor(lights[i].y);

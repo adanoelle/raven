@@ -333,10 +333,21 @@ void GameScene::render(Game& game) {
     // is on top, this scene no longer ticks, so snap to current positions —
     // a varying alpha would make sprites shimmer between prev and current.
     float alpha = game.scenes().is_top(this) ? game.clock().interpolation_alpha : 1.f;
-    systems::render_sprites(game.registry(), r, game.sprites(), alpha);
-
 #ifdef RAVEN_ENABLE_SHADER_LIGHTING
-    apply_lighting(game, alpha);
+    // By default only the tiles are lit: sprites are drawn onto the lit
+    // room, so players, enemies and bullets keep the colours they were
+    // drawn in whatever the light is doing.
+    const bool light_sprites = game.registry().ctx().emplace<LightingSettings>().light_sprites;
+    if (!light_sprites) {
+        apply_lighting(game, alpha);
+    }
+    systems::render_sprites(game.registry(), r, game.sprites(), alpha);
+    if (light_sprites) {
+        apply_lighting(game, alpha);
+    }
+    draw_fires(game);
+#else
+    systems::render_sprites(game.registry(), r, game.sprites(), alpha);
 #endif
 
     // HUD overlay
@@ -354,14 +365,14 @@ void GameScene::apply_lighting(Game& game, float alpha) {
     // Persistent scratch buffer, as the sprite renderer keeps.
     auto& lights = reg.ctx().emplace<std::vector<Light>>();
     lights.clear();
-    auto add = [&](entt::entity entity, const Transform2D& tf, int radius, int zones) {
+    auto light_at = [&](entt::entity entity, const Transform2D& tf, int radius, int level) {
         float x = tf.x;
         float y = tf.y;
         if (const auto* prev = reg.try_get<PreviousTransform>(entity)) {
             x = prev->x + (tf.x - prev->x) * alpha;
             y = prev->y + (tf.y - prev->y) * alpha;
         }
-        lights.push_back({x, y, static_cast<float>(radius), zones * 16});
+        return Light{x, y, static_cast<float>(radius), level};
     };
 
     // Fires placed in the room ("Fire" entities in LDtk). The light swells
@@ -388,7 +399,8 @@ void GameScene::apply_lighting(Game& game, float alpha) {
     // more lights than it takes, it is bullets that go without.
     for (auto [entity, player, tf] : reg.view<Player, Transform2D>().each()) {
         if (settings.player_zones > 0) {
-            add(entity, tf, settings.player_radius, settings.player_zones);
+            lights.push_back(
+                light_at(entity, tf, settings.player_radius, settings.player_zones * 16));
         }
     }
     for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
@@ -396,17 +408,19 @@ void GameScene::apply_lighting(Game& game, float alpha) {
             lights.size() >= static_cast<size_t>(LightingPass::MAX_LOOP_LIGHTS)) {
             break;
         }
-        if (settings.bullet_zones <= 0) {
+        if (settings.bullet_level <= 0) {
             break;
         }
-        add(entity, tf, settings.bullet_radius, settings.bullet_zones);
+        lights.push_back(light_at(entity, tf, settings.bullet_radius, settings.bullet_level));
     }
     game.renderer().apply_lighting(settings, lights);
+}
 
-    // A stand-in flame until there is art for one: drawn after the lighting
-    // pass, so it is not lit itself.
+void GameScene::draw_fires(Game& game) {
+    // A stand-in flame until there is art for one. Drawn after the
+    // lighting pass, so it is not lit itself.
     auto* r = game.renderer().sdl_renderer();
-    for (const auto* fire : fires) {
+    for (const auto* fire : tilemap_.find_all_spawns("Fire")) {
         const float x = std::floor(fire->x);
         const float y = std::floor(fire->y);
         SDL_SetRenderDrawColor(r, 58, 40, 44, 255);

@@ -61,6 +61,10 @@ class GameScene : public Scene {
     /// @param game The game, for the registry and the renderer.
     /// @param alpha Interpolation factor, as passed to the sprite renderer.
     void apply_lighting(Game& game, float alpha);
+
+    /// @brief Draw a stand-in flame at each fire placed in the room.
+    /// @param game The game, for the renderer.
+    void draw_fires(Game& game);
 #endif
 
     ClassId::Id selected_class_; ///< Player class chosen at character select.
