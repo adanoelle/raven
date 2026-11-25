@@ -193,12 +193,14 @@ void LightingPass::draw_light_buffer(const std::vector<Light>& lights) {
     const auto width = static_cast<float>(light_buffer_->w);
     const auto height = static_cast<float>(light_buffer_->h);
     for (const Light& light : lights) {
-        if (light.radius <= 0 || light.level <= 0) {
+        if (light.radius <= 0.f || light.level <= 0) {
             continue;
         }
-        const auto reach = static_cast<float>(light.radius);
-        const float x = std::floor(light.x);
-        const float y = std::floor(light.y);
+        // Position and reach keep their fractions, so a light that moves
+        // or breathes slowly changes a few pixels at a time
+        const float reach = light.radius;
+        const float x = light.x;
+        const float y = light.y;
         if (x + reach <= 0.f || y + reach <= 0.f || x - reach >= width || y - reach >= height) {
             continue; // wholly off the frame
         }
@@ -232,7 +234,7 @@ void LightingPass::apply(SDL_Texture* source, SDL_Texture* target, const Lightin
     for (size_t i = 0; i < count; ++i) {
         u.lights[i][0] = std::floor(lights[i].x);
         u.lights[i][1] = std::floor(lights[i].y);
-        u.lights[i][2] = static_cast<float>(lights[i].radius);
+        u.lights[i][2] = std::floor(lights[i].radius);
         u.lights[i][3] = static_cast<float>(std::min(lights[i].level, MAX_LEVEL));
     }
 

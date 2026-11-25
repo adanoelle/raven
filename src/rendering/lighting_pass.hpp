@@ -20,19 +20,19 @@ struct LightingSettings {
     int player_zones = 0;   ///< Ramp steps that light adds at its centre; 0 is no light.
     int bullet_radius = 20; ///< Radius of the light a bullet carries, in pixels.
     int bullet_zones = 3;   ///< Ramp steps that light adds at its centre.
-    int fire_radius = 44;   ///< Radius of the light a placed fire gives, in pixels.
-    int fire_level = 28;    ///< That light's strength at its centre, sixteenths of a step.
-    int fire_flicker = 3;   ///< How far the strength wavers, sixteenths of a step.
+    int fire_radius = 54;   ///< Radius of the light a placed fire gives, in pixels.
+    int fire_level = 44;    ///< That light's strength at its centre, sixteenths of a step.
+    int fire_flicker = 6;   ///< How far the strength swells and sinks, sixteenths of a step.
     bool use_loop = false;  ///< Compute lights in the shader loop (at most
                             ///< MAX_LOOP_LIGHTS) instead of the light buffer.
 };
 
 /// @brief One light for one frame, in virtual-resolution pixels.
 struct Light {
-    float x = 0.f;  ///< Centre X.
-    float y = 0.f;  ///< Centre Y.
-    int radius = 0; ///< Reach in pixels.
-    int level = 0;  ///< Light added at the centre, in sixteenths of a ramp step.
+    float x = 0.f;      ///< Centre X.
+    float y = 0.f;      ///< Centre Y.
+    float radius = 0.f; ///< Reach in pixels.
+    int level = 0;      ///< Light added at the centre, in sixteenths of a ramp step.
 };
 
 /// @brief Resolves the drawn world through the lighting shader.

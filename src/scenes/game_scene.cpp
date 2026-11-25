@@ -35,6 +35,7 @@
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
 
+#include <cmath>
 #include <random>
 
 namespace raven {
@@ -360,22 +361,27 @@ void GameScene::apply_lighting(Game& game, float alpha) {
             x = prev->x + (tf.x - prev->x) * alpha;
             y = prev->y + (tf.y - prev->y) * alpha;
         }
-        lights.push_back({x, y, radius, zones * 16});
+        lights.push_back({x, y, static_cast<float>(radius), zones * 16});
     };
 
-    // Fires placed in the room ("Fire" entities in LDtk). The light wavers
-    // between three strengths, changing about five times a second, each
-    // fire on its own rhythm: steps, not a smooth pulse, so the dithered
-    // edge does not shimmer.
+    // Fires placed in the room ("Fire" entities in LDtk). The light swells
+    // and sinks slowly and sways a little, as two slow waves of different
+    // length so it does not visibly repeat; each fire is out of step with
+    // the others.
     const auto fires = tilemap_.find_all_spawns("Fire");
-    const Uint64 beat = SDL_GetTicks() / 190;
+    const float seconds = static_cast<float>(SDL_GetTicks() % 3'600'000) / 1000.f;
     for (size_t i = 0; i < fires.size(); ++i) {
-        Uint64 h = (beat + i * 7919u) * 0x9E3779B97F4A7C15ull;
-        const int waver = static_cast<int>((h >> 60) % 3) - 1; // -1, 0 or 1
-        if (settings.fire_level > 0) {
-            lights.push_back({fires[i]->x, fires[i]->y, settings.fire_radius + waver,
-                              settings.fire_level + waver * settings.fire_flicker});
+        if (settings.fire_level <= 0) {
+            break;
         }
+        const float phase = static_cast<float>(i) * 2.4f;
+        const float breath = 0.6f * std::sin(seconds * 1.9f + phase) +
+                             0.4f * std::sin(seconds * 3.1f + phase * 1.7f);
+        const float sway = std::sin(seconds * 1.3f + phase * 0.6f);
+        const auto flicker = static_cast<float>(settings.fire_flicker);
+        lights.push_back({fires[i]->x + 1.5f * sway, fires[i]->y + 0.8f * breath,
+                          static_cast<float>(settings.fire_radius) + 0.5f * flicker * breath,
+                          settings.fire_level + static_cast<int>(std::lround(flicker * breath))});
     }
 
     // Then players, then bullets: when the loop is in use and there are
