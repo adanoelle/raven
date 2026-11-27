@@ -56,14 +56,17 @@ SDL_GPUShader* LightingPass::create_shader(const unsigned char* spv, size_t spv_
     SDL_GPUShaderCreateInfo info{};
     if (formats & SDL_GPU_SHADERFORMAT_SPIRV) {
         info.format = SDL_GPU_SHADERFORMAT_SPIRV;
+        info.entrypoint = "main";
         info.code = spv;
         info.code_size = spv_size;
     } else if (formats & SDL_GPU_SHADERFORMAT_DXIL) {
         info.format = SDL_GPU_SHADERFORMAT_DXIL;
+        info.entrypoint = "main";
         info.code = dxil;
         info.code_size = dxil_size;
     } else if (formats & SDL_GPU_SHADERFORMAT_MSL) {
         info.format = SDL_GPU_SHADERFORMAT_MSL;
+        info.entrypoint = "main0"; // what shadercross names it in MSL
         info.code = msl;
         info.code_size = msl_size;
     } else {
