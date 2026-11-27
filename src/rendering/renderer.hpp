@@ -123,6 +123,13 @@ class Renderer {
 
     /// @brief Destroy and recreate the virtual resolution render target.
     void recreate_target();
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// @brief Build the lighting pass, releasing any earlier one first.
+    ///
+    /// Leaves the pass unavailable, and the game unlit, when it cannot be built.
+    void init_lighting();
+#endif
 };
 
 } // namespace raven

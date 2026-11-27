@@ -87,11 +87,7 @@ bool Renderer::init(const std::string& title, int window_scale, bool fullscreen,
 #ifdef RAVEN_ENABLE_SHADER_LIGHTING
     lit_target_ = create_virtual_target(renderer_);
     current_target_ = render_target_;
-    if (lit_target_) {
-        lighting_.init(renderer_, paths::asset("assets/data/lighting/ramps.png"),
-                       paths::asset("assets/data/lighting/reverse.png"), VIRTUAL_WIDTH,
-                       VIRTUAL_HEIGHT);
-    }
+    init_lighting();
 #endif
 
     // Set logical size for proper scaling on window resize
@@ -159,10 +155,26 @@ void Renderer::handle_event(const SDL_Event& event) {
         event.type == SDL_EVENT_RENDER_DEVICE_RESET) {
         spdlog::warn("Render targets reset — recreating");
         recreate_target();
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+        // The pass owns textures of its own (the light buffer, the tables)
+        // and render states that hold them; a reset loses those too.
+        init_lighting();
+#endif
     } else if (event.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
         recreate_target();
     }
 }
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+void Renderer::init_lighting() {
+    lighting_.shutdown();
+    if (!lit_target_) {
+        return;
+    }
+    lighting_.init(renderer_, paths::asset("assets/data/lighting/ramps.png"),
+                   paths::asset("assets/data/lighting/reverse.png"), VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
+}
+#endif
 
 void Renderer::recreate_target() {
     if (render_target_) {
