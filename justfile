@@ -57,6 +57,10 @@ asan:
 export-art *files:
     tools/export_art.sh {{files}}
 
+# Export Aseprite tilesets to assets/tilesets/ (all of art/tiles/, or the given files)
+export-tiles *files:
+    tools/export_tileset.sh {{files}}
+
 # Format all source files
 fmt:
     find src tests -name '*.hpp' -o -name '*.cpp' | xargs clang-format -i
