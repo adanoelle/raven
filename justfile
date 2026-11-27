@@ -22,7 +22,7 @@ release:
 run: build
     ./build/bin/raven
 
-# Build and run with the shader lighting prototype (ADR-0028). F3 opens its controls.
+# Build and run with the shader lighting prototype (ADR-0028). F1 opens its controls.
 run-lit:
     cmake -B build-lit -G Ninja -DCMAKE_BUILD_TYPE=Debug -DRAVEN_ENABLE_SHADER_LIGHTING=ON -DRAVEN_ENABLE_TESTS=OFF
     cmake --build build-lit -j$(nproc)
