@@ -222,6 +222,9 @@ void GameScene::clear_room_entities(Game& game) {
 void GameScene::update(Game& game, float dt) {
     auto& reg = game.registry();
     const auto& input = game.input().state();
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    light_time_ = std::fmod(light_time_ + dt, 3600.f);
+#endif
 
     // Run ECS systems in order
     systems::update_charged_shot(reg, input, dt);
@@ -380,7 +383,7 @@ void GameScene::apply_lighting(Game& game, float alpha) {
     // length so it does not visibly repeat; each fire is out of step with
     // the others.
     const auto fires = tilemap_.find_all_spawns("Fire");
-    const float seconds = static_cast<float>(SDL_GetTicks() % 3'600'000) / 1000.f;
+    const float seconds = light_time_;
     for (size_t i = 0; i < fires.size(); ++i) {
         if (settings.fire_level <= 0) {
             break;
@@ -402,7 +405,7 @@ void GameScene::apply_lighting(Game& game, float alpha) {
                 light_at(entity, tf, settings.player_radius, settings.player_zones * 16));
         }
     }
-    const Uint64 crackle_beat = SDL_GetTicks() / 83;
+    const auto crackle_beat = static_cast<Uint64>(light_time_ * 12.f);
     for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
         if (settings.bullet_level <= 0) {
             break;

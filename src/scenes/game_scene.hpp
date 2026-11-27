@@ -73,6 +73,12 @@ class GameScene : public Scene {
     EnemyLibrary enemy_lib_;     ///< Enemy definitions that stages place by name.
     StageLoader stage_loader_;   ///< Loaded stage definitions.
     int current_stage_ = 0;      ///< Index of the current stage being played.
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// Seconds of simulated time, for lights that move. It advances in
+    /// update(), so lights hold still while the game is paused and repeat
+    /// under replay.
+    float light_time_ = 0.f;
+#endif
 };
 
 } // namespace raven
