@@ -64,6 +64,12 @@ class DebugOverlay {
     /// @brief Draw the player state inspector panel.
     /// @param reg The ECS registry containing the player entity.
     void panel_player(entt::registry& reg);
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// @brief Draw the controls for the shader lighting prototype.
+    /// @param reg The ECS registry whose context holds LightingSettings.
+    void panel_lighting(entt::registry& reg);
+#endif
 };
 
 } // namespace raven

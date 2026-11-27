@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rendering/lighting_pass.hpp"
+
 #include <SDL3/SDL.h>
 
 #include <memory>
@@ -62,6 +64,39 @@ class Renderer {
     /// @brief End the frame by scaling the virtual target to the window. Does not present.
     void end_frame();
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// @brief Light everything drawn so far this frame.
+    ///
+    /// Call after the world is drawn and before the HUD. What is drawn
+    /// afterwards lands on top of the lit frame and is not lit. Does
+    /// nothing when the lighting pass is unavailable.
+    /// @param settings Ambient shift and dither band.
+    /// @param lights This frame's lights, in virtual-resolution pixels.
+    /// @param passes Times to run the pass. More than one is only for the
+    ///        benchmark, which finds the cost of a pass from the difference.
+    void apply_lighting(const LightingSettings& settings, const std::vector<Light>& lights,
+                        int passes = 1);
+
+    /// @brief Block until the GPU has finished everything submitted so far.
+    ///
+    /// For the benchmark, so a frame's time includes the GPU's work.
+    void wait_for_gpu();
+
+    /// @brief Read back the frame as drawn so far, lit or not.
+    ///
+    /// For checks that look at what the lighting pass produced.
+    /// @return A new surface the caller destroys, or null on failure.
+    [[nodiscard]] SDL_Surface* read_frame();
+
+    /// @brief Read back the light buffer of the last apply_lighting().
+    /// @return A new surface the caller destroys, or null on failure.
+    [[nodiscard]] SDL_Surface* read_light_buffer() { return lighting_.read_light_buffer(); }
+
+    /// @brief Whether the lighting pass is available.
+    /// @return True when apply_lighting() has an effect.
+    [[nodiscard]] bool lighting_ready() const { return lighting_.ready(); }
+#endif
+
     /// @brief Present the rendered frame. Call after any overlays have drawn.
     void present();
 
@@ -90,9 +125,21 @@ class Renderer {
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* render_target_ = nullptr; ///< Virtual resolution render target.
     bool vsync_enabled_ = false;           ///< True if the driver accepted vsync.
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    LightingPass lighting_;                 ///< Prototype lighting shader (ADR-0028).
+    SDL_Texture* lit_target_ = nullptr;     ///< Receives the lit world; the HUD draws onto it.
+    SDL_Texture* current_target_ = nullptr; ///< The target end_frame() presents.
+#endif
 
     /// @brief Destroy and recreate the virtual resolution render target.
     void recreate_target();
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// @brief Build the lighting pass, releasing any earlier one first.
+    ///
+    /// Leaves the pass unavailable, and the game unlit, when it cannot be built.
+    void init_lighting();
+#endif
 };
 
 } // namespace raven

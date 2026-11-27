@@ -32,6 +32,19 @@ jobs:
           find src tests -name '*.cpp' -o -name '*.hpp' \
             | xargs pipx run --spec clang-format==21.1.8 clang-format --dry-run --Werror
 
+  # The compiled shaders are committed as headers. Compile them again with
+  # the pinned tools and fail if the result differs: a shader was edited
+  # without 'just shaders', or the headers were edited by hand.
+  shaders:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Compile the shaders
+        run: nix develop .#shaders -c src/rendering/shaders/build.sh
+      - name: Check the committed headers match
+        run: git diff --exit-code -- src/rendering/shaders
+
   lint:
     runs-on: ubuntu-24.04
     steps:
@@ -123,6 +136,12 @@ jobs:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
+        lighting: ["OFF"]
+        # Shader lighting is off by default, so nothing else compiles it.
+        # Debug, because that build also has the overlay's lighting panel.
+        include:
+          - build_type: Debug
+            lighting: "ON"
     steps:
       - uses: actions/checkout@v4
 
@@ -171,6 +190,7 @@ jobs:
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DRAVEN_ENABLE_SHADER_LIGHTING=${{ matrix.lighting }} \
             -DCMAKE_PREFIX_PATH="$SDL_PREFIX"
         env:
           PKG_CONFIG_PATH: ${{ env.SDL_PREFIX }}/lib/pkgconfig
@@ -185,12 +205,35 @@ jobs:
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: dummy
 
+      # No GPU on the runner: Mesa's software Vulkan driver and a virtual
+      # display stand in. This runs the SPIR-V shaders.
+      - name: Check shader lighting (Vulkan, software)
+        if: matrix.lighting == 'ON'
+        run: |
+          sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb
+          xvfb-run -a ./build/bin/raven --check-lighting lighting-check-linux.png
+        env:
+          LD_LIBRARY_PATH: ${{ env.SDL_PREFIX }}/lib
+          SDL_AUDIODRIVER: dummy
+
+      - name: Keep the lit frame
+        if: matrix.lighting == 'ON' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighting-check-linux
+          path: lighting-check-linux.png
+          if-no-files-found: ignore
+
   build-test-windows:
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         build_type: [Debug, Release]
+        lighting: ["OFF"]
+        include: # as in build-test
+          - build_type: Debug
+            lighting: "ON"
     steps:
       - uses: actions/checkout@v4
 
@@ -209,6 +252,7 @@ jobs:
           cmake -B build
           -DRAVEN_BUNDLED_DEPS=ON
           -DRAVEN_ENABLE_IMGUI=${{ matrix.build_type == 'Debug' && 'ON' || 'OFF' }}
+          -DRAVEN_ENABLE_SHADER_LIGHTING=${{ matrix.lighting }}
           -DCPM_SOURCE_CACHE=C:\cpm-cache
 
       - name: Build
@@ -219,6 +263,27 @@ jobs:
         env:
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: dummy
+
+      # No GPU on the runner: Windows' software Direct3D 12 adapter stands
+      # in. This runs the DXIL shaders, which no other machine has yet.
+      - name: Check shader lighting (Direct3D 12, software)
+        if: matrix.lighting == 'ON'
+        shell: bash
+        run: |
+          exe=$(find build -name raven.exe | head -n 1)
+          echo "running $exe"
+          "$exe" --check-lighting lighting-check-windows.png
+        env:
+          SDL_GPU_DRIVER: direct3d12
+          SDL_AUDIODRIVER: dummy
+
+      - name: Keep the lit frame
+        if: matrix.lighting == 'ON' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighting-check-windows
+          path: lighting-check-windows.png
+          if-no-files-found: ignore
 
       # The package is what players get: the game, its DLLs and assets.
       - name: Check the package layout

@@ -94,6 +94,17 @@
           CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
         };
 
+        # Tools that compile the shaders (src/rendering/shaders/build.sh).
+        # A shell of its own: only editing a shader needs it, and pinning
+        # it here makes every machine write the same headers.
+        devShells.shaders = pkgs.mkShell {
+          name = "raven-shaders";
+          nativeBuildInputs = with pkgs; [
+            sdl3-shadercross
+            unixtools.xxd
+          ];
+        };
+
         # Buildable package
         packages.default = pkgs.stdenv.mkDerivation {
           pname = "raven";

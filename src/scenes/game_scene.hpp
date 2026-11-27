@@ -6,7 +6,10 @@
 #include "rendering/tilemap.hpp"
 #include "scenes/scene.hpp"
 
+#include <SDL3/SDL.h>
+
 #include <string>
+#include <vector>
 
 namespace raven {
 
@@ -56,12 +59,30 @@ class GameScene : public Scene {
     /// @param game The Game instance.
     void render_hud(Game& game);
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// @brief Gather this frame's lights and light the world drawn so far.
+    /// @param game The game, for the registry and the renderer.
+    /// @param alpha Interpolation factor, as passed to the sprite renderer.
+    void apply_lighting(Game& game, float alpha);
+
+    /// @brief Draw a stand-in flame at each fire placed in the room.
+    /// @param game The game, for the renderer.
+    void draw_fires(Game& game);
+#endif
+
     ClassId::Id selected_class_; ///< Player class chosen at character select.
     Tilemap tilemap_;            ///< Tilemap loaded from LDtk for the current room.
     PatternLibrary pattern_lib_; ///< Bullet pattern definitions for enemy emitters.
     EnemyLibrary enemy_lib_;     ///< Enemy definitions that stages place by name.
     StageLoader stage_loader_;   ///< Loaded stage definitions.
     int current_stage_ = 0;      ///< Index of the current stage being played.
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    /// Seconds of simulated time, for lights that move. It advances in
+    /// update(), so lights hold still while the game is paused and repeat
+    /// under replay.
+    float light_time_ = 0.f;
+    std::vector<SDL_FPoint> fires_; ///< Where the room's fires are; set in enter_room().
+#endif
 };
 
 } // namespace raven

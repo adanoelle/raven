@@ -3,8 +3,9 @@
 #
 # Every art/**/<name>.aseprite becomes assets/sprites/<name>.png (one row
 # per frame tag) and assets/sprites/<name>.json (frame rects, durations and
-# tags, read by the game's AnimationLibrary). Templates and sketches are
-# skipped, and a layer named "guides" is never exported.
+# tags, read by the game's AnimationLibrary). Templates, sketches and
+# tilesets (art/tiles/, see export_tileset.sh) are skipped, and a layer
+# named "guides" is never exported.
 #
 # All sheets share one directory, so two sources with the same file name
 # would write the same sheet: that is an error, and nothing is exported.
@@ -48,7 +49,7 @@ if [[ ${#sources[@]} -eq 0 ]]; then
     full_export=1
     for src in art/**/*.aseprite; do
         case "$src" in
-        art/templates/* | */sketches/*) continue ;;
+        art/templates/* | art/tiles/* | */sketches/*) continue ;;
         esac
         sources+=("$src")
     done

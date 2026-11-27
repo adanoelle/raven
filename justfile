@@ -22,6 +22,34 @@ release:
 run: build
     ./build/bin/raven
 
+# Build and run with the shader lighting prototype (ADR-0028). F1 opens its controls.
+run-lit:
+    cmake -B build-lit -G Ninja -DCMAKE_BUILD_TYPE=Debug -DRAVEN_ENABLE_SHADER_LIGHTING=ON -DRAVEN_ENABLE_TESTS=OFF
+    cmake --build build-lit -j$(nproc)
+    ./build-lit/bin/raven
+
+# Time the shader lighting prototype on this machine (Release build).
+# Prints a table and writes lighting-benchmark.csv.
+bench-lit:
+    cmake -B build-bench -G Ninja -DCMAKE_BUILD_TYPE=Release -DRAVEN_ENABLE_SHADER_LIGHTING=ON -DRAVEN_ENABLE_TESTS=OFF
+    cmake --build build-bench -j$(nproc)
+    ./build-bench/bin/raven --bench-lighting lighting-benchmark.csv
+
+# Compile the shaders in src/rendering/shaders/ to the committed headers
+shaders:
+    nix develop .#shaders -c src/rendering/shaders/build.sh
+
+# Fail if the committed shader headers do not match their sources
+shaders-check: shaders
+    git diff --exit-code -- src/rendering/shaders
+
+# Check the shader lighting works on this machine's GPU driver.
+# Saves the lit frame as lighting-check.png.
+check-lit:
+    cmake -B build-bench -G Ninja -DCMAKE_BUILD_TYPE=Release -DRAVEN_ENABLE_SHADER_LIGHTING=ON -DRAVEN_ENABLE_TESTS=OFF
+    cmake --build build-bench -j$(nproc)
+    ./build-bench/bin/raven --check-lighting lighting-check.png
+
 # Run tests
 test: build
     cd build && ctest --output-on-failure
@@ -35,6 +63,10 @@ asan:
 # Export Aseprite art to sprite sheets and animation data (all of art/, or the given files)
 export-art *files:
     tools/export_art.sh {{files}}
+
+# Export Aseprite tilesets to assets/tilesets/ (all of art/tiles/, or the given files)
+export-tiles *files:
+    tools/export_tileset.sh {{files}}
 
 # Format all source files
 fmt:

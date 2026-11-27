@@ -459,7 +459,9 @@ TEST_CASE("Hidden LDtk layers keep their collision and entities", "[tilemap]") {
 TEST_CASE("Hidden LDtk tile layers are not drawn", "[tilemap]") {
     SoftwareRenderer sw;
     auto map = load_modified_test_room(sw.renderer, [](nlohmann::json& project) {
+        // The room draws stone on "Tiles" and moss on "Overlay"
         layer_instance(project, "Test_Room", "Tiles")["visible"] = false;
+        layer_instance(project, "Test_Room", "Overlay")["visible"] = false;
     });
 
     CHECK(map.tiles().empty());
@@ -496,6 +498,7 @@ TEST_CASE("LDtk layer opacity reaches the tiles", "[tilemap]") {
 
     auto faded = load_modified_test_room(sw.renderer, [](nlohmann::json& project) {
         layer_instance(project, "Test_Room", "Tiles")["__opacity"] = 0.5;
+        layer_instance(project, "Test_Room", "Overlay")["__opacity"] = 0.5;
     });
     REQUIRE_FALSE(faded.tiles().empty());
     for (const auto& tile : faded.tiles()) {

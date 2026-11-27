@@ -258,7 +258,7 @@ These block work in Phases 0–1 and cost nothing but a choice:
 | -------- | ------ | -------------- |
 | Sonic identity (chiptune, hybrid, or acoustic-leaning) | every sound and track | audio spec §1 |
 | Knight palette hex values and secondary colour | knight action rows, enemy palettes | knight page |
-| Biome 1 theme (the placeholder set is "dungeon") | tileset, rooms, area-1 track mood | this page |
+| Biome 1 theme (the first set is "ruins") | tileset, rooms, area-1 track mood | this page |
 | Shader-resolved palette and lighting: accept after the spike, or fall back to a swap at load time | palette structure and colour budget, how tiles and sprites are drawn (0.5 most of all) | [ADR-0028](decisions/0028-shader-resolved-palette-lighting.md), [devlog](devlog/2026-11-24-shader-direction.md) |
 | Whether the Knight stays a third mechanical class or the roster converges to five with mechanics reassigned | class art after the knight | creative vision, Characters |
 

@@ -35,6 +35,7 @@
 #include <SDL3/SDL.h>
 #include <spdlog/spdlog.h>
 
+#include <cmath>
 #include <random>
 
 namespace raven {
@@ -148,6 +149,13 @@ void GameScene::enter_room(Game& game, const std::string& level) {
         spdlog::error("Room '{}' failed to load; check that the level exists in raven.ldtk", level);
     }
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    fires_.clear();
+    for (const auto* fire : tilemap_.find_all_spawns("Fire")) {
+        fires_.push_back({fire->x, fire->y});
+    }
+#endif
+
     // Reposition player to PlayerStart
     auto& reg = game.registry();
     auto player_view = reg.view<Player, Transform2D, PreviousTransform>();
@@ -221,6 +229,9 @@ void GameScene::clear_room_entities(Game& game) {
 void GameScene::update(Game& game, float dt) {
     auto& reg = game.registry();
     const auto& input = game.input().state();
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    light_time_ = std::fmod(light_time_ + dt, 3600.f);
+#endif
 
     // Run ECS systems in order
     systems::update_charged_shot(reg, input, dt);
@@ -332,11 +343,112 @@ void GameScene::render(Game& game) {
     // is on top, this scene no longer ticks, so snap to current positions —
     // a varying alpha would make sprites shimmer between prev and current.
     float alpha = game.scenes().is_top(this) ? game.clock().interpolation_alpha : 1.f;
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    // By default only the tiles are lit: sprites are drawn onto the lit
+    // room, so players, enemies and bullets keep the colours they were
+    // drawn in whatever the light is doing.
+    const bool light_sprites = game.registry().ctx().emplace<LightingSettings>().light_sprites;
+    if (!light_sprites) {
+        apply_lighting(game, alpha);
+    }
     systems::render_sprites(game.registry(), r, game.sprites(), alpha);
+    if (light_sprites) {
+        apply_lighting(game, alpha);
+    }
+    draw_fires(game);
+#else
+    systems::render_sprites(game.registry(), r, game.sprites(), alpha);
+#endif
 
     // HUD overlay
     render_hud(game);
 }
+
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+void GameScene::apply_lighting(Game& game, float alpha) {
+    auto& reg = game.registry();
+    const auto& settings = reg.ctx().emplace<LightingSettings>();
+    if (!settings.enabled) {
+        return;
+    }
+
+    // Persistent scratch buffer, as the sprite renderer keeps.
+    auto& lights = reg.ctx().emplace<std::vector<Light>>();
+    lights.clear();
+    auto light_at = [&](entt::entity entity, const Transform2D& tf, int radius, int level) {
+        float x = tf.x;
+        float y = tf.y;
+        if (const auto* prev = reg.try_get<PreviousTransform>(entity)) {
+            x = prev->x + (tf.x - prev->x) * alpha;
+            y = prev->y + (tf.y - prev->y) * alpha;
+        }
+        return Light{x, y, static_cast<float>(radius), level, false};
+    };
+
+    // Fires placed in the room ("Fire" entities in LDtk). The light swells
+    // and sinks slowly and sways a little, as two slow waves of different
+    // length so it does not visibly repeat; each fire is out of step with
+    // the others.
+    const float seconds = light_time_;
+    for (size_t i = 0; i < fires_.size(); ++i) {
+        if (settings.fire_level <= 0) {
+            break;
+        }
+        const float phase = static_cast<float>(i) * 2.4f;
+        const float breath = 0.6f * std::sin(seconds * 1.9f + phase) +
+                             0.4f * std::sin(seconds * 3.1f + phase * 1.7f);
+        const float sway = std::sin(seconds * 1.3f + phase * 0.6f);
+        const auto flicker = static_cast<float>(settings.fire_flicker);
+        lights.push_back({fires_[i].x + 1.5f * sway, fires_[i].y + 0.8f * breath,
+                          static_cast<float>(settings.fire_radius) + 0.5f * flicker * breath,
+                          settings.fire_level + static_cast<int>(std::lround(flicker * breath)),
+                          false});
+    }
+
+    for (auto [entity, player, tf] : reg.view<Player, Transform2D>().each()) {
+        if (settings.player_zones > 0) {
+            lights.push_back(
+                light_at(entity, tf, settings.player_radius, settings.player_zones * 16));
+        }
+    }
+    const auto crackle_beat = static_cast<Uint64>(light_time_ * 12.f);
+    for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
+        if (settings.bullet_level <= 0) {
+            break;
+        }
+        // Each bullet's light jumps between strengths about twelve times a
+        // second, on its own rhythm: a crackle, like a spark
+        const Uint64 h = (crackle_beat + static_cast<Uint64>(entt::to_integral(entity)) * 7919u) *
+                         0x9E3779B97F4A7C15ull;
+        const int jump = static_cast<int>((h >> 58) % 5) - 2; // -2..2
+        Light light = light_at(entity, tf, settings.bullet_radius,
+                               settings.bullet_level + jump * settings.bullet_crackle / 2);
+        // Enemy fire is electric: its light is the cool one
+        light.cool = bullet.owner == Bullet::Owner::Enemy;
+        lights.push_back(light);
+    }
+    game.renderer().apply_lighting(settings, lights);
+}
+
+void GameScene::draw_fires(Game& game) {
+    // A stand-in flame until there is art for one. Drawn after the
+    // lighting pass, so it is not lit itself.
+    auto* r = game.renderer().sdl_renderer();
+    for (const SDL_FPoint& fire : fires_) {
+        const float x = std::floor(fire.x);
+        const float y = std::floor(fire.y);
+        SDL_SetRenderDrawColor(r, 58, 40, 44, 255);
+        const SDL_FRect bowl{x - 3.f, y + 1.f, 6.f, 3.f};
+        SDL_RenderFillRect(r, &bowl);
+        SDL_SetRenderDrawColor(r, 214, 120, 54, 255);
+        const SDL_FRect flame{x - 2.f, y - 3.f, 4.f, 4.f};
+        SDL_RenderFillRect(r, &flame);
+        SDL_SetRenderDrawColor(r, 246, 205, 110, 255);
+        const SDL_FRect core{x - 1.f, y - 1.f, 2.f, 2.f};
+        SDL_RenderFillRect(r, &core);
+    }
+}
+#endif
 
 void GameScene::render_hud(Game& game) {
     systems::render_hud(game.registry(), game.renderer().sdl_renderer(), game.font());
