@@ -43,6 +43,13 @@ shaders:
 shaders-check: shaders
     git diff --exit-code -- src/rendering/shaders
 
+# Check the shader lighting works on this machine's GPU driver.
+# Saves the lit frame as lighting-check.png.
+check-lit:
+    cmake -B build-bench -G Ninja -DCMAKE_BUILD_TYPE=Release -DRAVEN_ENABLE_SHADER_LIGHTING=ON -DRAVEN_ENABLE_TESTS=OFF
+    cmake --build build-bench -j$(nproc)
+    ./build-bench/bin/raven --check-lighting lighting-check.png
+
 # Run tests
 test: build
     cd build && ctest --output-on-failure

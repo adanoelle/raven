@@ -205,6 +205,25 @@ jobs:
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: dummy
 
+      # No GPU on the runner: Mesa's software Vulkan driver and a virtual
+      # display stand in. This runs the SPIR-V shaders.
+      - name: Check shader lighting (Vulkan, software)
+        if: matrix.lighting == 'ON'
+        run: |
+          sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb
+          xvfb-run -a ./build/bin/raven --check-lighting lighting-check-linux.png
+        env:
+          LD_LIBRARY_PATH: ${{ env.SDL_PREFIX }}/lib
+          SDL_AUDIODRIVER: dummy
+
+      - name: Keep the lit frame
+        if: matrix.lighting == 'ON' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighting-check-linux
+          path: lighting-check-linux.png
+          if-no-files-found: ignore
+
   build-test-windows:
     runs-on: windows-latest
     strategy:
@@ -244,6 +263,27 @@ jobs:
         env:
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: dummy
+
+      # No GPU on the runner: Windows' software Direct3D 12 adapter stands
+      # in. This runs the DXIL shaders, which no other machine has yet.
+      - name: Check shader lighting (Direct3D 12, software)
+        if: matrix.lighting == 'ON'
+        shell: bash
+        run: |
+          exe=$(find build -name raven.exe | head -n 1)
+          echo "running $exe"
+          "$exe" --check-lighting lighting-check-windows.png
+        env:
+          SDL_GPU_DRIVER: direct3d12
+          SDL_AUDIODRIVER: dummy
+
+      - name: Keep the lit frame
+        if: matrix.lighting == 'ON' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighting-check-windows
+          path: lighting-check-windows.png
+          if-no-files-found: ignore
 
       # The package is what players get: the game, its DLLs and assets.
       - name: Check the package layout

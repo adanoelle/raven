@@ -227,6 +227,14 @@ void Renderer::wait_for_gpu() {
 }
 #endif
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+SDL_Surface* Renderer::read_frame() {
+    SDL_Texture* frame = current_target_ ? current_target_ : render_target_;
+    SDL_SetRenderTarget(renderer_, frame);
+    return SDL_RenderReadPixels(renderer_, nullptr);
+}
+#endif
+
 void Renderer::end_frame() {
     SDL_SetRenderTarget(renderer_, nullptr);
     SDL_SetRenderDrawColor(renderer_, 0, 0, 0, 255);

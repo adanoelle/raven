@@ -82,6 +82,12 @@ class Renderer {
     /// For the benchmark, so a frame's time includes the GPU's work.
     void wait_for_gpu();
 
+    /// @brief Read back the frame as drawn so far, lit or not.
+    ///
+    /// For checks that look at what the lighting pass produced.
+    /// @return A new surface the caller destroys, or null on failure.
+    [[nodiscard]] SDL_Surface* read_frame();
+
     /// @brief Whether the lighting pass is available.
     /// @return True when apply_lighting() has an effect.
     [[nodiscard]] bool lighting_ready() const { return lighting_.ready(); }

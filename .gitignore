@@ -40,3 +40,4 @@ build-docs/
 *.zip
 *.tar.gz
 lighting-benchmark.csv
+lighting-check.png
