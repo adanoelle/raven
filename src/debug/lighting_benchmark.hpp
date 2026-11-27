@@ -17,7 +17,8 @@ class Renderer;
 /// the frame. Prints a table and writes the same numbers as CSV.
 /// @param renderer The game's renderer, already initialised.
 /// @param csv_path Where to write the results.
-/// @return 0 on success, 1 if the lighting pass or the room is unavailable.
+/// @return 0 on success; 1 if the lighting pass or the room is unavailable,
+///         or the results cannot be written.
 int run_lighting_benchmark(Renderer& renderer, const std::string& csv_path);
 
 } // namespace raven

@@ -130,9 +130,11 @@ int run_lighting_benchmark(Renderer& renderer, const std::string& csv_path) {
     };
 
     FILE* csv = std::fopen(csv_path.c_str(), "w");
-    if (csv) {
-        std::fprintf(csv, "path,lights,radius,frame_ms,frame_p99_ms,pass_ms,pass_cpu_ms\n");
+    if (!csv) {
+        spdlog::error("Benchmark: cannot write '{}'", csv_path);
+        return 1;
     }
+    std::fprintf(csv, "path,lights,radius,frame_ms,frame_p99_ms,pass_ms,pass_cpu_ms\n");
     const int w = Renderer::VIRTUAL_WIDTH;
     const int h = Renderer::VIRTUAL_HEIGHT;
     std::printf("\nLighting benchmark: %dx%d pass, %d frames a case, vsync off\n", w, h,
@@ -154,15 +156,14 @@ int run_lighting_benchmark(Renderer& renderer, const std::string& csv_path) {
         std::printf("%-7s %6d %6d %10.3f %10.3f %10.4f %10.4f\n", c.path, c.lights, c.radius,
                     once.mean_ms, once.p99_ms, pass_ms, pass_cpu_ms);
         std::fflush(stdout);
-        if (csv) {
-            std::fprintf(csv, "%s,%d,%d,%.4f,%.4f,%.5f,%.5f\n", c.path, c.lights, c.radius,
-                         once.mean_ms, once.p99_ms, pass_ms, pass_cpu_ms);
-        }
+        std::fprintf(csv, "%s,%d,%d,%.4f,%.4f,%.5f,%.5f\n", c.path, c.lights, c.radius,
+                     once.mean_ms, once.p99_ms, pass_ms, pass_cpu_ms);
     }
-    if (csv) {
-        std::fclose(csv);
-        std::printf("\nwrote %s\n", csv_path.c_str());
+    if (std::fclose(csv) != 0) {
+        spdlog::error("Benchmark: could not finish writing '{}'", csv_path);
+        return 1;
     }
+    std::printf("\nwrote %s\n", csv_path.c_str());
     return 0;
 }
 

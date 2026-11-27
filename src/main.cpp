@@ -26,7 +26,9 @@ int main(int argc, char* argv[]) {
     // --bench-lighting [file.csv]: time the lighting prototype and exit
     for (int i = 1; i < argc; ++i) {
         if (std::string_view{argv[i]} == "--bench-lighting") {
-            const std::string csv = i + 1 < argc ? argv[i + 1] : "lighting-benchmark.csv";
+            // The next argument is the file, unless it is another option
+            const bool named = i + 1 < argc && argv[i + 1][0] != '-';
+            const std::string csv = named ? argv[i + 1] : "lighting-benchmark.csv";
             const int result = raven::run_lighting_benchmark(game.renderer(), csv);
             game.shutdown();
             return result;
