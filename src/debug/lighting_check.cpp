@@ -154,6 +154,11 @@ int run_lighting_check(Renderer& renderer, const std::string& png_path) {
     const int y = static_cast<int>(LIGHT_Y);
 
     const int shifted = differing(drawn, ambient, 0, 0, w, h);
+    // A room that went black also "changed": compare how bright it is left
+    const Region whole_drawn = drawn.sum(w / 2, h / 2, h / 2);
+    const Region whole_ambient = ambient.sum(w / 2, h / 2, h / 2);
+    const long bright_drawn = whole_drawn.red + whole_drawn.green + whole_drawn.blue;
+    const long bright_ambient = whole_ambient.red + whole_ambient.green + whole_ambient.blue;
     const Region plain_before = ambient.sum(px, y, NEAR);
     const Region plain_after = lit.sum(px, y, NEAR);
     const Region cool_before = ambient.sum(cx, y, NEAR);
@@ -184,7 +189,10 @@ int run_lighting_check(Renderer& renderer, const std::string& png_path) {
     std::printf("  light buffer at the plain light's centre: %d; at the cool light's: %d, "
                 "of which cool %d (48 expected for each)\n",
                 buffer_plain, buffer_cool, buffer_cool_green);
-    std::printf("  ambient changed %d of %d pixels\n", shifted, w * h);
+    std::printf("  ambient changed %d of %d pixels, and left the room %.0f%% as bright\n", shifted,
+                w * h,
+                100.0 * static_cast<double>(bright_ambient) /
+                    static_cast<double>(bright_drawn > 0 ? bright_drawn : 1));
     std::printf("  plain light: brightness +%.1f a pixel, blue over red %+.1f\n",
                 static_cast<double>(plain_gain) / static_cast<double>(3 * area),
                 static_cast<double>(plain_blue) / static_cast<double>(area));
@@ -198,6 +206,9 @@ int run_lighting_check(Renderer& renderer, const std::string& png_path) {
                  "lights are drawn into the light buffer");
     ok &= expect(shifted > w * h / 4, "the ambient shift changes the room (colour tables reach "
                                       "the shader)");
+    ok &= expect(bright_ambient * 5 > bright_drawn && bright_ambient < bright_drawn,
+                 "the ambient shift darkens the room without blacking it out (pixels are read "
+                 "where they are drawn)");
     ok &= expect(plain_gain > 3 * area * 4, "a light makes its surroundings lighter (the light "
                                             "buffer reaches the shader)");
     ok &= expect(blue_after - blue_before > area * 8, "a cool light makes its surroundings bluer "
