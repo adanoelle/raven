@@ -35,6 +35,14 @@ bench-lit:
     cmake --build build-bench -j$(nproc)
     ./build-bench/bin/raven --bench-lighting lighting-benchmark.csv
 
+# Compile the shaders in src/rendering/shaders/ to the committed headers
+shaders:
+    nix develop .#shaders -c src/rendering/shaders/build.sh
+
+# Fail if the committed shader headers do not match their sources
+shaders-check: shaders
+    git diff --exit-code -- src/rendering/shaders
+
 # Run tests
 test: build
     cd build && ctest --output-on-failure
