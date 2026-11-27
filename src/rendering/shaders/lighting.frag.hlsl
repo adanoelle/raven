@@ -52,7 +52,12 @@ PSOutput main(PSInput input) {
 
     int2 px = int2(floor(input.v_uv * frame.xy));
     float4 drawn = u_texture.Load(int3(px, 0));
-    output.o_color = float4(drawn.rgb, 1.0);
+    // The frame's colour modulation, white unless someone sets it. It must
+    // be used: an input the shader ignores is dropped when the shader is
+    // translated for Direct3D, the inputs left no longer line up with what
+    // the vertex shader passes, and v_uv arrives holding the colour.
+    float4 mod = float4(input.v_color.rgb, 1.0);
+    output.o_color = float4(drawn.rgb, 1.0) * mod;
 
     // Which ramp and step is this colour?
     int3 c = int3(round(drawn.rgb * 255.0)) >> 2;
@@ -103,6 +108,6 @@ PSOutput main(PSInput input) {
 
     int step_out = clamp(step_in + shift, 0, int(frame.w) - 1);
     float4 colour = u_ramps.Load(int3(step_out, row, 0));
-    output.o_color = float4(colour.rgb, 1.0);
+    output.o_color = float4(colour.rgb, 1.0) * mod;
     return output;
 }
