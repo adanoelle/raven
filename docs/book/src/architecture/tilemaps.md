@@ -286,13 +286,24 @@ The project file at `assets/maps/raven.ldtk` uses LDtk 1.5.3 format.
 
 | Layer     | Type    | Content                                                    |
 | --------- | ------- | ---------------------------------------------------------- |
-| Entities  | Entity  | `PlayerStart`, four `EnemySpawn`s, one `Exit`              |
-| Tiles     | Tiles   | Floor/wall visuals from tileset                            |
+| Entities  | Entity  | `PlayerStart`, four `EnemySpawn`s, one `Exit`, two `Fire`s |
+| Overlay   | Tiles   | Moss, drawn over the stone                                 |
+| Tiles     | Tiles   | Stone floor, and the cliff face below a floor edge         |
 | Collision | IntGrid | Value 1 on border cells, 0 interior                        |
 
-`Room_02` and `Room_03` are copies of `Test_Room` with 2x2 pillars, and are
-placeholders for real room designs. The three rooms are the levels of
-`stage_01` to `stage_03`.
+Every tile layer in a level is drawn, back to front, so a level may have
+any number of them. `test_content` hides and fades both `Tiles` and
+`Overlay` in `Test_Room`, and so expects that room to keep both.
+
+`Room_02` and `Room_03` are copies of `Test_Room` with 2x2 pillars. The
+three rooms are the levels of `stage_01` to `stage_03`.
+
+The tiles in all three rooms were painted by a script,
+`tools/ruins_test_rooms.py`, from each room's collision layer: stone
+variants at random on walkable cells, a cliff face below floor edges, moss
+scattered on the overlay. They show the tileset in the game and are not
+level design. Rooms laid out by hand in LDtk replace them; do not run the
+script on a room you have painted, because it repaints every cell.
 
 ### Entity types
 
@@ -301,6 +312,7 @@ placeholders for real room designs. The three rooms are the levels of
 | `PlayerStart` | none                     | Where the player appears on entering the room           |
 | `EnemySpawn`  | `index` (Int)            | Enemy positions; a stage's `spawn_index` picks the one with that `index` (the Nth, in a level where none have one) |
 | `Exit`        | `target_level` (String)  | Opens when the room is cleared; leave the field null on the final room |
+| `Fire`        | none                     | A fire that lights the tiles around it. Only builds with shader lighting (`RAVEN_ENABLE_SHADER_LIGHTING`) use it; others ignore it |
 
 Every `EnemySpawn` in the shipped map carries its `index`, numbered from 0
 within its room. When you add or move spawn points in LDtk, set the field
@@ -311,9 +323,22 @@ exactly one spawn point.
 
 ### Tileset
 
-A minimal 64x16 PNG at `assets/tilesets/dungeon.png` with four 16x16 tiles:
-floor, wall top, wall side, wall corner. This is a placeholder for
-bootstrapping; final art will replace it.
+`assets/tilesets/ruins.png` is the game's tileset: 16x16 tiles in two rows,
+stone (floor variants and cliff faces) and moss. The first tile of each row
+is empty.
+
+The sheet is exported from `art/tiles/ruins.aseprite`, which uses
+Aseprite's tilemap layers. Each tilemap layer becomes one row of the sheet,
+bottom layer first. After editing the source, run:
+
+```sh
+just export-tiles
+```
+
+This exports every `art/tiles/*.aseprite` to `assets/tilesets/<name>.png`.
+`just export-art` leaves that folder alone. Adding tiles to the end of a
+row keeps the tile numbers the map already uses; inserting or reordering
+tiles changes what the rooms show.
 
 ## Spawn points
 
@@ -404,6 +429,8 @@ tm.init_collision(4, 4, 16, std::move(grid));
 | `src/ecs/systems/tile_collision_system.cpp` | `update_tile_collision()` — AABB-vs-grid resolution |
 | `src/scenes/game_scene.cpp`                 | Loads tilemap, wires render and collision systems   |
 | `assets/maps/raven.ldtk`                    | LDtk project with Test_Room level                   |
-| `assets/tilesets/dungeon.png`               | Placeholder tileset (4 tiles, 16x16)                |
+| `assets/tilesets/ruins.png`                 | The tileset (stone and moss, 16x16)                 |
+| `art/tiles/ruins.aseprite`                  | Its source; `just export-tiles` exports it          |
+| `tools/ruins_test_rooms.py`                 | Painted the three rooms' tiles from their collision |
 | `tests/test_tilemap.cpp`                    | Collision grid and resolution tests                 |
 | `cmake/Dependencies.cmake`                  | LDtkLoader CPM dependency                           |
