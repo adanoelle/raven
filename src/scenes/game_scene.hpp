@@ -6,7 +6,10 @@
 #include "rendering/tilemap.hpp"
 #include "scenes/scene.hpp"
 
+#include <SDL3/SDL.h>
+
 #include <string>
+#include <vector>
 
 namespace raven {
 
@@ -78,6 +81,7 @@ class GameScene : public Scene {
     /// update(), so lights hold still while the game is paused and repeat
     /// under replay.
     float light_time_ = 0.f;
+    std::vector<SDL_FPoint> fires_; ///< Where the room's fires are; set in enter_room().
 #endif
 };
 

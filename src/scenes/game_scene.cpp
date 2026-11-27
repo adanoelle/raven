@@ -149,6 +149,13 @@ void GameScene::enter_room(Game& game, const std::string& level) {
         spdlog::error("Room '{}' failed to load; check that the level exists in raven.ldtk", level);
     }
 
+#ifdef RAVEN_ENABLE_SHADER_LIGHTING
+    fires_.clear();
+    for (const auto* fire : tilemap_.find_all_spawns("Fire")) {
+        fires_.push_back({fire->x, fire->y});
+    }
+#endif
+
     // Reposition player to PlayerStart
     auto& reg = game.registry();
     auto player_view = reg.view<Player, Transform2D, PreviousTransform>();
@@ -382,9 +389,8 @@ void GameScene::apply_lighting(Game& game, float alpha) {
     // and sinks slowly and sways a little, as two slow waves of different
     // length so it does not visibly repeat; each fire is out of step with
     // the others.
-    const auto fires = tilemap_.find_all_spawns("Fire");
     const float seconds = light_time_;
-    for (size_t i = 0; i < fires.size(); ++i) {
+    for (size_t i = 0; i < fires_.size(); ++i) {
         if (settings.fire_level <= 0) {
             break;
         }
@@ -393,7 +399,7 @@ void GameScene::apply_lighting(Game& game, float alpha) {
                              0.4f * std::sin(seconds * 3.1f + phase * 1.7f);
         const float sway = std::sin(seconds * 1.3f + phase * 0.6f);
         const auto flicker = static_cast<float>(settings.fire_flicker);
-        lights.push_back({fires[i]->x + 1.5f * sway, fires[i]->y + 0.8f * breath,
+        lights.push_back({fires_[i].x + 1.5f * sway, fires_[i].y + 0.8f * breath,
                           static_cast<float>(settings.fire_radius) + 0.5f * flicker * breath,
                           settings.fire_level + static_cast<int>(std::lround(flicker * breath)),
                           false});
@@ -428,9 +434,9 @@ void GameScene::draw_fires(Game& game) {
     // A stand-in flame until there is art for one. Drawn after the
     // lighting pass, so it is not lit itself.
     auto* r = game.renderer().sdl_renderer();
-    for (const auto* fire : tilemap_.find_all_spawns("Fire")) {
-        const float x = std::floor(fire->x);
-        const float y = std::floor(fire->y);
+    for (const SDL_FPoint& fire : fires_) {
+        const float x = std::floor(fire.x);
+        const float y = std::floor(fire.y);
         SDL_SetRenderDrawColor(r, 58, 40, 44, 255);
         const SDL_FRect bowl{x - 3.f, y + 1.f, 6.f, 3.f};
         SDL_RenderFillRect(r, &bowl);
