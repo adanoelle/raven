@@ -216,6 +216,17 @@ void LightingPass::draw_light_buffer(const std::vector<Light>& lights) {
     SDL_SetGPURenderState(renderer_, nullptr);
 }
 
+SDL_Surface* LightingPass::read_light_buffer() {
+    if (!light_buffer_) {
+        return nullptr;
+    }
+    SDL_Texture* previous = SDL_GetRenderTarget(renderer_);
+    SDL_SetRenderTarget(renderer_, light_buffer_);
+    SDL_Surface* read = SDL_RenderReadPixels(renderer_, nullptr);
+    SDL_SetRenderTarget(renderer_, previous);
+    return read;
+}
+
 void LightingPass::apply(SDL_Texture* source, SDL_Texture* target, const LightingSettings& settings,
                          const std::vector<Light>& lights) {
     if (!state_) {

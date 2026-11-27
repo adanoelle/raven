@@ -88,6 +88,10 @@ class Renderer {
     /// @return A new surface the caller destroys, or null on failure.
     [[nodiscard]] SDL_Surface* read_frame();
 
+    /// @brief Read back the light buffer of the last apply_lighting().
+    /// @return A new surface the caller destroys, or null on failure.
+    [[nodiscard]] SDL_Surface* read_light_buffer() { return lighting_.read_light_buffer(); }
+
     /// @brief Whether the lighting pass is available.
     /// @return True when apply_lighting() has an effect.
     [[nodiscard]] bool lighting_ready() const { return lighting_.ready(); }

@@ -62,13 +62,19 @@ struct Frame {
 /// Draw the room, light it if asked, and read the frame back as RGBA bytes.
 bool draw(raven::Renderer& renderer, const raven::Tilemap& room,
           const raven::LightingSettings* settings, const std::vector<raven::Light>& lights,
-          Frame& out) {
+          Frame& out, Frame* buffer = nullptr) {
     renderer.begin_frame();
     raven::systems::render_tilemap(room, renderer.sdl_renderer());
     if (settings) {
         renderer.apply_lighting(*settings, lights);
     }
     SDL_Surface* read = renderer.read_frame();
+    if (buffer) {
+        if (SDL_Surface* light = renderer.read_light_buffer()) {
+            buffer->surface = SDL_ConvertSurface(light, SDL_PIXELFORMAT_RGBA32);
+            SDL_DestroySurface(light);
+        }
+    }
     renderer.end_frame();
     renderer.present();
     renderer.wait_for_gpu();
@@ -126,14 +132,17 @@ int run_lighting_check(Renderer& renderer, const std::string& png_path) {
     Frame drawn;
     Frame ambient;
     Frame lit;
+    Frame buffer; // the light buffer behind the lit frame
     // Each is drawn twice: the first frame after start-up may not be whole
     for (int i = 0; i < 2; ++i) {
         Frame discard_drawn;
         Frame discard_ambient;
         Frame discard_lit;
+        Frame discard_buffer;
         if (!draw(renderer, room, nullptr, none, i == 0 ? discard_drawn : drawn) ||
             !draw(renderer, room, &settings, none, i == 0 ? discard_ambient : ambient) ||
-            !draw(renderer, room, &settings, lights, i == 0 ? discard_lit : lit)) {
+            !draw(renderer, room, &settings, lights, i == 0 ? discard_lit : lit,
+                  i == 0 ? &discard_buffer : &buffer)) {
             return 1;
         }
     }
@@ -162,6 +171,19 @@ int run_lighting_check(Renderer& renderer, const std::string& png_path) {
         (plain_after.blue - plain_after.red) - (plain_before.blue - plain_before.red);
     const long area = static_cast<long>(2 * NEAR) * (2 * NEAR);
 
+    // What the lights left in the light buffer, apart from what the
+    // resolve shader then made of it
+    int buffer_plain = -1;
+    int buffer_cool = -1;
+    int buffer_cool_green = -1;
+    if (buffer.surface) {
+        buffer_plain = buffer.pixel(px, y)[0];
+        buffer_cool = buffer.pixel(cx, y)[0];
+        buffer_cool_green = buffer.pixel(cx, y)[1];
+    }
+    std::printf("  light buffer at the plain light's centre: %d; at the cool light's: %d, "
+                "of which cool %d (48 expected for each)\n",
+                buffer_plain, buffer_cool, buffer_cool_green);
     std::printf("  ambient changed %d of %d pixels\n", shifted, w * h);
     std::printf("  plain light: brightness +%.1f a pixel, blue over red %+.1f\n",
                 static_cast<double>(plain_gain) / static_cast<double>(3 * area),
@@ -172,6 +194,8 @@ int run_lighting_check(Renderer& renderer, const std::string& png_path) {
     std::printf("  pixels changed out of reach of the lights: %d\n\n", stray);
 
     bool ok = true;
+    ok &= expect(buffer_plain >= 44 && buffer_cool >= 44 && buffer_cool_green >= 44,
+                 "lights are drawn into the light buffer");
     ok &= expect(shifted > w * h / 4, "the ambient shift changes the room (colour tables reach "
                                       "the shader)");
     ok &= expect(plain_gain > 3 * area * 4, "a light makes its surroundings lighter (the light "

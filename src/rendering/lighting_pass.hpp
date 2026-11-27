@@ -80,6 +80,13 @@ class LightingPass {
     void apply(SDL_Texture* source, SDL_Texture* target, const LightingSettings& settings,
                const std::vector<Light>& lights);
 
+    /// @brief Read back the light buffer as apply() last drew it.
+    ///
+    /// For checks: red is the light at each pixel in sixteenths of a step,
+    /// green the cool part of it.
+    /// @return A new surface the caller destroys, or null on failure.
+    [[nodiscard]] SDL_Surface* read_light_buffer();
+
   private:
     SDL_Renderer* renderer_ = nullptr;
     SDL_GPUDevice* device_ = nullptr;
