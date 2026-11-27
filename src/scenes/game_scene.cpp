@@ -396,8 +396,6 @@ void GameScene::apply_lighting(Game& game, float alpha) {
                           false});
     }
 
-    // Then players, then bullets: when the loop is in use and there are
-    // more lights than it takes, it is bullets that go without.
     for (auto [entity, player, tf] : reg.view<Player, Transform2D>().each()) {
         if (settings.player_zones > 0) {
             lights.push_back(
@@ -406,10 +404,6 @@ void GameScene::apply_lighting(Game& game, float alpha) {
     }
     const Uint64 crackle_beat = SDL_GetTicks() / 83;
     for (auto [entity, bullet, tf] : reg.view<Bullet, Transform2D>().each()) {
-        if (settings.use_loop &&
-            lights.size() >= static_cast<size_t>(LightingPass::MAX_LOOP_LIGHTS)) {
-            break;
-        }
         if (settings.bullet_level <= 0) {
             break;
         }

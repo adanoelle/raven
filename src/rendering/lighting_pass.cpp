@@ -13,17 +13,14 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-#include <cmath>
 
 namespace {
 
 /// Matches the cbuffer in lighting.frag.hlsl.
 struct Uniforms {
     float frame[4]; // target w, target h, ambient shift, step count
-    float extra[4]; // x: dither band, y: lights in the loop, z: read the light buffer,
-                    // w: light ceiling
+    float extra[4]; // x: dither band, w: light ceiling
     float tint[4];  // x: ramps in one layer, y: cool light for a full tint
-    float lights[raven::LightingPass::MAX_LOOP_LIGHTS][4];
 };
 
 } // namespace
@@ -221,28 +218,16 @@ void LightingPass::apply(SDL_Texture* source, SDL_Texture* target, const Lightin
     if (!state_) {
         return;
     }
-    if (!settings.use_loop) {
-        draw_light_buffer(lights);
-    }
+    draw_light_buffer(lights);
     Uniforms u{};
     u.frame[0] = static_cast<float>(source->w);
     u.frame[1] = static_cast<float>(source->h);
     u.frame[2] = static_cast<float>(settings.ambient);
     u.frame[3] = static_cast<float>(steps_);
     u.extra[0] = static_cast<float>(std::clamp(settings.dither_band, 0, 8));
-    size_t count =
-        settings.use_loop ? std::min(lights.size(), static_cast<size_t>(MAX_LOOP_LIGHTS)) : 0;
-    u.extra[1] = static_cast<float>(count);
-    u.extra[2] = settings.use_loop ? 0.f : 1.f;
     u.extra[3] = static_cast<float>(std::clamp(settings.light_ceiling, 0, MAX_LEVEL));
     u.tint[0] = static_cast<float>(ramps_count_);
     u.tint[1] = static_cast<float>(std::max(settings.cool_full, 0));
-    for (size_t i = 0; i < count; ++i) {
-        u.lights[i][0] = std::floor(lights[i].x);
-        u.lights[i][1] = std::floor(lights[i].y);
-        u.lights[i][2] = std::floor(lights[i].radius);
-        u.lights[i][3] = static_cast<float>(std::min(lights[i].level, MAX_LEVEL));
-    }
 
     SDL_SetGPURenderStateFragmentUniforms(state_, 0, &u, sizeof(u));
     SDL_SetRenderTarget(renderer_, target);

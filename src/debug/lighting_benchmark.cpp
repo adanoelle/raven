@@ -21,7 +21,7 @@ constexpr int MEASURED_FRAMES = 240;
 constexpr int MANY_PASSES = 33; ///< Passes per frame in the second run of a case.
 
 struct Case {
-    const char* path; ///< "off", "loop" or "buffer".
+    const char* path; ///< "off" or "buffer".
     int lights;
     int radius;
 };
@@ -64,7 +64,6 @@ void place_lights(std::vector<raven::Light>& lights, int count, int radius, int 
 Timing run(raven::Renderer& renderer, const raven::Tilemap& room, const Case& c, int passes) {
     raven::LightingSettings settings;
     settings.enabled = SDL_strcmp(c.path, "off") != 0;
-    settings.use_loop = SDL_strcmp(c.path, "loop") == 0;
 
     std::vector<raven::Light> lights;
     std::vector<double> frames;
@@ -124,12 +123,10 @@ int run_lighting_benchmark(Renderer& renderer, const std::string& csv_path) {
     }
     renderer.set_vsync(false);
 
-    // Bullet-sized lights, then room-sized ones. The loop takes 32 at most.
+    // Bullet-sized lights, then room-sized ones
     const Case cases[] = {
-        {"off", 0, 0},       {"loop", 0, 20},     {"loop", 8, 20},      {"loop", 16, 20},
-        {"loop", 32, 20},    {"loop", 32, 80},    {"buffer", 0, 20},    {"buffer", 32, 20},
-        {"buffer", 100, 20}, {"buffer", 300, 20}, {"buffer", 1000, 20}, {"buffer", 32, 80},
-        {"buffer", 300, 80},
+        {"off", 0, 0},       {"buffer", 0, 20},    {"buffer", 32, 20}, {"buffer", 100, 20},
+        {"buffer", 300, 20}, {"buffer", 1000, 20}, {"buffer", 32, 80}, {"buffer", 300, 80},
     };
 
     FILE* csv = std::fopen(csv_path.c_str(), "w");

@@ -4,8 +4,8 @@
 // Drawn as a square over the light's reach with additive blending. The
 // colour modulation carries the light's strength at its centre: red is
 // sixteenths of a ramp step, over 255, and green is the part of that
-// which is cool light. The falloff is (1 - (d/r)^2)^2,
-// the same curve as the loop in lighting.frag.hlsl.
+// which is cool light. The falloff is (1 - (d/r)^2)^2: smooth at the
+// centre and at the edge.
 
 Texture2D u_texture : register(t0, space2);
 SamplerState u_sampler : register(s0, space2);

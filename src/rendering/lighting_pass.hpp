@@ -32,8 +32,6 @@ struct LightingSettings {
     int fire_radius = 54;       ///< Radius of the light a placed fire gives, in pixels.
     int fire_level = 44;        ///< That light's strength at its centre, sixteenths of a step.
     int fire_flicker = 6;       ///< How far the strength swells and sinks, sixteenths of a step.
-    bool use_loop = false;      ///< Compute lights in the shader loop (at most
-                                ///< MAX_LOOP_LIGHTS) instead of the light buffer.
 };
 
 /// @brief One light for one frame, in virtual-resolution pixels.
@@ -52,13 +50,10 @@ struct Light {
 ///
 /// Lights are drawn as squares into a light buffer the size of the frame,
 /// and the lighting shader reads the sum at each pixel. The cost of a light
-/// is its area, and there is no limit on their number. The first version,
-/// a loop over lights in the shader, is kept behind
-/// LightingSettings::use_loop to compare the two.
+/// is its area, and there is no limit on their number.
 class LightingPass {
   public:
-    static constexpr int MAX_LOOP_LIGHTS = 32; ///< Matches lighting.frag.hlsl.
-    static constexpr int MAX_LEVEL = 255;      ///< Most light one pixel can hold, sixteenths.
+    static constexpr int MAX_LEVEL = 255; ///< Most light one pixel can hold, sixteenths.
 
     /// @brief Create the shader, load the lookup tables and build the render state.
     /// @param renderer The SDL renderer; must be the "gpu" renderer.
@@ -80,9 +75,8 @@ class LightingPass {
     /// @brief Draw `source` into `target` through the lighting shader.
     /// @param source The world as drawn, in colour.
     /// @param target The render target that receives the lit frame.
-    /// @param settings Ambient shift, dither band and which way lights are computed.
-    /// @param lights This frame's lights. With LightingSettings::use_loop,
-    ///        those past MAX_LOOP_LIGHTS are ignored.
+    /// @param settings Ambient shift, dither band, light ceiling and tint.
+    /// @param lights This frame's lights; any number.
     void apply(SDL_Texture* source, SDL_Texture* target, const LightingSettings& settings,
                const std::vector<Light>& lights);
 

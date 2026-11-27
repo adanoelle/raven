@@ -13,18 +13,12 @@
 // light at that pixel. An unknown colour is left as drawn. All arithmetic
 // that decides a colour uses whole numbers.
 
-#define MAX_LIGHTS 32
-
 cbuffer Context : register(b0, space3) {
     float4 frame; // target w, target h, ambient shift (steps), step count
     float4 extra; // x: dither band half-width, sixteenths of a step (0..8)
-                  // y: number of lights in the loop below
-                  // z: 1 to read the light buffer
                   // w: most light one pixel takes, in sixteenths of a step
     float4 tint;  // x: number of ramps (rows in one layer of u_ramps)
                   // y: cool light for a full tint, sixteenths of a step; 0 is no tint
-    float4 lights[MAX_LIGHTS]; // each: x, y, radius (whole target pixels),
-                               // strength at the centre in sixteenths of a step
 };
 
 Texture2D u_texture : register(t0, space2);
@@ -70,33 +64,12 @@ PSOutput main(PSInput input) {
     int ramp = int(round(entry.r * 255.0));
     int step_in = int(round(entry.g * 255.0));
 
-    // Light arrives two ways, and both add. The light buffer holds any
-    // number of lights, drawn into it beforehand. The loop computes up to
-    // MAX_LIGHTS here; it is the first version, kept to compare cost.
-    // Each light is a smooth falloff, (1 - (d/r)^2)^2, scaled to its
-    // strength at the centre. The sum is in sixteenths of a step: the
-    // whole part shifts the step and the remainder is dithered.
-    int level16 = 0;
-    int cool16 = 0;
-    if (extra.z > 0.5) {
-        float4 light = u_light.Load(int3(px, 0));
-        level16 = int(round(light.r * 255.0));
-        cool16 = int(round(light.g * 255.0));
-    }
-    int count = min(int(extra.y), MAX_LIGHTS);
-    for (int i = 0; i < count; ++i) {
-        int radius = int(lights[i].z);
-        int strength = int(lights[i].w);
-        if (radius > 0 && strength > 0) {
-            int2 dd = px * 2 + 1 - int2(lights[i].xy) * 2;
-            int d2x4 = dd.x * dd.x + dd.y * dd.y;
-            int r2x4 = 4 * radius * radius;
-            if (d2x4 < r2x4) {
-                int t = ((r2x4 - d2x4) * 256) / r2x4;
-                level16 += (strength * t * t) >> 16;
-            }
-        }
-    }
+    // The light at this pixel, summed over every light stamped into the
+    // light buffer. It is in sixteenths of a step: the whole part shifts
+    // the step and the remainder is dithered.
+    float4 light = u_light.Load(int3(px, 0));
+    int level16 = int(round(light.r * 255.0));
+    int cool16 = int(round(light.g * 255.0));
 
     // Where many lights overlap, stop short of the top of the ramp
     level16 = min(level16, int(extra.w));
